@@ -110,7 +110,9 @@ export function UnifiedAuthForm({
             } catch (registerError: unknown) {
               console.error('Registration error:', registerError);
               if (registerError instanceof AxiosError) {
-                const message = registerError.response?.data?.message || 'Failed to create account. Please try again.';
+                const message =
+                  registerError.response?.data?.message ||
+                  'Failed to create account. Please try again.';
                 toast.error(message);
               } else {
                 toast.error('Failed to create account. Please try again.');
@@ -308,7 +310,7 @@ export default function UnifiedAuth() {
   return (
     <div className='flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10'>
       <div className='flex w-full max-w-sm flex-col gap-6'>
-        <a href='#' className='flex items-center gap-2 self-center font-medium'>
+        <a href='' className='flex items-center gap-2 self-center font-medium'>
           <Image
             src='/images/logo.png'
             alt='RONR Logo'
