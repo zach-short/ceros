@@ -89,12 +89,12 @@ export function FriendsListClean() {
         <DataState
           data={data}
           error={error}
-          loading={loading}
+          isLoading={loading}
           refetch={refetch}
           EmptyComponent={FriendsNotFound}
           validate={validateFriends}
         >
-          {(data) => {
+          {(data: any) => {
             const friendsList = data?.friendships;
 
             return (

@@ -1,6 +1,6 @@
 [build]
     base = "frontend"
-    command = "next build"
+    command = "rm -rf node_modules .next && bun install && bun run build"
     publish = ".next"
 
 [[plugins]]
