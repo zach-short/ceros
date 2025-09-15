@@ -26,10 +26,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          const { user, token } = await authApi.login({
+          const response = await authApi.login({
             email: credentials.email as string,
             password: credentials.password as string,
           });
+
+          if (!response.success) {
+            console.error('Login failed:', response.error);
+            return null;
+          }
+
+          const { user, token } = response.data;
 
           return {
             id: user.id,
@@ -37,7 +44,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.name,
             apiToken: token,
           };
-        } catch {
+        } catch (error) {
+          console.error('Login error:', error);
           return null;
         }
       },
@@ -45,9 +53,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user, account }) {
+      console.log('JWT callback triggered:', { provider: account?.provider, user: !!user, account: !!account });
+
       if ((account?.provider === 'google' || account?.provider === 'github') && user) {
         try {
-          const { user: userData, token: apiToken } = await authApi.socialAuth({
+          console.log('Attempting social auth with:', {
+            provider: account.provider,
+            providerId: account.providerAccountId,
+            email: user.email,
+            name: user.name
+          });
+
+          const response = await authApi.socialAuth({
             provider: account.provider,
             providerId: account.providerAccountId!,
             email: user.email!,
@@ -55,8 +72,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             image: user.image || undefined,
           });
 
-          token.apiToken = apiToken;
-          token.userId = userData.id;
+          console.log('Social auth response:', response);
+
+          if (response.success) {
+            const { user: userData, token: apiToken } = response.data;
+            token.apiToken = apiToken;
+            token.userId = userData.id;
+            console.log('Social auth successful, token set');
+          } else {
+            console.error('Social auth failed:', response.error);
+          }
         } catch (error) {
           console.error('Social auth error:', error);
         }
@@ -87,4 +112,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   jwt: {
     maxAge: 3 * 30 * 24 * 60 * 60, // 30 days
   },
+  debug: process.env.NODE_ENV === 'development',
+  trustHost: true,
 });

@@ -1,4 +1,4 @@
-import UnifiedAuth from '@/components/auth/unified-auth';
+import { UnifiedAuth } from '@/components/auth/unified-auth';
 import { ThemeToggle } from '@/components/shared/button/theme-toggle';
 
 export default function LandingPage() {

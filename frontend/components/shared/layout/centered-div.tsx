@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-export default function CenteredDiv({
+export function CenteredDiv({
   children,
   className,
 }: {

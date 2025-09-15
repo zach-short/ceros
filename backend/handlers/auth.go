@@ -134,7 +134,7 @@ func SocialAuth(c *gin.Context) {
 	collection := config.GetCollection("users")
 	var user models.User
 	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
-	
+
 	if err == mongo.ErrNoDocuments {
 		user = models.User{
 			ID:      primitive.NewObjectID(),
@@ -173,7 +173,19 @@ func CheckEmail(c *gin.Context) {
 	collection := config.GetCollection("users")
 	var user models.User
 	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
-	
-	exists := err == nil
-	c.JSON(http.StatusOK, gin.H{"exists": exists})
+
+	if err == nil {
+		// User exists, check if they have a password (not OAuth-only)
+		hasPassword := user.PasswordHash != ""
+		c.JSON(http.StatusOK, gin.H{
+			"exists":      true,
+			"hasPassword": hasPassword,
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"exists":      false,
+			"hasPassword": false,
+		})
+	}
 }
+
