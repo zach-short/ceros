@@ -9,6 +9,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
     }),
     GitHubProvider({
       clientId: process.env.AUTH_GITHUB_ID!,
@@ -52,18 +59,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ account }) {
+      if (account?.provider === 'google' || account?.provider === 'github') {
+        return true;
+      }
+
+      if (account?.provider === 'credentials') {
+        return true;
+      }
+
+      return false;
+    },
+
     async jwt({ token, user, account }) {
-      console.log('JWT callback triggered:', { provider: account?.provider, user: !!user, account: !!account });
-
-      if ((account?.provider === 'google' || account?.provider === 'github') && user) {
+      if (
+        (account?.provider === 'google' || account?.provider === 'github') &&
+        user
+      ) {
         try {
-          console.log('Attempting social auth with:', {
-            provider: account.provider,
-            providerId: account.providerAccountId,
-            email: user.email,
-            name: user.name
-          });
-
           const response = await authApi.socialAuth({
             provider: account.provider,
             providerId: account.providerAccountId!,
@@ -72,18 +85,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             image: user.image || undefined,
           });
 
-          console.log('Social auth response:', response);
-
           if (response.success) {
             const { user: userData, token: apiToken } = response.data;
             token.apiToken = apiToken;
             token.userId = userData.id;
-            console.log('Social auth successful, token set');
           } else {
-            console.error('Social auth failed:', response.error);
+            console.error('❌ Social auth failed:', response.error);
           }
         } catch (error) {
-          console.error('Social auth error:', error);
+          console.error('💥 Social auth error:', error);
         }
       }
 
