@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AxiosError } from 'axios';
 import { ArrowLeft } from 'lucide-react';
-import { authApi } from '@/lib/api';
+import { authApi, type ApiResponse, type CheckEmailResponse } from '@/lib/api';
 import Image from 'next/image';
 import { CenteredDiv } from '../shared/layout/centered-div';
 import { DefaultLoader } from '../shared/layout/loader';
@@ -98,7 +98,15 @@ function UnifiedAuthForm({
 
       if (result?.error) {
         try {
-          const { exists, hasPassword } = await authApi.checkEmail(email);
+          const response: ApiResponse<CheckEmailResponse> =
+            await authApi.checkEmail(email);
+
+          if (!response.success) {
+            toast.error('Failed to check email. Please try again.');
+            return;
+          }
+
+          const { exists, hasPassword } = response.data;
 
           if (exists && !hasPassword) {
             toast.error(

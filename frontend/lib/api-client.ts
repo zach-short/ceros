@@ -90,7 +90,7 @@ export function useApiQuery<T>(
 
   const fetcher = async (url: string): Promise<T> => {
     const token =
-      session?.apiToken || session?.user?.apiToken || session?.accessToken;
+      (session as any)?.apiToken || (session as any)?.user?.apiToken || (session as any)?.accessToken;
     if (!token) {
       console.log('Session object:', session);
       throw new Error('No authentication token available');
@@ -99,7 +99,7 @@ export function useApiQuery<T>(
   };
 
   const token =
-    session?.apiToken || session?.user?.apiToken || session?.accessToken;
+    (session as any)?.apiToken || (session as any)?.user?.apiToken || (session as any)?.accessToken;
 
   return useSWR(token && endpoint ? endpoint : null, fetcher, {
     revalidateOnFocus: false,
@@ -124,7 +124,7 @@ export function useApiMutation<TData = any, TVariables = any>(
     { arg }: { arg: TVariables },
   ): Promise<TData> => {
     const token =
-      session?.apiToken || session?.user?.apiToken || session?.accessToken;
+      (session as any)?.apiToken || (session as any)?.user?.apiToken || (session as any)?.accessToken;
     if (!token) {
       console.log('Session object in mutation:', session);
       throw new Error('No authentication token available');
@@ -144,7 +144,7 @@ export function useApiMutation<TData = any, TVariables = any>(
     }
   };
 
-  const mutation = useSWRMutation<TData, Error, string, TVariables>(
+  const mutation = (useSWRMutation as any)(
     endpoint,
     mutationFetcher,
     {

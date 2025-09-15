@@ -1,6 +1,39 @@
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
 
+type ApiSuccessResponse<T = any> = {
+  success: true;
+  data: T;
+  status: number;
+};
+
+type ApiErrorResponse = {
+  success: false;
+  error: {
+    status: number;
+    message: string;
+    data?: any;
+  };
+  isOffline?: boolean;
+};
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+export type CheckEmailResponse = {
+  exists: boolean;
+  hasPassword: boolean;
+};
+
+export type AuthResponse = {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    picture?: string;
+  };
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 const API = axios.create({
@@ -124,14 +157,27 @@ export const apiRequest = (
 export default API;
 
 export const authApi = {
-  login: (credentials: { email: string; password: string }) =>
-    apiRequest('post', '/auth/login', credentials),
+  login: (credentials: {
+    email: string;
+    password: string;
+  }): Promise<ApiResponse<AuthResponse>> =>
+    apiRequest('post', '/auth/login', credentials) as Promise<
+      ApiResponse<AuthResponse>
+    >,
 
-  register: (data: { email: string; password: string; name?: string }) =>
-    apiRequest('post', '/auth/register', data),
+  register: (data: {
+    email: string;
+    password: string;
+    name?: string;
+  }): Promise<ApiResponse<AuthResponse>> =>
+    apiRequest('post', '/auth/register', data) as Promise<
+      ApiResponse<AuthResponse>
+    >,
 
-  checkEmail: (email: string) =>
-    apiRequest('post', '/auth/check-email', { email }),
+  checkEmail: (email: string): Promise<ApiResponse<CheckEmailResponse>> =>
+    apiRequest('post', '/auth/check-email', { email }) as Promise<
+      ApiResponse<CheckEmailResponse>
+    >,
 
   socialAuth: (data: {
     provider: string;
@@ -139,5 +185,8 @@ export const authApi = {
     email: string;
     name?: string;
     image?: string;
-  }) => apiRequest('post', '/auth/social', data),
+  }): Promise<ApiResponse<AuthResponse>> =>
+    apiRequest('post', '/auth/social', data) as Promise<
+      ApiResponse<AuthResponse>
+    >,
 };
