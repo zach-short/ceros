@@ -33,22 +33,17 @@ export interface GetFriendshipResponse {
   friendship: Friendship;
 }
 
-// Friends API routes following your clean pattern
 export const friendsApi = {
-  // GET requests
-  getAll: (): Promise<any> =>
-    apiRequest('get', '/users/me/friends'),
+  getAll: (): Promise<any> => apiRequest('get', '/users/me/friends'),
 
   getPending: (): Promise<any> =>
     apiRequest('get', '/users/me/friends/pending'),
 
-  getSent: (): Promise<any> =>
-    apiRequest('get', '/users/me/friends/sent'),
+  getSent: (): Promise<any> => apiRequest('get', '/users/me/friends/sent'),
 
   getFriendship: (friendshipId: string): Promise<any> =>
     apiRequest('get', `/users/me/friends/${friendshipId}`),
 
-  // POST requests
   requestFriend: (data: AddFriendRequest): Promise<any> =>
     apiRequest('post', '/users/me/friends/request', data),
 
@@ -61,10 +56,10 @@ export const friendsApi = {
   blockUser: (data: BlockUserRequest): Promise<any> =>
     apiRequest('post', '/users/me/friends/block', data),
 
-  // DELETE requests
   removeFriend: (friendshipId: string): Promise<any> =>
     apiRequest('delete', `/users/me/friends/${friendshipId}`),
 
   unblockUser: (friendshipId: string): Promise<any> =>
     apiRequest('delete', `/users/me/friends/${friendshipId}/unblock`),
 };
+
