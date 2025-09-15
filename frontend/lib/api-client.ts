@@ -8,7 +8,7 @@ class ApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    token?: string
+    token?: string,
   ): Promise<T> {
     const url = `${BASE_URL}${endpoint}`;
 
@@ -47,9 +47,9 @@ class ApiClient {
       endpoint,
       {
         method: 'POST',
-        body: data ? JSON.stringify(data) : undefined
+        body: data ? JSON.stringify(data) : undefined,
       },
-      token
+      token,
     );
   }
 
@@ -58,9 +58,9 @@ class ApiClient {
       endpoint,
       {
         method: 'PUT',
-        body: data ? JSON.stringify(data) : undefined
+        body: data ? JSON.stringify(data) : undefined,
       },
-      token
+      token,
     );
   }
 
@@ -69,9 +69,9 @@ class ApiClient {
       endpoint,
       {
         method: 'PATCH',
-        body: data ? JSON.stringify(data) : undefined
+        body: data ? JSON.stringify(data) : undefined,
       },
-      token
+      token,
     );
   }
 
@@ -82,15 +82,15 @@ class ApiClient {
 
 export const apiClient = new ApiClient();
 
-// Hook for data fetching
 export function useApiQuery<T>(
   endpoint: string | null,
-  config?: SWRConfiguration<T>
+  config?: SWRConfiguration<T>,
 ): SWRResponse<T> {
   const { data: session } = useSession();
 
   const fetcher = async (url: string): Promise<T> => {
-    const token = session?.apiToken || session?.user?.apiToken || session?.accessToken;
+    const token =
+      session?.apiToken || session?.user?.apiToken || session?.accessToken;
     if (!token) {
       console.log('Session object:', session);
       throw new Error('No authentication token available');
@@ -98,20 +98,16 @@ export function useApiQuery<T>(
     return apiClient.get<T>(url, token);
   };
 
-  const token = session?.apiToken || session?.user?.apiToken || session?.accessToken;
+  const token =
+    session?.apiToken || session?.user?.apiToken || session?.accessToken;
 
-  return useSWR(
-    token && endpoint ? endpoint : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      ...config,
-    }
-  );
+  return useSWR(token && endpoint ? endpoint : null, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    ...config,
+  });
 }
 
-// Generic mutation hook
 export function useApiMutation<TData = any, TVariables = any>(
   endpoint: string,
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST',
@@ -119,15 +115,16 @@ export function useApiMutation<TData = any, TVariables = any>(
     onSuccess?: (data: TData, variables: TVariables) => void;
     onError?: (error: Error, variables: TVariables) => void;
     config?: SWRConfiguration<TData>;
-  }
+  },
 ) {
   const { data: session } = useSession();
 
   const mutationFetcher = async (
     url: string,
-    { arg }: { arg: TVariables }
+    { arg }: { arg: TVariables },
   ): Promise<TData> => {
-    const token = session?.apiToken || session?.user?.apiToken || session?.accessToken;
+    const token =
+      session?.apiToken || session?.user?.apiToken || session?.accessToken;
     if (!token) {
       console.log('Session object in mutation:', session);
       throw new Error('No authentication token available');
@@ -154,7 +151,7 @@ export function useApiMutation<TData = any, TVariables = any>(
       onSuccess: options?.onSuccess,
       onError: options?.onError,
       ...options?.config,
-    }
+    },
   );
 
   return {
@@ -162,3 +159,4 @@ export function useApiMutation<TData = any, TVariables = any>(
     mutate: mutation.trigger,
   };
 }
+
