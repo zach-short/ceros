@@ -4,22 +4,22 @@ import { useState } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { AxiosError } from 'axios';
+import { ArrowLeft } from 'lucide-react';
+import { authApi } from '@/lib/api';
+import Image from 'next/image';
+import { CenteredDiv } from '../shared/layout/centered-div';
+import { DefaultLoader } from '../shared/layout/loader';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowLeft } from 'lucide-react';
-import { authApi } from '@/lib/api';
-import Image from 'next/image';
-import CenteredDiv from '../shared/layout/centered-div';
-import DefaultLoader from '../shared/layout/loader';
+} from '../ui/card';
 
 type AuthStep = 'providers' | 'email' | 'password';
 
@@ -27,7 +27,7 @@ interface UnifiedAuthFormProps {
   className?: string;
 }
 
-export function UnifiedAuthForm({
+function UnifiedAuthForm({
   className,
   ...props
 }: UnifiedAuthFormProps & React.ComponentPropsWithoutRef<'div'>) {
@@ -37,11 +37,19 @@ export function UnifiedAuthForm({
 
   const handleSocialAuth = async (provider: 'google' | 'github') => {
     setIsLoading(true);
+    console.log(
+      provider,
+      'provider in /Projects/wm-courses/3-fall-2025/web-programming/final-web-programming/frontend/components/auth/unified-auth.tsx',
+    );
     try {
       const result = await signIn(provider, {
         callbackUrl: '/dashboard',
         redirect: false,
       });
+      console.log(
+        result,
+        'result in /Projects/wm-courses/3-fall-2025/web-programming/final-web-programming/frontend/components/auth/unified-auth.tsx',
+      );
 
       if (result?.error) {
         toast.error(`Failed to sign in with ${provider}. Please try again.`);
@@ -291,7 +299,7 @@ export function UnifiedAuthForm({
   );
 }
 
-export default function UnifiedAuth() {
+export function UnifiedAuth() {
   const { data: session, status } = useSession();
 
   if (status === 'loading') {

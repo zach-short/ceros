@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
-import { ThemeProvider } from '@/components/shared/layout/theme-provider';
 import './globals.css';
 import { ReactNode } from 'react';
 import { SessionProvider } from 'next-auth/react';
-import { Toaster } from '@/components/ui/sonner';
+import { SWRProvider } from '@/context/swr-provider';
+import { ThemeProvider } from 'next-themes';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Ceros',
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             enableSystem
             disableTransitionOnChange
           >
-            <SessionProvider>{children}</SessionProvider>
+            <SessionProvider>
+              <SWRProvider>{children}</SWRProvider>
+            </SessionProvider>
           </ThemeProvider>
           <Toaster />
         </body>

@@ -2,8 +2,8 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
-import DefaultLoader from '../shared/layout/loader';
-import CenteredDiv from '../shared/layout/centered-div';
+import { CenteredDiv } from '../shared/layout/centered-div';
+import { DefaultLoader } from '../shared/layout/loader';
 
 export type UserRole = 'admin' | 'member' | 'observer';
 
@@ -101,4 +101,3 @@ export function MemberOnly({
     </RoleGate>
   );
 }
-

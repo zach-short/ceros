@@ -1,4 +1,5 @@
 import '@/styles/loader.css';
-export default function DefaultLoader() {
+
+export function DefaultLoader() {
   return <span className={`loader`} />;
 }

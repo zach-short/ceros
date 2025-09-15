@@ -1,127 +1,137 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { User } from 'next-auth';
+import axios from 'axios';
+import { getSession } from 'next-auth/react';
 
-class ApiClient {
-  private client: AxiosInstance;
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-  constructor() {
-    this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+const API = axios.create({
+  baseURL: apiUrl,
+  headers: { 'Content-Type': 'application/json' },
+});
 
-    this.setupInterceptors();
-  }
+API.interceptors.request.use(
+  async (config) => {
+    const isPublicEndpoint = config.url?.includes('/auth/');
 
-  private setupInterceptors() {
-    this.client.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          window.location.href = '/';
+    if (!isPublicEndpoint) {
+      try {
+        const session = await getSession();
+        console.log('Full session object:', session);
+        const token = session?.apiToken || session?.user?.apiToken;
+        console.log(
+          'Extracted token:',
+          token ? 'Token exists' : 'No token found',
+        );
+
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        } else {
+          console.warn('No authentication token available for API request');
         }
-        return Promise.reject(error);
-      },
-    );
-  }
-
-  private async getAuthHeaders() {
-    if (typeof window === 'undefined') return {};
-    
-    try {
-      const response = await fetch('/api/auth/session');
-      const session = await response.json();
-      
-      if (session?.apiToken) {
-        return { Authorization: `Bearer ${session.apiToken}` };
+      } catch (error) {
+        console.error('Error getting session:', error);
       }
-    } catch (error) {
-      console.error('Failed to get session:', error);
     }
-    
-    return {};
-  }
 
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const authHeaders = await this.getAuthHeaders();
-    const response: AxiosResponse<T> = await this.client.get(url, {
-      ...config,
-      headers: { ...authHeaders, ...config?.headers },
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
+API.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+    }
+
+    return Promise.reject(error);
+  },
+);
+
+const handleApiResponse = async (promise: Promise<any>) => {
+  return promise
+    .then((response) => ({
+      success: true,
+      data: response.data,
+      status: response.status,
+    }))
+    .catch((error) => {
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        return {
+          success: false,
+          error: {
+            status: 0,
+            message: 'Network error. Please check your connection.',
+          },
+          isOffline: true,
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          status: error.response?.status || 500,
+          message: error.response?.data?.error || error.message,
+          data: error.response?.data,
+        },
+      };
     });
-    return response.data;
+};
+
+export const apiRequest = (
+  method: 'get' | 'post' | 'put' | 'patch' | 'delete',
+  url: string,
+  body?: any,
+  params?: any,
+  config?: any,
+) => {
+  let promise: Promise<any>;
+
+  const requestConfig = {
+    params,
+    ...config,
+  };
+
+  switch (method) {
+    case 'get':
+      promise = API.get(url, requestConfig);
+      break;
+    case 'post':
+      promise = API.post(url, body, requestConfig);
+      break;
+    case 'put':
+      promise = API.put(url, body, requestConfig);
+      break;
+    case 'patch':
+      promise = API.patch(url, body, requestConfig);
+      break;
+    case 'delete':
+      promise = API.delete(url, { data: body, ...requestConfig });
+      break;
+    default:
+      throw new Error(`Unsupported method: ${method}`);
   }
 
-  async post<T>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig,
-  ): Promise<T> {
-    const authHeaders = await this.getAuthHeaders();
-    const response: AxiosResponse<T> = await this.client.post(
-      url,
-      data,
-      {
-        ...config,
-        headers: { ...authHeaders, ...config?.headers },
-      },
-    );
-    return response.data;
-  }
+  return handleApiResponse(promise);
+};
 
-  async put<T>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig,
-  ): Promise<T> {
-    const authHeaders = await this.getAuthHeaders();
-    const response: AxiosResponse<T> = await this.client.put(url, data, {
-      ...config,
-      headers: { ...authHeaders, ...config?.headers },
-    });
-    return response.data;
-  }
-
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const authHeaders = await this.getAuthHeaders();
-    const response: AxiosResponse<T> = await this.client.delete(url, {
-      ...config,
-      headers: { ...authHeaders, ...config?.headers },
-    });
-    return response.data;
-  }
-
-  async patch<T>(
-    url: string,
-    data?: unknown,
-    config?: AxiosRequestConfig,
-  ): Promise<T> {
-    const authHeaders = await this.getAuthHeaders();
-    const response: AxiosResponse<T> = await this.client.patch(
-      url,
-      data,
-      {
-        ...config,
-        headers: { ...authHeaders, ...config?.headers },
-      },
-    );
-    return response.data;
-  }
-}
-
-export const api = new ApiClient();
+export default API;
 
 export const authApi = {
   login: (credentials: { email: string; password: string }) =>
-    api.post<{ token: string; user: User }>('/auth/login', credentials),
+    apiRequest('post', '/auth/login', credentials),
 
   register: (data: { email: string; password: string; name?: string }) =>
-    api.post<{ token: string; user: User }>('/auth/register', data),
+    apiRequest('post', '/auth/register', data),
 
   checkEmail: (email: string) =>
-    api.post<{ exists: boolean; hasPassword: boolean }>('/auth/check-email', { email }),
+    apiRequest('post', '/auth/check-email', { email }),
 
   socialAuth: (data: {
     provider: string;
@@ -129,5 +139,5 @@ export const authApi = {
     email: string;
     name?: string;
     image?: string;
-  }) => api.post<{ token: string; user: User }>('/auth/social', data),
+  }) => apiRequest('post', '/auth/social', data),
 };

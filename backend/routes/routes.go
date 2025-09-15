@@ -15,12 +15,43 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/check-email", handlers.CheckEmail)
 	}
 
-	api := r.Group("")
-	api.Use(middleware.AuthMiddleware())
+	users := r.Group("/users")
+	users.Use(middleware.AuthMiddleware())
 	{
-		api.GET("/profile", func(c *gin.Context) {
-			userID := c.GetString("userID")
-			c.JSON(200, gin.H{"message": "Protected route", "userID": userID})
-		})
+		// Current user routes (using /me)
+		me := users.Group("/me")
+		{
+			friends := me.Group("/friends")
+			{
+				friends.GET("", handlers.GetFriendships)
+				friends.GET("/pending", handlers.GetPendingRequests)
+				friends.GET("/sent", handlers.GetSentRequests)
+				friends.POST("/request", handlers.RequestFriend)
+				friends.POST("/block", handlers.BlockUser)
+
+				friend := friends.Group("/:friendshipId")
+				{
+					friend.GET("", handlers.GetFriendship)
+					friend.POST("/accept", handlers.AddFriend)
+					friend.POST("/reject", handlers.RejectFriend)
+					friend.DELETE("/unblock", handlers.UnblockUser)
+					friend.DELETE("", handlers.RemoveFriend)
+				}
+			}
+
+			comittees := me.Group("/comittees")
+			{
+				comittee := comittees.Group("/:comitteeId")
+				{
+					motions := comittee.Group("/motions")
+					{
+						motion := motions.Group("/:motionId")
+						{
+							motion.GET("", handlers.GetMotion)
+						}
+					}
+				}
+			}
+		}
 	}
 }
