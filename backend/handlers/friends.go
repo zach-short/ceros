@@ -171,7 +171,40 @@ func GetPendingRequests(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"pendingRequests": requests})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+
+	var enrichedRequests []map[string]any
+	for _, request := range requests {
+		requesterID := request["requesterId"].(primitive.ObjectID)
+
+		var user models.User
+		err := userCollection.FindOne(ctx, bson.M{"_id": requesterID}).Decode(&user)
+		if err != nil {
+			continue
+		}
+
+		enrichedRequest := map[string]any{
+			"id":          request["_id"],
+			"requesterId": request["requesterId"],
+			"addresseeId": request["addresseeId"],
+			"status":      request["status"],
+			"requestedAt": request["requestedAt"],
+			"respondedAt": request["respondedAt"],
+			"user": map[string]any{
+				"id":      user.ID.Hex(),
+				"name":    user.Name,
+				"email":   user.Email,
+				"picture": user.Picture,
+			},
+		}
+
+		enrichedRequests = append(enrichedRequests, enrichedRequest)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"pendingRequests": enrichedRequests})
 }
 
 func GetSentRequests(c *gin.Context) {
@@ -193,7 +226,40 @@ func GetSentRequests(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"sentRequests": requests})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+
+	var enrichedRequests []map[string]any
+	for _, request := range requests {
+		addresseeID := request["addresseeId"].(primitive.ObjectID)
+
+		var user models.User
+		err := userCollection.FindOne(ctx, bson.M{"_id": addresseeID}).Decode(&user)
+		if err != nil {
+			continue
+		}
+
+		enrichedRequest := map[string]any{
+			"id":          request["_id"],
+			"requesterId": request["requesterId"],
+			"addresseeId": request["addresseeId"],
+			"status":      request["status"],
+			"requestedAt": request["requestedAt"],
+			"respondedAt": request["respondedAt"],
+			"user": map[string]any{
+				"id":      user.ID.Hex(),
+				"name":    user.Name,
+				"email":   user.Email,
+				"picture": user.Picture,
+			},
+		}
+
+		enrichedRequests = append(enrichedRequests, enrichedRequest)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"sentRequests": enrichedRequests})
 }
 
 func RejectFriend(c *gin.Context) {
@@ -383,5 +449,155 @@ func GetFriendships(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"friendships": friendships})
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+
+	var enrichedFriendships []map[string]any
+	for _, friendship := range friendships {
+		var otherUserID primitive.ObjectID
+		requesterID := friendship["requesterId"].(primitive.ObjectID)
+		addresseeID := friendship["addresseeId"].(primitive.ObjectID)
+
+		if requesterID == userID {
+			otherUserID = addresseeID
+		} else {
+			otherUserID = requesterID
+		}
+
+		var user models.User
+		err := userCollection.FindOne(ctx, bson.M{"_id": otherUserID}).Decode(&user)
+		if err != nil {
+			continue
+		}
+
+		enrichedFriendship := map[string]any{
+			"id":          friendship["_id"],
+			"requesterId": friendship["requesterId"],
+			"addresseeId": friendship["addresseeId"],
+			"status":      friendship["status"],
+			"requestedAt": friendship["requestedAt"],
+			"respondedAt": friendship["respondedAt"],
+			"user": map[string]any{
+				"id":      user.ID.Hex(),
+				"name":    user.Name,
+				"email":   user.Email,
+				"picture": user.Picture,
+			},
+		}
+
+		enrichedFriendships = append(enrichedFriendships, enrichedFriendship)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"friendships": enrichedFriendships})
+}
+
+func SearchUsers(c *gin.Context) {
+	searchTerm := c.Query("search")
+	if searchTerm == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "search term is required"})
+		return
+	}
+
+	userId := c.GetString("userID")
+	currentUserID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"name": bson.M{
+			"$regex":   searchTerm,
+			"$options": "i",
+		},
+	}
+
+	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+	cursor, err := userCollection.Find(ctx, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var users []models.User
+	if err = cursor.All(ctx, &users); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decode users"})
+		return
+	}
+
+	var userIDs []primitive.ObjectID
+	for _, user := range users {
+		userIDs = append(userIDs, user.ID)
+	}
+
+	friendshipQuery := bson.M{
+		"$or": []bson.M{
+			{
+				"requesterId": currentUserID,
+				"addresseeId": bson.M{"$in": userIDs},
+			},
+			{
+				"addresseeId": currentUserID,
+				"requesterId": bson.M{"$in": userIDs},
+			},
+		},
+	}
+
+	friendships, err := utils.FetchItems(friendshipQuery, "Friendship")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch friendship statuses"})
+		return
+	}
+
+	statusMap := make(map[primitive.ObjectID]map[string]any)
+	for _, friendship := range friendships {
+		var otherUserID primitive.ObjectID
+
+		requesterID := friendship["requesterId"].(primitive.ObjectID)
+		addresseeID := friendship["addresseeId"].(primitive.ObjectID)
+
+		if requesterID == currentUserID {
+			otherUserID = addresseeID
+		} else {
+			otherUserID = requesterID
+		}
+
+		status := friendship["status"].(string)
+		isPendingFromMe := requesterID == currentUserID && status == "pending"
+		isPendingToMe := addresseeID == currentUserID && status == "pending"
+
+		statusMap[otherUserID] = map[string]any{
+			"status":          status,
+			"isPendingFromMe": isPendingFromMe,
+			"isPendingToMe":   isPendingToMe,
+			"friendshipId":    friendship["_id"],
+		}
+	}
+
+	var usersWithStatus []map[string]any
+	for _, user := range users {
+		userMap := map[string]any{
+			"id":            user.ID.Hex(),
+			"name":          user.Name,
+			"email":         user.Email,
+			"picture":       user.Picture,
+			"isCurrentUser": user.ID == currentUserID,
+		}
+
+		if friendshipStatus, exists := statusMap[user.ID]; exists {
+			userMap["friendshipStatus"] = friendshipStatus
+		} else {
+			userMap["friendshipStatus"] = nil
+		}
+
+		usersWithStatus = append(usersWithStatus, userMap)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": usersWithStatus})
 }

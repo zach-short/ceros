@@ -17,7 +17,7 @@ type Claims struct {
 func GenerateJWT(userID primitive.ObjectID, email string) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "your-secret-key" // fallback for development
+		jwtSecret = "secret"
 	}
 
 	expirationTime := time.Now().Add(24 * time.Hour)
@@ -37,7 +37,7 @@ func GenerateJWT(userID primitive.ObjectID, email string) (string, error) {
 func ValidateJWT(tokenString string) (*Claims, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "your-secret-key" // fallback for development
+		jwtSecret = "secret"
 	}
 
 	claims := &Claims{}
@@ -55,3 +55,4 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 
 	return claims, nil
 }
+

@@ -101,10 +101,20 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	username := req.Name
+	if username == "" {
+		generatedUsername, err := utils.GenerateUsernameFromEmail(req.Email)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate username"})
+			return
+		}
+		username = generatedUsername
+	}
+
 	user := models.User{
 		ID:           primitive.NewObjectID(),
 		Email:        req.Email,
-		Name:         req.Name,
+		Name:         username,
 		PasswordHash: string(hashedPassword),
 	}
 
@@ -136,10 +146,20 @@ func SocialAuth(c *gin.Context) {
 	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
 
 	if err == mongo.ErrNoDocuments {
+		username := req.Name
+		if username == "" {
+			generatedUsername, err := utils.GenerateUsernameFromEmail(req.Email)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate username"})
+				return
+			}
+			username = generatedUsername
+		}
+
 		user = models.User{
 			ID:      primitive.NewObjectID(),
 			Email:   req.Email,
-			Name:    req.Name,
+			Name:    username,
 			Picture: req.Image,
 		}
 
@@ -175,7 +195,6 @@ func CheckEmail(c *gin.Context) {
 	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
 
 	if err == nil {
-		// User exists, check if they have a password (not OAuth-only)
 		hasPassword := user.PasswordHash != ""
 		c.JSON(http.StatusOK, gin.H{
 			"exists":      true,
@@ -188,4 +207,3 @@ func CheckEmail(c *gin.Context) {
 		})
 	}
 }
-

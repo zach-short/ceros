@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -20,7 +19,7 @@ var DB *mongo.Client
 func GetCollection(collectionName string) *mongo.Collection {
 	databaseName := os.Getenv("DATABASE_NAME")
 	if databaseName == "" {
-		databaseName = "your-app-db" // fallback
+		databaseName = "db"
 	}
 	return DB.Database(databaseName).Collection(collectionName)
 }
@@ -88,8 +87,6 @@ func ConnectDB() {
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		log.Printf("Connection error details: %v", err)
-		log.Printf("MongoDB URI structure valid: %v", strings.HasPrefix(mongoURI, "mongodb+srv://"))
-		log.Fatal("Failed to create MongoDB client: ", err)
 	}
 
 	err = client.Ping(ctx, nil)
