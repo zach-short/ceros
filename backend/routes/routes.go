@@ -18,7 +18,8 @@ func SetupRoutes(r *gin.Engine) {
 	users := r.Group("/users")
 	users.Use(middleware.AuthMiddleware())
 	{
-		// Current user routes (using /me)
+		users.GET("/search", handlers.SearchUsers)
+
 		me := users.Group("/me")
 		{
 			friends := me.Group("/friends")

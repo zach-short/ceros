@@ -158,3 +158,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sonner toast font override */
+[data-sonner-toast] {
+  font-family: "Clash Display", system-ui, sans-serif !important;
+}
+
+[data-sonner-toast] * {
+  font-family: inherit !important;
+}

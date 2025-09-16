@@ -7,6 +7,12 @@ export interface Friendship {
   status: 'pending' | 'accepted' | 'blocked';
   requestedAt: string;
   respondedAt?: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    picture?: string;
+  };
 }
 
 export interface AddFriendRequest {
@@ -31,6 +37,26 @@ export interface GetSentRequestsResponse {
 
 export interface GetFriendshipResponse {
   friendship: Friendship;
+}
+
+export interface FriendshipStatus {
+  status: 'pending' | 'accepted' | 'blocked';
+  isPendingFromMe: boolean;
+  isPendingToMe: boolean;
+  friendshipId: string;
+}
+
+export interface User {
+  id: string;
+  name?: string;
+  email: string;
+  picture?: string;
+  isCurrentUser?: boolean;
+  friendshipStatus?: FriendshipStatus | null;
+}
+
+export interface SearchUsersResponse {
+  users: User[];
 }
 
 export const friendsApi = {
@@ -61,5 +87,7 @@ export const friendsApi = {
 
   unblockUser: (friendshipId: string): Promise<any> =>
     apiRequest('delete', `/users/me/friends/${friendshipId}/unblock`),
-};
 
+  searchUsers: (searchTerm: string): Promise<any> =>
+    apiRequest('get', '/users/search', null, { search: searchTerm }),
+};

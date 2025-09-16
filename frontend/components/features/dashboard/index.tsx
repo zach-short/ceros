@@ -1,11 +1,10 @@
 'use client';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { AddFriendsInput } from '@/components/features/friends/add-friends-input';
 import { AdminOnly, AuthGate, MemberOnly } from '@/components/auth/auth-gate';
-import { Button } from '@/components/ui/button';
-import { FriendsListClean } from '@/components/test/friends-list';
+import { SignoutButton } from '@/components/shared/button/signout';
 
-export default function DashboardPage() {
+export default function Dashboard() {
   const session = useSession();
   return (
     <AuthGate>
@@ -13,7 +12,6 @@ export default function DashboardPage() {
         <h1 className='text-2xl font-bold'>Dashboard</h1>
         <p>Hello {session.data?.user?.name || session.data?.user?.email}</p>
         <AddFriendsInput />
-        <FriendsListClean />
 
         <div className='p-4  rounded'>
           <h2 className='text-lg font-semibold'>User Content</h2>
@@ -37,10 +35,7 @@ export default function DashboardPage() {
             <p>This is visible to admins only.</p>
           </div>
         </AdminOnly>
-
-        <Button onClick={() => signOut({ callbackUrl: '/' })} variant='outline'>
-          Sign out
-        </Button>
+        <SignoutButton />
       </div>
     </AuthGate>
   );
