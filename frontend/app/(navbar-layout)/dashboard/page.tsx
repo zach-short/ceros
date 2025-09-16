@@ -3,7 +3,6 @@ import { signOut, useSession } from 'next-auth/react';
 import { AddFriendsInput } from '@/components/features/friends/add-friends-input';
 import { AdminOnly, AuthGate, MemberOnly } from '@/components/auth/auth-gate';
 import { Button } from '@/components/ui/button';
-import { FriendsListClean } from '@/components/test/friends-list';
 
 export default function DashboardPage() {
   const session = useSession();
@@ -13,7 +12,6 @@ export default function DashboardPage() {
         <h1 className='text-2xl font-bold'>Dashboard</h1>
         <p>Hello {session.data?.user?.name || session.data?.user?.email}</p>
         <AddFriendsInput />
-        <FriendsListClean />
 
         <div className='p-4  rounded'>
           <h2 className='text-lg font-semibold'>User Content</h2>
