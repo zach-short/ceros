@@ -1,7 +1,7 @@
 'use client';
 
 import { UploadButton } from '@/lib/uploadthing';
-import { CameraIcon, PencilIcon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 
 export function UploadImageButton({
   onClientUploadComplete,

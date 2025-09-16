@@ -13,11 +13,11 @@ type User struct {
 	ID           primitive.ObjectID `bson:"_id" json:"id"`
 	Email        string             `bson:"email" json:"email"`
 	Name         string             `bson:"name,omitempty" json:"name,omitempty"`
-	GivenName    string             `bson:"given_name,omitempty" json:"given_name,omitempty"`
-	FamilyName   string             `bson:"family_name,omitempty" json:"family_name,omitempty"`
-	PasswordHash string             `bson:"password_hash,omitempty" json:"password_hash,omitempty"`
+	GivenName    string             `bson:"givenName,omitempty" json:"givenName,omitempty"`
+	FamilyName   string             `bson:"familyName,omitempty" json:"familyName,omitempty"`
+	PasswordHash string             `bson:"passwordHash,omitempty" json:"passwordHash,omitempty"`
 	Bio          string             `bson:"bio,omitempty" json:"bio,omitempty"`
 	Picture      string             `bson:"picture,omitempty" json:"picture,omitempty"`
-	PhoneNumber  string             `bson:"phone_number,omitempty" json:"phone_number,omitempty"`
+	PhoneNumber  string             `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
 	Address      Address            `bson:"address,omitempty" json:"address,omitempty"`
 }

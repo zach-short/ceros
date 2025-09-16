@@ -21,6 +21,7 @@ export interface UpdateProfileRequest {
   name?: string;
   givenName?: string;
   familyName?: string;
+  email?: string;
   bio?: string;
   picture?: string;
   phoneNumber?: string;
@@ -45,4 +46,3 @@ export const usersApi = {
   checkUsername: (name: string): Promise<any> =>
     apiRequest('get', '/users/check-username', null, { name }),
 };
-
