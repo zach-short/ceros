@@ -5,7 +5,7 @@ export default function NavbarLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <Navbar />
-      {children}
+      <div className={`pt-12 lg:pt-0`}>{children}</div>
     </>
   );
 }

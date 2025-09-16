@@ -77,11 +77,9 @@ export default function Friends() {
     },
   });
 
-  const friends = friendsData?.friendships ? friendsData.friendships : [];
-  const pendingRequests = pendingData?.pendingRequests
-    ? pendingData.pendingRequests
-    : [];
-  const sentRequests = sentData?.sentRequests ? sentData?.sentRequests : [];
+  const friends = friendsData?.friendships || [];
+  const pendingRequests = pendingData?.pendingRequests || [];
+  const sentRequests = sentData?.sentRequests || [];
 
   const renderTabButton = (tab: TabType, label: string, count?: number) => (
     <Button
@@ -356,7 +354,7 @@ export default function Friends() {
         <h1 className='text-3xl font-bold mb-6'>Friends</h1>
 
         <div className='flex space-x-1 p-1 bg-muted rounded-lg'>
-          {renderTabButton('active', 'Active Friends', friends.length)}
+          {renderTabButton('active', 'Friends', friends.length)}
           {renderTabButton(
             'pending',
             'Pending',

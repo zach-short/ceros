@@ -1,16 +1,16 @@
 import { useFetch, useMutation } from '../use-fetch';
-import { friendsApi } from '@/lib/api/friends';
+import { friendsApi, Friendship } from '@/lib/api/friends';
 
 export function useFriends() {
-  return useFetch(friendsApi.getAll);
+  return useFetch<{ friendships: Friendship[] }>(friendsApi.getAll);
 }
 
 export function usePendingRequests() {
-  return useFetch(friendsApi.getPending);
+  return useFetch<{ pendingRequests: Friendship[] }>(friendsApi.getPending);
 }
 
 export function useSentRequests() {
-  return useFetch(friendsApi.getSent);
+  return useFetch<{ sentRequests: Friendship[] }>(friendsApi.getSent);
 }
 
 export function useFriendship(friendshipId: string | undefined) {

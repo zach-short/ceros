@@ -40,14 +40,9 @@ function UnifiedAuthForm({
     console.log(`Starting ${provider} OAuth flow`);
 
     try {
-      // For social providers, we need to allow the full redirect flow
-      // Don't use redirect: false for OAuth providers
       await signIn(provider, {
         callbackUrl: '/dashboard',
       });
-
-      // Note: This code won't run because signIn will redirect the page
-      // The redirect is necessary for OAuth to work properly
     } catch (error) {
       console.error('Social auth error:', error);
       toast.error(`Failed to sign in with ${provider}. Please try again.`);

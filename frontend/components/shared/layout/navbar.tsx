@@ -9,6 +9,7 @@ import {
 import { MenuIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { SignoutButton } from '../button/signout';
 
 function ProfileCard() {
   const session = useSession();
@@ -43,14 +44,17 @@ export function Navbar({
 }) {
   const menuItems = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Comittees', href: '/comittees' },
+    { title: 'Comittees', href: '/committee' },
     { title: 'Friends', href: '/friends' },
+    { title: 'Profile', href: '/profile' },
   ];
 
   return (
     <Popover>
-      <PopoverTrigger className={`absolute top-10 right-10 ${buttonClassName}`}>
-        <MenuIcon size={20} />
+      <PopoverTrigger
+        className={`h-20 lg:h-0 absolute top-1 lg:top-6 right-6 lg:block ${buttonClassName}`}
+      >
+        <MenuIcon size={32} />
       </PopoverTrigger>
       <PopoverContent
         className={`h-120 flex flex-col mr-10 ${contentClassName}`}
@@ -67,6 +71,8 @@ export function Navbar({
             );
           })}
         </div>
+
+        <SignoutButton className={`absolute bottom-10 w-3/4 ml-1`} />
       </PopoverContent>
     </Popover>
   );
