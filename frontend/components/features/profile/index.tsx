@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/label';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { toast } from 'sonner';
-import { User, Camera, X, Check } from 'lucide-react';
+import { User, X, Check } from 'lucide-react';
 import {
   useUser,
   useUpdateProfile,
   useCheckUsername,
 } from '@/hooks/api/use-users';
 import { UpdateProfileRequest } from '@/lib/api/users';
+import { UploadImageButton } from '@/components/shared/button/upload';
 
 export function Profile() {
   const { data: user, loading: userLoading, refetch } = useUser();
@@ -25,7 +26,6 @@ export function Profile() {
     null,
   );
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { mutate: updateProfile, loading: updateLoading } = useUpdateProfile({
     onSuccess: () => {
@@ -211,18 +211,27 @@ export function Profile() {
               <div className='relative'>
                 <Avatar className='h-24 w-24'>
                   <AvatarImage
-                    src={user.picture}
+                    src={formData?.picture || user.picture}
                     alt={user.name || 'Profile'}
                   />
                   <AvatarFallback />
                 </Avatar>
                 {isEditing && (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className='absolute -bottom-2 -right-2 rounded-full bg-primary p-2 text-primary-foreground hover:bg-primary/90'
-                  >
-                    <Camera className='h-4 w-4' />
-                  </button>
+                  <>
+                    <div className='absolute inset-0 bg-black/40 rounded-full' />
+                    <div className='absolute -bottom-5 -right-5'>
+                      <UploadImageButton
+                        onUploadError={(error) => {
+                          console.log(error);
+                          toast.error('Error uploading photo');
+                        }}
+                        onClientUploadComplete={(res) => {
+                          console.log(res);
+                          setFormData({ ...formData, picture: res[0].url });
+                        }}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
               <div>
@@ -230,24 +239,8 @@ export function Profile() {
                   {user.name || 'Unknown User'}
                 </h3>
                 <p className='text-sm text-muted-foreground'>{user.email}</p>
-                {isEditing && (
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='mt-2'
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Change Picture
-                  </Button>
-                )}
               </div>
             </div>
-            <input
-              ref={fileInputRef}
-              type='file'
-              accept='image/*'
-              className='hidden'
-            />
           </CardContent>
         </Card>
 
