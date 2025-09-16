@@ -19,9 +19,13 @@ func SetupRoutes(r *gin.Engine) {
 	users.Use(middleware.AuthMiddleware())
 	{
 		users.GET("/search", handlers.SearchUsers)
+		users.GET("/check-username", handlers.CheckUsername)
 
 		me := users.Group("/me")
 		{
+			me.GET("", handlers.GetMe)
+			me.PATCH("", handlers.UpdateProfile)
+
 			friends := me.Group("/friends")
 			{
 				friends.GET("", handlers.GetFriendships)
