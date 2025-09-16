@@ -60,7 +60,7 @@ func RequestFriend(c *gin.Context) {
 		},
 	}
 
-	existing, _ := utils.FetchItem(existingQuery, "Friendship")
+	existing, _ := utils.FetchItem(existingQuery, "friendships")
 	if existing != nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "friendship already exists"})
 		return
@@ -77,7 +77,7 @@ func RequestFriend(c *gin.Context) {
 		RequestedAt: time.Now(),
 	}
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Friendship")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 	_, err = friendCollection.InsertOne(ctx, friendship)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send friend request"})
@@ -119,7 +119,7 @@ func AddFriend(c *gin.Context) {
 		},
 	}
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Friendship")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 	result := friendCollection.FindOneAndUpdate(ctx, query, update)
 	if result.Err() != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pending friend request not found"})
@@ -165,7 +165,7 @@ func GetPendingRequests(c *gin.Context) {
 		"status":      models.FriendStatusPending,
 	}
 
-	requests, err := utils.FetchItems(query, "Friendship")
+	requests, err := utils.FetchItems(query, "friendships")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding pending requests"})
 		return
@@ -220,7 +220,7 @@ func GetSentRequests(c *gin.Context) {
 		"status":      models.FriendStatusPending,
 	}
 
-	requests, err := utils.FetchItems(query, "Friendship")
+	requests, err := utils.FetchItems(query, "friendships")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding sent requests"})
 		return
@@ -286,7 +286,7 @@ func RejectFriend(c *gin.Context) {
 		"status":      models.FriendStatusPending,
 	}
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Friendship")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 	var friendship models.Friendship
 	err = friendCollection.FindOneAndDelete(ctx, query).Decode(&friendship)
 	if err != nil {
@@ -335,7 +335,7 @@ func BlockUser(c *gin.Context) {
 		},
 	}
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Friendship")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 
 	update := bson.M{
 		"$set": bson.M{
@@ -392,7 +392,7 @@ func UnblockUser(c *gin.Context) {
 		},
 	}
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Friendship")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 	var friendship models.Friendship
 	err = friendCollection.FindOneAndDelete(ctx, query).Decode(&friendship)
 	if err != nil {
@@ -414,7 +414,7 @@ func GetFriendship(c *gin.Context) {
 
 	query := bson.M{"_id": friendshipID, "status": models.FriendStatusAccepted}
 
-	friendship, err := utils.FetchItem(query, "Friendship")
+	friendship, err := utils.FetchItem(query, "friendships")
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "finding friend"})
 		return
@@ -443,7 +443,7 @@ func GetFriendships(c *gin.Context) {
 		},
 	}
 
-	friendships, err := utils.FetchItems(query, "Friendship")
+	friendships, err := utils.FetchItems(query, "friendships")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding friendships"})
 		return
@@ -549,7 +549,7 @@ func SearchUsers(c *gin.Context) {
 		},
 	}
 
-	friendships, err := utils.FetchItems(friendshipQuery, "Friendship")
+	friendships, err := utils.FetchItems(friendshipQuery, "friendships")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch friendship statuses"})
 		return
