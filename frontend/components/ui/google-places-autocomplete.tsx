@@ -67,7 +67,7 @@ export function GooglePlacesAutocomplete({
             inputRef.current,
             {
               types: ['address'],
-              componentRestrictions: { country: ['us', 'ca'] }, // Restrict to US and Canada
+              componentRestrictions: { country: ['us'] },
               fields: [
                 'address_components',
                 'formatted_address',
@@ -186,4 +186,3 @@ export function GooglePlacesAutocomplete({
     </div>
   );
 }
-

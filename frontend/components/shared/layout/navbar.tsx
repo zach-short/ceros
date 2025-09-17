@@ -6,16 +6,31 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from '@/components/ui/popover';
-import { MenuIcon } from 'lucide-react';
+import {
+  MenuIcon,
+  GavelIcon,
+  LayoutDashboard,
+  Users,
+  User,
+  FileText,
+  Vote,
+  History,
+  Bell,
+  Settings,
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignoutButton } from '../button/signout';
+import { useState } from 'react';
 
 function ProfileCard() {
   const session = useSession();
   const user = session.data?.user;
   return (
-    <div className={`flex flex-row items-center`}>
+    <Link
+      href={`/profile/${user?.id}`}
+      className={`flex flex-row items-center`}
+    >
       <Avatar>
         <AvatarImage src={user?.image as string | undefined} />
         <AvatarFallback></AvatarFallback>
@@ -24,13 +39,22 @@ function ProfileCard() {
         <p>{user?.name}</p>
         <p className={`text-xs`}>{user?.email}</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
-function MenuItem({ href, title }: { href: string; title: string }) {
+function MenuItem({
+  href,
+  title,
+  icon: Icon,
+}: {
+  href: string;
+  title: string;
+  icon: React.ComponentType<{ size?: number }>;
+}) {
   return (
-    <Link className={`mt-2 `} href={href}>
+    <Link className={`mt-2 flex items-center gap-3`} href={href}>
+      <Icon size={20} />
       {title}
     </Link>
   );
@@ -42,22 +66,29 @@ export function Navbar({
   buttonClassName?: string;
   contentClassName?: string;
 }) {
+  const [open, setOpen] = useState(false);
   const menuItems = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Comittees', href: '/committee' },
-    { title: 'Friends', href: '/friends' },
-    { title: 'Profile', href: '/profile' },
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Comittees', href: '/committee', icon: GavelIcon },
+    { title: 'Motions', href: '/motions', icon: FileText },
+    { title: 'Voting', href: '/voting', icon: Vote },
+    { title: 'History', href: '/history', icon: History },
+    { title: 'Friends', href: '/friends', icon: Users },
+    { title: 'Notifications', href: '/notifications', icon: Bell },
+    { title: 'Profile', href: '/profile', icon: User },
+    { title: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={() => setOpen(!open)}>
       <PopoverTrigger
-        className={`h-20 lg:h-0 absolute top-1 lg:top-6 right-6 lg:block ${buttonClassName}`}
+        className={`h-20 lg:h-0 absolute lg:top-6 right-6 lg:block ${buttonClassName}`}
       >
         <MenuIcon size={32} />
       </PopoverTrigger>
       <PopoverContent
-        className={`h-120 flex flex-col mr-10 ${contentClassName}`}
+        className={`flex flex-col mr-6 mt-[-12] lg:mt-[-4] lg:w-72 w-[calc(100vw-3rem)] px-6 lg:px-4 h-[calc(100vh-6rem)] sm:h-128 ${contentClassName}`}
+        onClick={() => setOpen(!open)}
       >
         <ProfileCard />
         <div className={`mt-4 flex flex-col`}>
@@ -67,12 +98,14 @@ export function Navbar({
                 title={menuItem.title}
                 key={menuItem.href}
                 href={menuItem.href}
+                icon={menuItem.icon}
               />
             );
           })}
         </div>
 
-        <SignoutButton className={`absolute bottom-10 w-3/4 ml-1`} />
+        <div className='flex-1' />
+        <SignoutButton />
       </PopoverContent>
     </Popover>
   );
