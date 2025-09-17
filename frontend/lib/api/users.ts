@@ -29,6 +29,9 @@ export interface User {
     state?: string;
     zip?: string;
   };
+}
+
+export interface PublicProfileUser extends User {
   committees?: Committee[];
   friendshipStatus?: FriendshipStatus;
   mutualFriendsCount?: number;
