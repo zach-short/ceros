@@ -6,20 +6,25 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from '@/components/ui/popover';
-import { MenuIcon } from 'lucide-react';
+import {
+  MenuIcon,
+  GavelIcon,
+  LayoutDashboard,
+  Users,
+  User,
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignoutButton } from '../button/signout';
 import { useState } from 'react';
 
-function ProfileCard({ onClick }: { onClick?: () => void }) {
+function ProfileCard() {
   const session = useSession();
   const user = session.data?.user;
   return (
     <Link
       href={`/profile/${user?.id}`}
       className={`flex flex-row items-center`}
-      onClick={() => onClick?.()}
     >
       <Avatar>
         <AvatarImage src={user?.image as string | undefined} />
@@ -36,14 +41,15 @@ function ProfileCard({ onClick }: { onClick?: () => void }) {
 function MenuItem({
   href,
   title,
-  onClick,
+  icon: Icon,
 }: {
   href: string;
   title: string;
-  onClick: () => void;
+  icon: React.ComponentType<{ size?: number }>;
 }) {
   return (
-    <Link className={`mt-2 `} href={href} onClick={onClick}>
+    <Link className={`mt-2 flex items-center gap-3`} href={href}>
+      <Icon size={20} />
       {title}
     </Link>
   );
@@ -57,37 +63,39 @@ export function Navbar({
 }) {
   const [open, setOpen] = useState(false);
   const menuItems = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Comittees', href: '/committee' },
-    { title: 'Friends', href: '/friends' },
-    { title: 'Profile', href: '/profile' },
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Comittees', href: '/committee', icon: GavelIcon },
+    { title: 'Friends', href: '/friends', icon: Users },
+    { title: 'Profile', href: '/profile', icon: User },
   ];
 
   return (
     <Popover open={open} onOpenChange={() => setOpen(!open)}>
       <PopoverTrigger
-        className={`h-20 lg:h-0 absolute top-1 lg:top-6 right-6 lg:block ${buttonClassName}`}
+        className={`h-20 lg:h-0 absolute lg:top-6 right-6 lg:block ${buttonClassName}`}
       >
         <MenuIcon size={32} />
       </PopoverTrigger>
       <PopoverContent
-        className={`h-120 flex flex-col mr-10 ${contentClassName}`}
+        className={`flex flex-col mr-6 mt-[-12] lg:mt-[-4] lg:w-72 w-[calc(100vw-3rem)] px-6 lg:px-4 h-[calc(100vh-6rem)] sm:h-128 ${contentClassName}`}
+        onClick={() => setOpen(!open)}
       >
-        <ProfileCard onClick={() => setOpen(!open)} />
+        <ProfileCard />
         <div className={`mt-4 flex flex-col`}>
           {menuItems.map((menuItem) => {
             return (
               <MenuItem
-                onClick={() => setOpen(!open)}
                 title={menuItem.title}
                 key={menuItem.href}
                 href={menuItem.href}
+                icon={menuItem.icon}
               />
             );
           })}
         </div>
 
-        <SignoutButton className={`absolute bottom-10 w-3/4 ml-1`} />
+        <div className='flex-1' />
+        <SignoutButton />
       </PopoverContent>
     </Popover>
   );
