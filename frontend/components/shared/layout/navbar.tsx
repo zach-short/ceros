@@ -12,6 +12,11 @@ import {
   LayoutDashboard,
   Users,
   User,
+  FileText,
+  Vote,
+  History,
+  Bell,
+  Settings,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -65,8 +70,13 @@ export function Navbar({
   const menuItems = [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Comittees', href: '/committee', icon: GavelIcon },
+    { title: 'Motions', href: '/motions', icon: FileText },
+    { title: 'Voting', href: '/voting', icon: Vote },
+    { title: 'History', href: '/history', icon: History },
     { title: 'Friends', href: '/friends', icon: Users },
+    { title: 'Notifications', href: '/notifications', icon: Bell },
     { title: 'Profile', href: '/profile', icon: User },
+    { title: 'Settings', href: '/settings', icon: Settings },
   ];
 
   return (
