@@ -10,10 +10,12 @@ interface CommitteeSectionProps {
       type: string;
       title: string;
       message: string;
-      timestamp: string;
+      created_at?: string;
+      timestamp?: string;
       read: boolean;
-      icon: React.ComponentType<{ size?: number; className?: string }>;
+      icon?: React.ComponentType<{ size?: number; className?: string }>;
       urgency: 'low' | 'medium' | 'high';
+      href?: string;
     }>;
   }>;
   isMainCollapsed: boolean;

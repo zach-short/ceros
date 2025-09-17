@@ -9,10 +9,12 @@ interface NotificationSectionProps {
     type: string;
     title: string;
     message: string;
-    timestamp: string;
+    created_at?: string;
+    timestamp?: string;
     read: boolean;
-    icon: React.ComponentType<{ size?: number; className?: string }>;
+    icon?: React.ComponentType<{ size?: number; className?: string }>;
     urgency: 'low' | 'medium' | 'high';
+    href?: string;
   }>;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
@@ -38,7 +40,9 @@ export function NotificationSection({
       >
         {isCollapsed ? <ChevronRight size={20} /> : <ChevronDown size={20} />}
         {title}
-        <span className='text-sm text-muted-foreground'>({unreadCount} unread)</span>
+        <span className='text-sm text-muted-foreground'>
+          ({unreadCount} unread)
+        </span>
       </button>
       {!isCollapsed && (
         <div className='space-y-2 ml-6'>
@@ -53,4 +57,3 @@ export function NotificationSection({
     </div>
   );
 }
-
