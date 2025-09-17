@@ -10,12 +10,17 @@ import { MenuIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignoutButton } from '../button/signout';
+import { useState } from 'react';
 
-function ProfileCard() {
+function ProfileCard({ onClick }: { onClick?: () => void }) {
   const session = useSession();
   const user = session.data?.user;
   return (
-    <div className={`flex flex-row items-center`}>
+    <Link
+      href={`/profile/${user?.id}`}
+      className={`flex flex-row items-center`}
+      onClick={() => onClick?.()}
+    >
       <Avatar>
         <AvatarImage src={user?.image as string | undefined} />
         <AvatarFallback></AvatarFallback>
@@ -24,13 +29,21 @@ function ProfileCard() {
         <p>{user?.name}</p>
         <p className={`text-xs`}>{user?.email}</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
-function MenuItem({ href, title }: { href: string; title: string }) {
+function MenuItem({
+  href,
+  title,
+  onClick,
+}: {
+  href: string;
+  title: string;
+  onClick: () => void;
+}) {
   return (
-    <Link className={`mt-2 `} href={href}>
+    <Link className={`mt-2 `} href={href} onClick={onClick}>
       {title}
     </Link>
   );
@@ -42,6 +55,7 @@ export function Navbar({
   buttonClassName?: string;
   contentClassName?: string;
 }) {
+  const [open, setOpen] = useState(false);
   const menuItems = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Comittees', href: '/committee' },
@@ -50,7 +64,7 @@ export function Navbar({
   ];
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={() => setOpen(!open)}>
       <PopoverTrigger
         className={`h-20 lg:h-0 absolute top-1 lg:top-6 right-6 lg:block ${buttonClassName}`}
       >
@@ -59,11 +73,12 @@ export function Navbar({
       <PopoverContent
         className={`h-120 flex flex-col mr-10 ${contentClassName}`}
       >
-        <ProfileCard />
+        <ProfileCard onClick={() => setOpen(!open)} />
         <div className={`mt-4 flex flex-col`}>
           {menuItems.map((menuItem) => {
             return (
               <MenuItem
+                onClick={() => setOpen(!open)}
                 title={menuItem.title}
                 key={menuItem.href}
                 href={menuItem.href}
