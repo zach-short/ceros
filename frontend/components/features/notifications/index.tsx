@@ -20,7 +20,7 @@ export default function Notifications() {
   const { data, error, isLoading } = useNotifications();
   const { markAllRead } = useNotificationActions();
   const [systemCollapsed, setSystemCollapsed] = useState(false);
-  const [committeeCollapsed, setCommitteeCollapsed] = useState({});
+  const [committeeCollapsed, setCommitteeCollapsed] = useState<Record<string, boolean>>({});
 
   const { systemNotifications, committeeNotifications } = useMemo(() => {
     if (!data?.notifications) {
