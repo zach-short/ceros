@@ -8,6 +8,6 @@ type Committee struct {
 	Type        string               `bson:"type" json:"type"`
 	OwnerID     primitive.ObjectID   `bson:"owner_id" json:"owner_id"`
 	ChairID     primitive.ObjectID   `bson:"chair_id" json:"chair_id"`
-	MemeberIDs  []primitive.ObjectID `bson:"memeber_ids" json:"member_ids"`
+	MemberIDs   []primitive.ObjectID `bson:"member_ids" json:"member_ids"`
 	ObserverIDs []primitive.ObjectID `bson:"observer_ids" json:"observer_id"`
 }

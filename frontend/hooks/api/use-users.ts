@@ -1,8 +1,14 @@
 import { useFetch, useMutation } from '../use-fetch';
-import { usersApi, User } from '@/lib/api/users';
+import { usersApi, User, PublicProfileUser } from '@/lib/api/users';
 
 export function useUser() {
   return useFetch<User>(usersApi.getMe);
+}
+
+export function usePublicProfile(userId: string) {
+  return useFetch<PublicProfileUser>(usersApi.getPublicProfile, {
+    resourceParams: [userId],
+  });
 }
 
 export function useUpdateProfile(options?: {
@@ -32,4 +38,3 @@ export function useCheckUsername(options?: {
     },
   });
 }
-
