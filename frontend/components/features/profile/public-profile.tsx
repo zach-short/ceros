@@ -187,10 +187,10 @@ export function PublicProfile({ userId }: PublicProfileProps) {
               {user.bio || 'No bio yet'}
             </p>
 
-            <div className='absolute top-4 right-4 flex gap-2'>
+            <div className='absolute top-6 right-6 flex gap-2'>
               {isOwnProfile ? (
                 <Link
-                  className='rounded-lg border px-4 py-2 text-sm hover:bg-gray-50'
+                  className='rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 hover:text-black'
                   href='/profile'
                 >
                   Edit Profile

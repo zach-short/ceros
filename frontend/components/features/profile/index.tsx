@@ -17,6 +17,7 @@ import {
 } from '@/hooks/api/use-users';
 import { UpdateProfileRequest } from '@/lib/api/users';
 import { UploadImageButton } from '@/components/shared/button/upload';
+import { GooglePlacesAutocomplete } from '@/components/ui/google-places-autocomplete';
 
 export function Profile() {
   const { data: user, loading: userLoading, refetch } = useUser();
@@ -303,28 +304,37 @@ export function Profile() {
             <CardTitle>Address</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='space-y-2'>
-              <Label htmlFor='address'>Address</Label>
-              {isEditing ? (
-                <Input
-                  id='address'
-                  value={formData.address?.street || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      address: { ...formData.address, street: e.target.value },
-                    })
-                  }
-                  placeholder='Enter your address'
-                />
-              ) : (
+            {isEditing ? (
+              <GooglePlacesAutocomplete
+                label='Address'
+                placeholder='Enter your address...'
+                value={
+                  formData.address?.street
+                    ? `${formData.address.street}${formData.address.city ? `, ${formData.address.city}` : ''}${formData.address.state ? `, ${formData.address.state}` : ''}${formData.address.zip ? ` ${formData.address.zip}` : ''}`
+                    : ''
+                }
+                onAddressSelect={(address) => {
+                  setFormData({
+                    ...formData,
+                    address: {
+                      street: address.street || '',
+                      city: address.city || '',
+                      state: address.state || '',
+                      zip: address.zip || '',
+                    },
+                  });
+                }}
+              />
+            ) : (
+              <div className='space-y-2'>
+                <Label>Address</Label>
                 <p className='text-sm text-muted-foreground'>
                   {user.address?.street
                     ? `${user.address.street}${user.address.city ? `, ${user.address.city}` : ''}${user.address.state ? `, ${user.address.state}` : ''}${user.address.zip ? ` ${user.address.zip}` : ''}`
                     : 'No address provided'}
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
