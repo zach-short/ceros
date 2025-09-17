@@ -20,6 +20,7 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		users.GET("/search", handlers.SearchUsers)
 		users.GET("/check-username", handlers.CheckUsername)
+		users.GET("/:userID/profile", handlers.GetPublicProfile)
 
 		me := users.Group("/me")
 		{

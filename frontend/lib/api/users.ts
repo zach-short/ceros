@@ -1,5 +1,19 @@
 import { apiRequest } from '../api';
 
+export interface Committee {
+  id: string;
+  name: string;
+  type: string;
+  role: string;
+}
+
+export interface FriendshipStatus {
+  status: 'pending' | 'accepted' | 'blocked';
+  isPendingFromMe: boolean;
+  isPendingToMe: boolean;
+  friendshipId: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -15,6 +29,9 @@ export interface User {
     state?: string;
     zip?: string;
   };
+  committees?: Committee[];
+  friendshipStatus?: FriendshipStatus;
+  mutualFriendsCount?: number;
 }
 
 export interface UpdateProfileRequest {
@@ -39,6 +56,8 @@ export interface CheckUsernameResponse {
 
 export const usersApi = {
   getMe: (): Promise<any> => apiRequest('get', '/users/me'),
+  getPublicProfile: (userId: string): Promise<any> =>
+    apiRequest('get', `/users/${userId}/profile`),
 
   updateProfile: (data: UpdateProfileRequest): Promise<any> =>
     apiRequest('patch', '/users/me', data),

@@ -18,6 +18,7 @@ import { UserCheck, UserX, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import Link from 'next/link';
 
 type TabType = 'active' | 'pending' | 'add';
 type PendingTabType = 'incoming' | 'outgoing';
@@ -124,7 +125,10 @@ export default function Friends() {
         {friends.map((friendship: Friendship) => (
           <Card key={friendship.id}>
             <CardContent className='flex items-center justify-between p-4'>
-              <div className='flex items-center space-x-3'>
+              <Link
+                href={`/profile/${friendship?.user?.id}`}
+                className='flex items-center space-x-3'
+              >
                 <Avatar className='h-10 w-10'>
                   <AvatarImage
                     src={friendship.user?.picture}
@@ -146,7 +150,7 @@ export default function Friends() {
                     ).toLocaleDateString()}
                   </p>
                 </div>
-              </div>
+              </Link>
               <Button
                 variant='outline'
                 size='sm'

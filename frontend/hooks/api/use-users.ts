@@ -5,6 +5,12 @@ export function useUser() {
   return useFetch<User>(usersApi.getMe);
 }
 
+export function usePublicProfile(userId: string) {
+  return useFetch<User>(usersApi.getPublicProfile, {
+    resourceParams: [userId],
+  });
+}
+
 export function useUpdateProfile(options?: {
   onSuccess?: (data: User) => void;
   onError?: (error: any) => void;
@@ -32,4 +38,3 @@ export function useCheckUsername(options?: {
     },
   });
 }
-
