@@ -8,7 +8,18 @@ import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Ceros',
-  description: '',
+  description: 'A progressive web application',
+  manifest: '/manifest.json',
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Ceros',
+  },
+  icons: {
+    icon: '/icon-192x192.png',
+    apple: '/icon-192x192.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
