@@ -104,7 +104,7 @@ export function Navbar({
           })}
         </div>
 
-        <div className='flex-1' />
+        <div className={`lg:flex-1 mt-12 lg:mt-0`} />
         <SignoutButton />
       </PopoverContent>
     </Popover>
