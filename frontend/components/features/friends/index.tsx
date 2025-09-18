@@ -143,6 +143,13 @@ export default function Friends() {
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
+                  {(friendship.user?.givenName || friendship.user?.familyName) && (
+                    <p className='text-sm text-muted-foreground'>
+                      {friendship.user?.givenName && friendship.user?.familyName
+                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
+                        : friendship.user?.givenName || friendship.user?.familyName}
+                    </p>
+                  )}
                   <p className='text-xs text-muted-foreground'>
                     Friends since{' '}
                     {new Date(
@@ -227,6 +234,13 @@ export default function Friends() {
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
+                  {(friendship.user?.givenName || friendship.user?.familyName) && (
+                    <p className='text-sm text-muted-foreground'>
+                      {friendship.user?.givenName && friendship.user?.familyName
+                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
+                        : friendship.user?.givenName || friendship.user?.familyName}
+                    </p>
+                  )}
                   <p className='text-xs text-muted-foreground'>
                     Sent request{' '}
                     {new Date(friendship.requestedAt).toLocaleDateString()}
@@ -292,6 +306,13 @@ export default function Friends() {
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
+                  {(friendship.user?.givenName || friendship.user?.familyName) && (
+                    <p className='text-sm text-muted-foreground'>
+                      {friendship.user?.givenName && friendship.user?.familyName
+                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
+                        : friendship.user?.givenName || friendship.user?.familyName}
+                    </p>
+                  )}
                   <p className='text-xs text-muted-foreground'>
                     Request sent{' '}
                     {new Date(friendship.requestedAt).toLocaleDateString()}

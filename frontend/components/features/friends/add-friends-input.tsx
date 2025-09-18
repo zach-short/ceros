@@ -195,7 +195,16 @@ function Suggestions({
                 {user.name || 'Unnamed User'}
                 {user.isCurrentUser && ' (You)'}
               </p>
-              <p className='text-sm text-gray-500'>{user.email}</p>
+              {(user.givenName || user.familyName) && (
+                <p className='text-sm text-gray-500'>
+                  {user.givenName && user.familyName
+                    ? `${user.givenName} ${user.familyName}`
+                    : user.givenName || user.familyName}
+                </p>
+              )}
+              {user.email && (
+                <p className='text-xs text-gray-400'>{user.email}</p>
+              )}
             </div>
             <Icon size={16} className={color} />
           </button>

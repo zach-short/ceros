@@ -10,7 +10,9 @@ export interface Friendship {
   user?: {
     id: string;
     name: string;
-    email: string;
+    email?: string;
+    givenName?: string;
+    familyName?: string;
     picture?: string;
   };
 }
@@ -49,7 +51,9 @@ export interface FriendshipStatus {
 export interface User {
   id: string;
   name?: string;
-  email: string;
+  email?: string;
+  givenName?: string;
+  familyName?: string;
   picture?: string;
   isCurrentUser?: boolean;
   friendshipStatus?: FriendshipStatus | null;

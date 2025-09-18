@@ -50,7 +50,7 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				notifications.GET("", handlers.GetNotifications)
 				notifications.PATCH("/mark-all-read", handlers.MarkAllNotificationsRead)
-				notifications.POST("", handlers.CreateNotification) // Admin/system use
+				notifications.POST("", handlers.CreateNotification)
 
 				notification := notifications.Group("/:notificationId")
 				{
