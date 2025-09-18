@@ -26,6 +26,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			me.GET("", handlers.GetMe)
 			me.PATCH("", handlers.UpdateProfile)
+			me.PATCH("/settings", handlers.UpdateUserSettings)
 
 			friends := me.Group("/friends")
 			{

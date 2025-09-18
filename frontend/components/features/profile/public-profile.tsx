@@ -6,7 +6,19 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
-import { User, Users, UserPlus, UserCheck, Clock, UserX } from 'lucide-react';
+import {
+  User,
+  Users,
+  UserPlus,
+  UserCheck,
+  Clock,
+  UserX,
+  EyeOff,
+  Lock,
+  PinIcon,
+  PhoneIcon,
+  MailIcon,
+} from 'lucide-react';
 import { usePublicProfile } from '@/hooks/api/use-users';
 import { useSession } from 'next-auth/react';
 import { friendsApi } from '@/lib/api/friends';
@@ -146,6 +158,16 @@ export function PublicProfile({ userId }: PublicProfileProps) {
   const userHasFullName = user?.familyName && user?.givenName;
   const friendButtonContent = getFriendButtonContent();
 
+  const canSeeEmail = user?.email !== undefined;
+  const canSeePhone = user?.phoneNumber !== undefined;
+  const canSeeAddress = user?.address !== undefined;
+  const canSeeBio = user?.bio !== undefined;
+  const canSeeGivenName = user?.givenName !== undefined;
+  const canSeeFamilyName = user?.familyName !== undefined;
+  const canSeePicture = user?.picture !== undefined;
+
+  const isFriend = user?.friendshipStatus?.status === 'accepted';
+
   return (
     <div className='container mx-auto p-6 max-w-4xl'>
       <div className='space-y-6'>
@@ -154,17 +176,27 @@ export function PublicProfile({ userId }: PublicProfileProps) {
             <div className='flex items-center space-x-6'>
               <div className='relative'>
                 <Avatar className='h-24 w-24'>
-                  <AvatarImage
-                    src={user?.picture || user.picture}
-                    alt={user.name || 'Profile'}
-                  />
-                  <AvatarFallback />
+                  {canSeePicture ? (
+                    <>
+                      <AvatarImage
+                        src={user?.picture || user.picture}
+                        alt={user.name || 'Profile'}
+                      />
+                      <AvatarFallback />
+                    </>
+                  ) : (
+                    <div className='flex items-center justify-center h-full w-full bg-muted'>
+                      <EyeOff className='h-8 w-8 text-muted-foreground' />
+                    </div>
+                  )}
                 </Avatar>
               </div>
               <div className='flex-1'>
-                <h3 className='text-xl font-semibold'>
-                  {userHasFullName && `${user?.givenName} ${user?.familyName}`}
-                </h3>
+                {userHasFullName && canSeeGivenName && canSeeFamilyName && (
+                  <h3 className='text-xl font-semibold'>
+                    {user?.givenName} {user?.familyName}
+                  </h3>
+                )}
                 <h3 className='text-base font-semibold'>
                   {user.name || 'Unknown User'}
                 </h3>
@@ -183,9 +215,21 @@ export function PublicProfile({ userId }: PublicProfileProps) {
               </div>
             </div>
 
-            <p className='text-sm mt-6 ml-1 text-muted-foreground whitespace-pre-wrap'>
-              {user.bio || 'No bio yet'}
-            </p>
+            <div className='mt-6 ml-1'>
+              {canSeeBio ? (
+                <p className='text-sm text-muted-foreground whitespace-pre-wrap'>
+                  {user.bio || 'No bio yet'}
+                </p>
+              ) : (
+                <div className='flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg'>
+                  <Lock className='h-4 w-4' />
+                  <span>
+                    Bio is private
+                    {isFriend ? '' : ' • Become friends to see more'}
+                  </span>
+                </div>
+              )}
+            </div>
 
             <div className='absolute top-6 right-6 flex gap-2'>
               {isOwnProfile ? (
@@ -211,6 +255,56 @@ export function PublicProfile({ userId }: PublicProfileProps) {
             </div>
           </CardContent>
         </Card>
+
+        {(canSeeEmail ||
+          canSeePhone ||
+          canSeeAddress ||
+          (!isOwnProfile &&
+            !canSeeEmail &&
+            !canSeePhone &&
+            !canSeeAddress)) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Information</CardTitle>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              {canSeeEmail && (
+                <div className='flex items-center gap-3'>
+                  <MailIcon />
+                  <span className='text-sm'>{user.email}</span>
+                </div>
+              )}
+              {canSeePhone && user.phoneNumber && (
+                <div className='flex items-center gap-3'>
+                  <PhoneIcon />
+                  <span className='text-sm'>{user.phoneNumber}</span>
+                </div>
+              )}
+              {canSeeAddress && user.address && user.address.city && (
+                <div className='flex items-center gap-3'>
+                  <PinIcon />
+                  <span className='text-sm'>
+                    {user.address.city && `${user.address.city}, `}
+                    {user.address.state && `${user.address.state} `}
+                  </span>
+                </div>
+              )}
+
+              {!canSeeEmail &&
+                !canSeePhone &&
+                !canSeeAddress &&
+                !isOwnProfile && (
+                  <div className='flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg'>
+                    <Lock className='h-4 w-4' />
+                    <span>
+                      Contact information is private
+                      {isFriend ? '' : ' • Become friends to see more'}
+                    </span>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+        )}
 
         {user.committees && user.committees.length > 0 && (
           <Card>
