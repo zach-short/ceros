@@ -1,7 +1,7 @@
 {
   "name": "Ceros",
   "short_name": "Ceros",
-  "description": "A progressive web application",
+  "description": "",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -20,3 +20,4 @@
     }
   ]
 }
+
