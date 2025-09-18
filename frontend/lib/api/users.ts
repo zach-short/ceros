@@ -14,6 +14,31 @@ export interface FriendshipStatus {
   friendshipId: string;
 }
 
+export interface PrivacySettings {
+  showEmail: boolean;
+  showPhoneNumber: boolean;
+  showAddress: boolean;
+  showGivenName: boolean;
+  showFamilyName: boolean;
+  showBio: boolean;
+  showPicture: boolean;
+}
+
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  committeeInvitations: boolean;
+  motionNotifications: boolean;
+  voteNotifications: boolean;
+  friendRequestNotifications: boolean;
+}
+
+export interface UserSettings {
+  theme: 'light' | 'dark' | 'system';
+  autoAcceptFriendInvitations: boolean;
+  privacy: PrivacySettings;
+  notifications: NotificationSettings;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -29,6 +54,7 @@ export interface User {
     state?: string;
     zip?: string;
   };
+  settings?: UserSettings;
 }
 
 export interface PublicProfileUser extends User {
@@ -53,6 +79,13 @@ export interface UpdateProfileRequest {
   };
 }
 
+export interface UpdateUserSettingsRequest {
+  theme?: 'light' | 'dark' | 'system';
+  autoAcceptFriendInvitations?: boolean;
+  privacy?: Partial<PrivacySettings>;
+  notifications?: Partial<NotificationSettings>;
+}
+
 export interface CheckUsernameResponse {
   available: boolean;
 }
@@ -64,6 +97,9 @@ export const usersApi = {
 
   updateProfile: (data: UpdateProfileRequest): Promise<any> =>
     apiRequest('patch', '/users/me', data),
+
+  updateSettings: (data: UpdateUserSettingsRequest): Promise<any> =>
+    apiRequest('patch', '/users/me/settings', data),
 
   checkUsername: (name: string): Promise<any> =>
     apiRequest('get', '/users/check-username', null, { name }),

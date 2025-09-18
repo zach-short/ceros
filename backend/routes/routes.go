@@ -26,6 +26,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			me.GET("", handlers.GetMe)
 			me.PATCH("", handlers.UpdateProfile)
+			me.PATCH("/settings", handlers.UpdateUserSettings)
 
 			friends := me.Group("/friends")
 			{
@@ -49,7 +50,7 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				notifications.GET("", handlers.GetNotifications)
 				notifications.PATCH("/mark-all-read", handlers.MarkAllNotificationsRead)
-				notifications.POST("", handlers.CreateNotification) // Admin/system use
+				notifications.POST("", handlers.CreateNotification)
 
 				notification := notifications.Group("/:notificationId")
 				{

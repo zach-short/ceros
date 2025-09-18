@@ -38,3 +38,17 @@ export function useCheckUsername(options?: {
     },
   });
 }
+
+export function useUpdateUserSettings(options?: {
+  onSuccess?: (data: User) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(usersApi.updateSettings, {
+    onSuccess: (data: User) => {
+      options?.onSuccess?.(data);
+    },
+    onError: (error) => {
+      options?.onError?.(error);
+    },
+  });
+}

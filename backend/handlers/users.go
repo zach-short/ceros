@@ -29,6 +29,13 @@ type CheckUsernameRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
+type UpdateUserSettingsRequest struct {
+	Theme                       *string                      `json:"theme,omitempty"`
+	AutoAcceptFriendInvitations *bool                        `json:"autoAcceptFriendInvitations,omitempty"`
+	Privacy                     *models.PrivacySettings      `json:"privacy,omitempty"`
+	Notifications               *models.NotificationSettings `json:"notifications,omitempty"`
+}
+
 func GetPublicProfile(c *gin.Context) {
 	userId := c.Param("userID")
 	userID, err := primitive.ObjectIDFromHex(userId)
@@ -64,16 +71,45 @@ func GetPublicProfile(c *gin.Context) {
 
 	user.PasswordHash = ""
 
+	settings := user.Settings
+	if settings == (models.UserSettings{}) {
+		settings = models.GetDefaultUserSettings()
+	}
+
+	isFriend := false
+	if isAuthenticated && userID != currentUserID {
+		friendshipStatus, err := getFriendshipStatus(ctx, currentUserID, userID)
+		if err == nil && friendshipStatus != nil {
+			status := friendshipStatus["status"].(string)
+			isFriend = status == "accepted"
+		}
+	}
+
 	response := map[string]any{
-		"id":          user.ID.Hex(),
-		"email":       user.Email,
-		"name":        user.Name,
-		"givenName":   user.GivenName,
-		"familyName":  user.FamilyName,
-		"picture":     user.Picture,
-		"bio":         user.Bio,
-		"phoneNumber": user.PhoneNumber,
-		"address":     user.Address,
+		"id":   user.ID.Hex(),
+		"name": user.Name,
+	}
+
+	if settings.Privacy.ShowEmail || isFriend {
+		response["email"] = user.Email
+	}
+	if settings.Privacy.ShowGivenName || isFriend {
+		response["givenName"] = user.GivenName
+	}
+	if settings.Privacy.ShowFamilyName || isFriend {
+		response["familyName"] = user.FamilyName
+	}
+	if settings.Privacy.ShowPicture || isFriend {
+		response["picture"] = user.Picture
+	}
+	if settings.Privacy.ShowBio || isFriend {
+		response["bio"] = user.Bio
+	}
+	if settings.Privacy.ShowPhoneNumber || isFriend {
+		response["phoneNumber"] = user.PhoneNumber
+	}
+	if settings.Privacy.ShowAddress || isFriend {
+		response["address"] = user.Address
 	}
 
 	committees, err := getUserCommittees(ctx, userID)
@@ -92,6 +128,8 @@ func GetPublicProfile(c *gin.Context) {
 			response["mutualFriendsCount"] = mutualFriendsCount
 		}
 	}
+
+	response["isOwnProfile"] = isAuthenticated && userID == currentUserID
 
 	c.JSON(http.StatusOK, response)
 }
@@ -240,6 +278,87 @@ func CheckUsername(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"available": available})
+}
+
+func UpdateUserSettings(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	var req UpdateUserSettingsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := config.GetCollection("users")
+
+	var currentUser models.User
+	err = collection.FindOne(ctx, bson.M{"_id": userID}).Decode(&currentUser)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	settings := currentUser.Settings
+	if settings == (models.UserSettings{}) {
+		settings = models.GetDefaultUserSettings()
+	}
+
+	if req.Theme != nil {
+		settings.Theme = *req.Theme
+	}
+	if req.AutoAcceptFriendInvitations != nil {
+		settings.AutoAcceptFriendInvitations = *req.AutoAcceptFriendInvitations
+	}
+	if req.Privacy != nil {
+		settings.Privacy.ShowEmail = req.Privacy.ShowEmail
+		settings.Privacy.ShowPhoneNumber = req.Privacy.ShowPhoneNumber
+		settings.Privacy.ShowAddress = req.Privacy.ShowAddress
+		settings.Privacy.ShowGivenName = req.Privacy.ShowGivenName
+		settings.Privacy.ShowFamilyName = req.Privacy.ShowFamilyName
+		settings.Privacy.ShowBio = req.Privacy.ShowBio
+		settings.Privacy.ShowPicture = req.Privacy.ShowPicture
+	}
+	if req.Notifications != nil {
+		settings.Notifications.EmailNotifications = req.Notifications.EmailNotifications
+		settings.Notifications.CommitteeInvitations = req.Notifications.CommitteeInvitations
+		settings.Notifications.MotionNotifications = req.Notifications.MotionNotifications
+		settings.Notifications.VoteNotifications = req.Notifications.VoteNotifications
+		settings.Notifications.FriendRequestNotifications = req.Notifications.FriendRequestNotifications
+	}
+
+	update := bson.M{"$set": bson.M{"settings": settings}}
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update settings"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	var updatedUser models.User
+	err = collection.FindOne(ctx, bson.M{"_id": userID}).Decode(&updatedUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch updated user"})
+		return
+	}
+
+	updatedUser.PasswordHash = ""
+	c.JSON(http.StatusOK, updatedUser)
 }
 
 func getUserCommittees(ctx context.Context, userID primitive.ObjectID) ([]map[string]any, error) {
