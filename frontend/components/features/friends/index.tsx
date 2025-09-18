@@ -14,7 +14,7 @@ import {
   useRemoveFriend,
 } from '@/hooks/api/use-friends';
 import { Friendship } from '@/lib/api/friends';
-import { UserCheck, UserX, Clock } from 'lucide-react';
+import { UserCheck, UserX, Clock, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
@@ -130,14 +130,22 @@ export default function Friends() {
                 className='flex items-center space-x-3'
               >
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage
-                    src={friendship.user?.picture}
-                    alt={friendship.user?.name || 'Friend'}
-                  />
-                  <AvatarFallback>
-                    {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                      'FR'}
-                  </AvatarFallback>
+                  {friendship.user?.picture ? (
+                    <>
+                      <AvatarImage
+                        src={friendship.user.picture}
+                        alt={friendship.user?.name || 'Friend'}
+                      />
+                      <AvatarFallback>
+                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
+                          'FR'}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback className='bg-muted'>
+                      <EyeOff className='h-4 w-4 text-muted-foreground' />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <p className='font-medium'>
@@ -221,14 +229,22 @@ export default function Friends() {
             <CardContent className='flex items-center justify-between p-4'>
               <div className='flex items-center space-x-3'>
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage
-                    src={friendship.user?.picture}
-                    alt={friendship.user?.name || 'User'}
-                  />
-                  <AvatarFallback>
-                    {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                      'U'}
-                  </AvatarFallback>
+                  {friendship.user?.picture ? (
+                    <>
+                      <AvatarImage
+                        src={friendship.user.picture}
+                        alt={friendship.user?.name || 'User'}
+                      />
+                      <AvatarFallback>
+                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
+                          'U'}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback className='bg-muted'>
+                      <EyeOff className='h-4 w-4 text-muted-foreground' />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <p className='font-medium'>
@@ -296,11 +312,22 @@ export default function Friends() {
             <CardContent className='flex items-center justify-between p-4'>
               <div className='flex items-center space-x-3'>
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage
-                    src={friendship.user?.picture}
-                    alt={friendship.user?.name || 'User'}
-                  />
-                  <AvatarFallback />
+                  {friendship.user?.picture ? (
+                    <>
+                      <AvatarImage
+                        src={friendship.user.picture}
+                        alt={friendship.user?.name || 'User'}
+                      />
+                      <AvatarFallback>
+                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
+                          'U'}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback className='bg-muted'>
+                      <EyeOff className='h-4 w-4 text-muted-foreground' />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <p className='font-medium'>

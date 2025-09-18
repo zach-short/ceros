@@ -482,13 +482,13 @@ func GetFriendships(c *gin.Context) {
 			"name": user.Name,
 		}
 
-		if settings.Privacy.ShowPicture {
+		if settings.Privacy.ShowPicture || true {
 			userInfo["picture"] = user.Picture
 		}
-		if settings.Privacy.ShowGivenName {
+		if settings.Privacy.ShowGivenName || true {
 			userInfo["givenName"] = user.GivenName
 		}
-		if settings.Privacy.ShowFamilyName {
+		if settings.Privacy.ShowFamilyName || true {
 			userInfo["familyName"] = user.FamilyName
 		}
 		if settings.Privacy.ShowEmail {
