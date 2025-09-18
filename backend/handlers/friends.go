@@ -140,7 +140,7 @@ func RemoveFriend(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Listing")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 	var friend models.Friendship
 	err = friendCollection.FindOneAndDelete(ctx, bson.M{"_id": friendshipID}).Decode(&friend)
 
