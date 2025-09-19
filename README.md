@@ -5,10 +5,10 @@ The final project for CSCI432 requires students to create a web-based platform t
 COMPLETED:
 
 - User registration, login, and name change.
+- Changing other properties, like short-bio, phone number, address, and profile picture, are optional.
 
 INCOMPLETE:
 
-- Changing other properties, like short-bio, phone number, address, and profile picture, are optional.
 - Creating a committee, adding users to a committee.
 - Role control of users (e.g., owner, chair, member, and optionally observer). Fine-grained authentication control (e.g., create motion, discussion, move to vote, vote) is optional.
 - Control panel for chairs to toggle some styles.
