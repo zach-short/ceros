@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type TabType = 'active' | 'pending' | 'add';
 type PendingTabType = 'incoming' | 'outgoing';
@@ -26,6 +27,7 @@ type PendingTabType = 'incoming' | 'outgoing';
 export default function Friends() {
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [pendingTab, setPendingTab] = useState<PendingTabType>('incoming');
+  const router = useRouter();
 
   const {
     data: friendsData,
@@ -168,13 +170,26 @@ export default function Friends() {
                   </p>
                 </div>
               </Link>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => removeFriend(friendship.id)}
-              >
-                Remove
-              </Button>
+
+              <div className={`flex flex-col gap-4`}>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className={`text-blue-600`}
+                  onClick={() => router.push(`/chat/${friendship.user?.id}`)}
+                >
+                  Message
+                </Button>
+
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className={`text-red-600`}
+                  onClick={() => removeFriend(friendship.id)}
+                >
+                  Remove
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}

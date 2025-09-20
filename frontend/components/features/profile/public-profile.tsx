@@ -18,6 +18,7 @@ import {
   PinIcon,
   PhoneIcon,
   MailIcon,
+  MessageCircleIcon,
 } from 'lucide-react';
 import { usePublicProfile } from '@/hooks/api/use-users';
 import { useSession } from 'next-auth/react';
@@ -25,6 +26,7 @@ import { friendsApi } from '@/lib/api/friends';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface PublicProfileProps {
   userId: string;
@@ -37,6 +39,7 @@ export function PublicProfile({ userId }: PublicProfileProps) {
     refetch,
   } = usePublicProfile(userId);
   const session = useSession();
+  const router = useRouter();
   const [friendActionLoading, setFriendActionLoading] = useState(false);
 
   const isOwnProfile = userId === session.data?.user.id;
@@ -48,7 +51,7 @@ export function PublicProfile({ userId }: PublicProfileProps) {
     const status = user.friendshipStatus;
 
     if (status?.status === 'accepted') {
-      toast.info('You are already friends with this user');
+      router.push(`/chat/${user.id}`);
       return;
     }
 
@@ -99,10 +102,10 @@ export function PublicProfile({ userId }: PublicProfileProps) {
     switch (status.status) {
       case 'accepted':
         return {
-          icon: UserCheck,
-          text: 'Friends',
-          color: 'bg-green-600',
-          disabled: true,
+          icon: MessageCircleIcon,
+          text: 'Message',
+          color: 'bg-blue-600',
+          disabled: false,
         };
       case 'blocked':
         return {
