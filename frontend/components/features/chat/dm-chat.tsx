@@ -7,15 +7,19 @@ import { useStartDM, useDMHistory } from '@/hooks/api/use-chat';
 import { ChatHeader } from './chat-header';
 import { MessagesList } from './messages-list';
 import { MessageInput } from './message-input';
-import { DefaultLoader } from '@/components/shared/layout/loader';
 import { Message } from './types';
 
 interface DMChatProps {
   recipientId: string;
   recipientName: string;
+  recipientPicture?: string;
 }
 
-export function DMChat({ recipientId, recipientName }: DMChatProps) {
+export function DMChat({
+  recipientId,
+  recipientName,
+  recipientPicture,
+}: DMChatProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -37,7 +41,7 @@ export function DMChat({ recipientId, recipientName }: DMChatProps) {
 
   const { data: historyData, loading: historyLoading } = useDMHistory(
     recipientId,
-    !!session?.apiToken && !!recipientId
+    !!session?.apiToken && !!recipientId,
   );
 
   const scrollToBottom = () => {
@@ -161,9 +165,11 @@ export function DMChat({ recipientId, recipientName }: DMChatProps) {
   }
 
   return (
-    <div className='flex flex-col h-full max-w-2xl mx-auto border rounded-lg'>
+    <div className='flex flex-col h-full max-w-3xl mx-auto border rounded-lg mt-8 lg:mt-6'>
       <ChatHeader
         recipientName={recipientName}
+        recipientId={recipientId}
+        recipientPicture={recipientPicture}
         isConnected={isConnected}
         isLoading={historyLoading || startingDM}
       />
@@ -183,4 +189,3 @@ export function DMChat({ recipientId, recipientName }: DMChatProps) {
     </div>
   );
 }
-

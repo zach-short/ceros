@@ -6,7 +6,7 @@ import { Message } from './types';
 interface MessagesListProps {
   messages: Message[];
   currentUserId: string;
-  recipientName: string;
+  recipientName?: string;
   isLoading?: boolean;
 }
 
