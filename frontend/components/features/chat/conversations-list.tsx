@@ -3,6 +3,7 @@
 import { useConversations } from '@/hooks/api/use-chat';
 import { ConversationItem } from './conversation-item';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import { ConversationSummary } from '@/lib/api/chat';
 
 export function ConversationsList() {
   const { data: conversationsData, loading, error } = useConversations();
@@ -47,7 +48,7 @@ export function ConversationsList() {
   return (
     <div className='rounded-lg border'>
       <div className='divide-y divide-gray-200'>
-        {conversations.map((conversation) => (
+        {conversations.map((conversation: ConversationSummary) => (
           <ConversationItem
             key={conversation.roomId}
             conversation={conversation}
@@ -57,4 +58,3 @@ export function ConversationsList() {
     </div>
   );
 }
-
