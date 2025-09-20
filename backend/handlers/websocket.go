@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -137,16 +138,115 @@ func GetDMHistory(c *gin.Context) {
 	})
 }
 
+type ConversationSummary struct {
+	RoomID        string             `json:"roomId"`
+	Type          models.RoomType    `json:"type"`
+	Participants  []primitive.ObjectID `json:"participants"`
+	LastMessage   *models.Message    `json:"lastMessage,omitempty"`
+	LastMessageAt time.Time          `json:"lastMessageAt"`
+	UnreadCount   int                `json:"unreadCount"`
+}
+
 func GetUserConversations(c *gin.Context) {
 	userIDStr := c.MustGet("userID").(string)
-	_, err := primitive.ObjectIDFromHex(userIDStr)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
-	// todo: implement conversation list retrieval from mongodb
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"$or": []bson.M{
+					{"senderId": userID},
+					{"roomId": bson.M{"$regex": userID.Hex()}},
+				},
+			},
+		},
+		{
+			"$sort": bson.M{"timestamp": -1},
+		},
+		{
+			"$group": bson.M{
+				"_id":           "$roomId",
+				"lastMessage":   bson.M{"$first": "$$ROOT"},
+				"lastMessageAt": bson.M{"$first": "$timestamp"},
+				"messageCount":  bson.M{"$sum": 1},
+			},
+		},
+		{
+			"$sort": bson.M{"lastMessageAt": -1},
+		},
+		{
+			"$limit": 50,
+		},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		log.Printf("Error aggregating conversations: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch conversations"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var conversations []ConversationSummary
+	for cursor.Next(ctx) {
+		var result struct {
+			ID            string          `bson:"_id"`
+			LastMessage   models.Message  `bson:"lastMessage"`
+			LastMessageAt time.Time       `bson:"lastMessageAt"`
+			MessageCount  int             `bson:"messageCount"`
+		}
+
+		if err := cursor.Decode(&result); err != nil {
+			log.Printf("Error decoding conversation: %v", err)
+			continue
+		}
+
+		var participants []primitive.ObjectID
+		var roomType models.RoomType
+
+		if strings.HasPrefix(result.ID, "dm_") {
+			roomType = models.RoomTypeDM
+			parts := strings.Split(result.ID, "_")
+			if len(parts) == 3 {
+				if id1, err := primitive.ObjectIDFromHex(parts[1]); err == nil {
+					participants = append(participants, id1)
+				}
+				if id2, err := primitive.ObjectIDFromHex(parts[2]); err == nil {
+					participants = append(participants, id2)
+				}
+			}
+		} else if strings.HasPrefix(result.ID, "group_") {
+			roomType = models.RoomTypeGroup
+			participants = append(participants, userID)
+		}
+
+		conversation := ConversationSummary{
+			RoomID:        result.ID,
+			Type:          roomType,
+			Participants:  participants,
+			LastMessage:   &result.LastMessage,
+			LastMessageAt: result.LastMessageAt,
+			UnreadCount:   0, // TODO: Implement unread tracking
+		}
+
+		conversations = append(conversations, conversation)
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Printf("Cursor error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error reading conversations"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"conversations": []models.Room{},
+		"conversations": conversations,
 	})
 }

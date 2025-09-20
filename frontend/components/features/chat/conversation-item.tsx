@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useFetch } from '@/hooks/use-fetch';
 import { usersApi, PublicProfileUser } from '@/lib/api/users';
 import { ConversationSummary } from '@/lib/api/chat';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface ConversationItemProps {
   conversation: ConversationSummary;
@@ -83,12 +84,10 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
   return (
     <div onClick={handleClick} className='p-4 cursor-pointer transition-colors'>
       <div className='flex items-center space-x-3'>
-        <div className='flex-shrink-0'>
-          <div className='w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold'>
-            {getDisplayName().charAt(0).toUpperCase()}
-          </div>
-        </div>
-
+        <Avatar>
+          <AvatarImage src={otherUser?.picture as string | undefined} />
+          <AvatarFallback>{getDisplayName().charAt(0)}</AvatarFallback>
+        </Avatar>
         <div className='flex-1 min-w-0'>
           <div className='flex items-center justify-between'>
             <h3 className='text-sm font-medium 00 truncate'>
