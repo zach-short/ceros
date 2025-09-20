@@ -1,5 +1,5 @@
 import { useFetch, useMutation } from '../use-fetch';
-import { chatApi, Message, Room } from '@/lib/api/chat';
+import { chatApi, ConversationSummary, Message, Room } from '@/lib/api/chat';
 
 export function useStartDM(options?: {
   onSuccess?: (data: { roomId: string; room: Room }) => void;
@@ -29,6 +29,7 @@ export function useDMHistory(recipientId: string | undefined, enabled = true) {
 }
 
 export function useConversations() {
-  return useFetch<{ conversations: Room[] }>(chatApi.getConversations);
+  return useFetch<{ conversations: ConversationSummary[] }>(
+    chatApi.getConversations,
+  );
 }
-

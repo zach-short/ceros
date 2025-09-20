@@ -57,3 +57,4 @@ export const chatApi = {
   getConversations: (): Promise<any> =>
     apiRequest('get', '/chat/conversations'),
 };
+
