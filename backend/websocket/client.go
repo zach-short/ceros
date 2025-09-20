@@ -1,12 +1,15 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -15,7 +18,7 @@ const (
 	writeWait      = 10 * time.Second
 	pongWait       = 60 * time.Second
 	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 512
+	maxMessageSize = 4096
 )
 
 var upgrader = websocket.Upgrader{
@@ -43,7 +46,7 @@ func NewClient(hub *Hub, conn *websocket.Conn, userID primitive.ObjectID) *Clien
 
 func (c *Client) ReadPump() {
 	defer func() {
-		c.hub.unregister <- c
+		c.hub.Unregister <- c
 		c.conn.Close()
 	}()
 
@@ -162,6 +165,18 @@ func (c *Client) handleSendMessage(wsMsg models.WSMessage) {
 		Timestamp: time.Now(),
 	}
 
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := collection.InsertOne(ctx, message)
+	if err != nil {
+		log.Printf("Failed to save message to database: %v", err)
+		return
+	}
+
+	log.Printf("Message saved: %s in room %s", content, roomID)
+
 	broadcastMsg := models.WSMessage{
 		Action:  "new_message",
 		Type:    message.Type,
@@ -174,4 +189,3 @@ func (c *Client) handleSendMessage(wsMsg models.WSMessage) {
 func UpgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
 	return upgrader.Upgrade(w, r, nil)
 }
-

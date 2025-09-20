@@ -12,8 +12,8 @@ import (
 type Hub struct {
 	clients    map[*Client]bool
 	rooms      map[string]map[*Client]bool
-	register   chan *Client
-	unregister chan *Client
+	Register   chan *Client
+	Unregister chan *Client
 	broadcast  chan []byte
 	mutex      sync.RWMutex
 }
@@ -30,8 +30,8 @@ func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
 		rooms:      make(map[string]map[*Client]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		Register:   make(chan *Client),
+		Unregister: make(chan *Client),
 		broadcast:  make(chan []byte, 256),
 	}
 }
@@ -39,13 +39,13 @@ func NewHub() *Hub {
 func (h *Hub) Run() {
 	for {
 		select {
-		case client := <-h.register:
+		case client := <-h.Register:
 			h.mutex.Lock()
 			h.clients[client] = true
 			h.mutex.Unlock()
 			log.Printf("Client connected: %s", client.userID.Hex())
 
-		case client := <-h.unregister:
+		case client := <-h.Unregister:
 			h.mutex.Lock()
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
@@ -144,4 +144,3 @@ func (h *Hub) GetClientsInRoom(roomID string) []*Client {
 	}
 	return clients
 }
-

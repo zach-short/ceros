@@ -74,4 +74,17 @@ func SetupRoutes(r *gin.Engine) {
 			}
 		}
 	}
+
+	ws := r.Group("/ws")
+	{
+		ws.GET("/chat", handlers.HandleWebSocket)
+	}
+
+	chat := r.Group("/chat")
+	chat.Use(middleware.AuthMiddleware())
+	{
+		chat.POST("/dm/start", handlers.StartDMConversation)
+		chat.GET("/dm/:recipientId/history", handlers.GetDMHistory)
+		chat.GET("/conversations", handlers.GetUserConversations)
+	}
 }

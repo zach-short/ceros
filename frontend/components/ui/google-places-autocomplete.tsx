@@ -44,7 +44,6 @@ export function GooglePlacesAutocomplete({
     setInputValue(value);
   }, [value]);
 
-  // Function to add MapPin icons to autocomplete items
   const addMapPinIcons = useCallback(() => {
     const pacItems = document.querySelectorAll(
       '.pac-item:not(.has-custom-icon)',
@@ -57,7 +56,6 @@ export function GooglePlacesAutocomplete({
     });
   }, []);
 
-  // Start observing when the input gains focus
   const startObserving = useCallback(() => {
     if (observerRef.current) {
       observerRef.current.observe(document.body, {
@@ -67,7 +65,6 @@ export function GooglePlacesAutocomplete({
     }
   }, []);
 
-  // Stop observing when input loses focus
   const stopObserving = useCallback(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
@@ -287,7 +284,12 @@ export function GooglePlacesAutocomplete({
 
           addressComponents?.forEach((component) => {
             const types = component.types;
-            console.log('Processing component:', component.long_name, 'types:', types);
+            console.log(
+              'Processing component:',
+              component.long_name,
+              'types:',
+              types,
+            );
 
             if (types.includes('street_number')) {
               address.street = component.long_name;
@@ -319,7 +321,6 @@ export function GooglePlacesAutocomplete({
         observerRef.current = new MutationObserver((mutations) => {
           addMapPinIcons();
 
-          // Check if PAC container is clicked (user selecting an option)
           mutations.forEach((mutation) => {
             if (mutation.type === 'childList') {
               mutation.addedNodes.forEach((node) => {
@@ -331,24 +332,28 @@ export function GooglePlacesAutocomplete({
                       const pacText = element.textContent || '';
                       console.log('PAC item text:', pacText);
 
-                      // Set a flag to track this click
                       element.setAttribute('data-clicked', 'true');
 
-                      // Multiple attempts to get the place data
                       const attemptPlace = (attempt = 1) => {
                         setTimeout(() => {
                           const place = autocompleteRef.current?.getPlace();
                           console.log(`PAC click attempt ${attempt}:`, place);
 
-                          if (place && place.address_components && place.address_components.length > 0) {
-                            console.log(`PAC click success on attempt ${attempt}`);
+                          if (
+                            place &&
+                            place.address_components &&
+                            place.address_components.length > 0
+                          ) {
+                            console.log(
+                              `PAC click success on attempt ${attempt}`,
+                            );
                             processPlace(place);
                           } else if (attempt < 6) {
                             attemptPlace(attempt + 1);
                           } else {
                             console.log('PAC click failed after all attempts');
                           }
-                        }, attempt * 50); // 50ms, 100ms, 150ms, etc.
+                        }, attempt * 50);
                       };
 
                       attemptPlace();
@@ -379,7 +384,6 @@ export function GooglePlacesAutocomplete({
             },
           );
 
-          // Wait for autocomplete to be fully initialized
           setTimeout(() => {
             if (inputRef.current && autocompleteRef.current) {
               console.log('Google Places Autocomplete fully initialized');
@@ -389,25 +393,28 @@ export function GooglePlacesAutocomplete({
                 setTimeout(stopObserving, 200);
               });
 
-              // Add additional event listeners for place selection
               inputRef.current.addEventListener('input', () => {
-                // Clear previous selection when user types
                 setError(null);
               });
 
-              // Add a more robust place_changed listener
               autocompleteRef.current.addListener('place_changed', () => {
                 console.log('place_changed event triggered!');
 
-                // Multiple retry attempts with different delays
                 const attemptToGetPlace = (attempt = 1) => {
-                  const delay = attempt * 25; // 25ms, 50ms, 75ms, 100ms
+                  const delay = attempt * 25;
 
                   setTimeout(() => {
                     const place = autocompleteRef.current?.getPlace();
-                    console.log(`Attempt ${attempt} - Retrieved place object:`, place);
+                    console.log(
+                      `Attempt ${attempt} - Retrieved place object:`,
+                      place,
+                    );
 
-                    if (place && place.address_components && place.address_components.length > 0) {
+                    if (
+                      place &&
+                      place.address_components &&
+                      place.address_components.length > 0
+                    ) {
                       console.log(`Success on attempt ${attempt}`);
                       processPlace(place);
                     } else if (attempt < 4) {
@@ -415,7 +422,9 @@ export function GooglePlacesAutocomplete({
                       attemptToGetPlace(attempt + 1);
                     } else {
                       console.log('All attempts failed');
-                      setError('Please select a valid address from the dropdown');
+                      setError(
+                        'Please select a valid address from the dropdown',
+                      );
                     }
                   }, delay);
                 };
@@ -423,7 +432,6 @@ export function GooglePlacesAutocomplete({
                 attemptToGetPlace();
               });
 
-              // Also add a direct listener to the autocomplete input for immediate feedback
               inputRef.current.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -438,7 +446,7 @@ export function GooglePlacesAutocomplete({
                 }
               });
             }
-          }, 100); // Give autocomplete time to fully initialize
+          }, 100);
         }
       } catch (err) {
         console.error('Error loading Google Maps:', err);
@@ -479,7 +487,7 @@ export function GooglePlacesAutocomplete({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Check if a place was selected via enter key
+
       setTimeout(() => {
         const place = autocompleteRef.current?.getPlace();
         if (place && place.address_components) {
