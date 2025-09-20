@@ -23,18 +23,21 @@ export function Profile() {
   const { data: user, loading: userLoading, refetch } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<UpdateProfileRequest>({});
+  const [addressInput, setAddressInput] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null,
   );
   const [checkingUsername, setCheckingUsername] = useState(false);
 
   const { mutate: updateProfile, loading: updateLoading } = useUpdateProfile({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Profile update successful:', data);
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       refetch();
     },
     onError: (error) => {
+      console.error('Profile update failed:', error);
       toast.error(error.message || 'Failed to update profile');
     },
   });
@@ -70,6 +73,7 @@ export function Profile() {
   }
 
   const handleEdit = () => {
+    console.log('Current user data:', user);
     setFormData({
       name: user.name || '',
       givenName: user.givenName || '',
@@ -78,12 +82,18 @@ export function Profile() {
       phoneNumber: user.phoneNumber || '',
       address: user.address || {},
     });
+    setAddressInput(
+      user.address?.street
+        ? `${user.address.street}${user.address.city ? `, ${user.address.city}` : ''}${user.address.state ? `, ${user.address.state}` : ''}${user.address.zip ? ` ${user.address.zip}` : ''}`
+        : ''
+    );
     setIsEditing(true);
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({});
+    setAddressInput('');
     setUsernameAvailable(null);
   };
 
@@ -93,6 +103,9 @@ export function Profile() {
       return;
     }
 
+    console.log('Submitting form data:', formData);
+    console.log('Form data address:', formData.address);
+    console.log('Address input state:', addressInput);
     updateProfile(formData);
   };
 
@@ -202,7 +215,7 @@ export function Profile() {
         )}
       </div>
 
-      <div className='space-y-6'>
+      <div className='space-y-6 mb-80'>
         <Card>
           <CardHeader>
             <CardTitle>Profile Picture</CardTitle>
@@ -308,13 +321,11 @@ export function Profile() {
               <GooglePlacesAutocomplete
                 label='Address'
                 placeholder='Enter your address...'
-                value={
-                  formData.address?.street
-                    ? `${formData.address.street}${formData.address.city ? `, ${formData.address.city}` : ''}${formData.address.state ? `, ${formData.address.state}` : ''}${formData.address.zip ? ` ${formData.address.zip}` : ''}`
-                    : ''
-                }
+                value={addressInput}
+                onValueChange={setAddressInput}
                 onAddressSelect={(address) => {
-                  setFormData({
+                  console.log('Address selected:', address);
+                  const updatedFormData = {
                     ...formData,
                     address: {
                       street: address.street || '',
@@ -322,7 +333,9 @@ export function Profile() {
                       state: address.state || '',
                       zip: address.zip || '',
                     },
-                  });
+                  };
+                  console.log('Updated form data:', updatedFormData);
+                  setFormData(updatedFormData);
                 }}
               />
             ) : (
