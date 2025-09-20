@@ -87,11 +87,11 @@ export default function Friends() {
       key={tab}
       variant={activeTab === tab ? 'default' : 'ghost'}
       onClick={() => setActiveTab(tab)}
-      className={`flex-1 ${activeTab === tab ? '' : 'text-muted-foreground'}`}
+      className={`flex-1 text-xs ${activeTab === tab ? '' : 'text-muted-foreground'}`}
     >
       {label}
       {count !== undefined && count > 0 && (
-        <span className='ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs'>
+        <span className='ml-[.5] rounded-full bg-primary/20 px-1  text-xs'>
           {count}
         </span>
       )}
@@ -151,11 +151,13 @@ export default function Friends() {
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
-                  {(friendship.user?.givenName || friendship.user?.familyName) && (
+                  {(friendship.user?.givenName ||
+                    friendship.user?.familyName) && (
                     <p className='text-sm text-muted-foreground'>
                       {friendship.user?.givenName && friendship.user?.familyName
                         ? `${friendship.user.givenName} ${friendship.user.familyName}`
-                        : friendship.user?.givenName || friendship.user?.familyName}
+                        : friendship.user?.givenName ||
+                          friendship.user?.familyName}
                     </p>
                   )}
                   <p className='text-xs text-muted-foreground'>
@@ -194,7 +196,7 @@ export default function Friends() {
     >
       {label}
       {count !== undefined && count > 0 && (
-        <span className='ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs'>
+        <span className='ml-[.5] rounded-full bg-primary/20 px-1  text-xs'>
           {count}
         </span>
       )}
@@ -250,11 +252,13 @@ export default function Friends() {
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
-                  {(friendship.user?.givenName || friendship.user?.familyName) && (
+                  {(friendship.user?.givenName ||
+                    friendship.user?.familyName) && (
                     <p className='text-sm text-muted-foreground'>
                       {friendship.user?.givenName && friendship.user?.familyName
                         ? `${friendship.user.givenName} ${friendship.user.familyName}`
-                        : friendship.user?.givenName || friendship.user?.familyName}
+                        : friendship.user?.givenName ||
+                          friendship.user?.familyName}
                     </p>
                   )}
                   <p className='text-xs text-muted-foreground'>
@@ -333,11 +337,13 @@ export default function Friends() {
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
-                  {(friendship.user?.givenName || friendship.user?.familyName) && (
+                  {(friendship.user?.givenName ||
+                    friendship.user?.familyName) && (
                     <p className='text-sm text-muted-foreground'>
                       {friendship.user?.givenName && friendship.user?.familyName
                         ? `${friendship.user.givenName} ${friendship.user.familyName}`
-                        : friendship.user?.givenName || friendship.user?.familyName}
+                        : friendship.user?.givenName ||
+                          friendship.user?.familyName}
                     </p>
                   )}
                   <p className='text-xs text-muted-foreground'>
