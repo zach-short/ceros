@@ -34,8 +34,17 @@ export interface GetDMHistoryResponse {
   messages: Message[];
 }
 
+export interface ConversationSummary {
+  roomId: string;
+  type: 'dm' | 'group';
+  participants: string[];
+  lastMessage?: Message;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
 export interface GetConversationsResponse {
-  conversations: Room[];
+  conversations: ConversationSummary[];
 }
 
 export const chatApi = {

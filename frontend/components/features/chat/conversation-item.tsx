@@ -1,0 +1,119 @@
+'use client';
+
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useFetch } from '@/hooks/use-fetch';
+import { usersApi, PublicProfileUser } from '@/lib/api/users';
+import { ConversationSummary } from '@/lib/api/chat';
+
+interface ConversationItemProps {
+  conversation: ConversationSummary;
+}
+
+export function ConversationItem({ conversation }: ConversationItemProps) {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const otherParticipantId = conversation.participants.find(
+    (id) => id !== session?.user?.id,
+  );
+
+  const { data: otherUser } = useFetch<PublicProfileUser>(
+    usersApi.getPublicProfile,
+    {
+      resourceParams: [otherParticipantId],
+      dependencies: [otherParticipantId],
+      enabled: !!otherParticipantId && conversation.type === 'dm',
+    },
+  );
+
+  const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } else if (diffInHours < 24 * 7) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handleClick = () => {
+    if (conversation.type === 'dm' && otherParticipantId) {
+      router.push(`/chat/${otherParticipantId}`);
+    }
+  };
+
+  const getDisplayName = () => {
+    if (conversation.type === 'group') {
+      return 'Group Chat';
+    }
+
+    if (otherUser) {
+      return (
+        otherUser.name ||
+        `${otherUser.givenName || ''} ${otherUser.familyName || ''}`.trim() ||
+        'Unknown User'
+      );
+    }
+
+    return 'Loading...';
+  };
+
+  const getLastMessagePreview = () => {
+    if (!conversation.lastMessage) return 'No messages yet';
+
+    const isOwn = conversation.lastMessage.senderId === session?.user?.id;
+    const prefix = isOwn ? 'You: ' : '';
+    const content = conversation.lastMessage.content;
+
+    if (content.length > 50) {
+      return prefix + content.substring(0, 50) + '...';
+    }
+
+    return prefix + content;
+  };
+
+  return (
+    <div onClick={handleClick} className='p-4 cursor-pointer transition-colors'>
+      <div className='flex items-center space-x-3'>
+        <div className='flex-shrink-0'>
+          <div className='w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold'>
+            {getDisplayName().charAt(0).toUpperCase()}
+          </div>
+        </div>
+
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-center justify-between'>
+            <h3 className='text-sm font-medium 00 truncate'>
+              {getDisplayName()}
+            </h3>
+            <span className='text-xs text-gray-500'>
+              {conversation.lastMessage &&
+                formatTime(conversation.lastMessageAt)}
+            </span>
+          </div>
+
+          <p className='text-sm text-gray-500 truncate mt-1'>
+            {getLastMessagePreview()}
+          </p>
+        </div>
+
+        {conversation.unreadCount > 0 && (
+          <div className='flex-shrink-0'>
+            <span className='inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-500 rounded-full'>
+              {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

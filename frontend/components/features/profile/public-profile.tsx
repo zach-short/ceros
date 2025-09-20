@@ -10,7 +10,6 @@ import {
   User,
   Users,
   UserPlus,
-  UserCheck,
   Clock,
   UserX,
   EyeOff,
@@ -18,7 +17,7 @@ import {
   PinIcon,
   PhoneIcon,
   MailIcon,
-  MessageCircleIcon,
+  MessageSquare,
 } from 'lucide-react';
 import { usePublicProfile } from '@/hooks/api/use-users';
 import { useSession } from 'next-auth/react';
@@ -102,7 +101,7 @@ export function PublicProfile({ userId }: PublicProfileProps) {
     switch (status.status) {
       case 'accepted':
         return {
-          icon: MessageCircleIcon,
+          icon: MessageSquare,
           text: 'Message',
           color: 'bg-blue-600',
           disabled: false,
