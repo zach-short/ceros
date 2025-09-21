@@ -5,6 +5,7 @@ import { Label } from "@radix-ui/react-label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AddMemberInput } from "./add-member-input"
 import { Button } from "@/components/ui/button"
+import { AddObserverInput } from "./add-observer-input"
 
 
 export default function NewCommittee() {
@@ -25,12 +26,12 @@ export default function NewCommittee() {
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium mb-1">Assign Chair</label>
-            <Input className="w-full" />
-          </div>
+            <Input className="w-full" />          
+        </div>
 
-          <div>
+        <div>
             <label className="block text-sm font-medium mb-1">Enter Observers</label>
-            <Input className="w-full" />
+            <AddObserverInput/>
           </div>
         </div>
 

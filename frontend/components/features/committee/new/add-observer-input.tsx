@@ -19,7 +19,7 @@ type AddMemberInputProps = {
   onAddMember?: (user: User) => void;
 };
 
-export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
+export function AddObserverInput({ onAddMember }: AddMemberInputProps) {
   const [value, setValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -48,10 +48,10 @@ export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
   }, [value]);
 
   const fuse = useMemo(() => {
-    return new Fuse(allFriendUsers, {
-      keys: ["name", "givenName", "familyName", "email"],
-      threshold: 0.3, // tweak for fuzziness
-    });
+  return new Fuse(allFriendUsers, {
+    keys: ["name", "givenName", "familyName", "email"],
+    threshold: 0.3, // tweak for fuzziness
+  });
   }, [allFriendUsers]);
 
   const filteredUsers: User[] = useMemo(() => {
@@ -76,7 +76,7 @@ export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
   return (
     <div className="relative max-w-80">
       <Input
-        placeholder="Find Members (friends)"
+        placeholder="Find Observers (friends)"
         value={value}
         onFocus={() => setShowSuggestions(true)}
         onBlur={() => {
