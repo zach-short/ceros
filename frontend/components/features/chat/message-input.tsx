@@ -3,6 +3,8 @@ import { useState } from 'react';
 interface MessageInputProps {
   isConnected: boolean;
   onSendMessage: (content: string) => void;
+  onProposeMotion?: () => void;
+  showMotionButton?: boolean;
 }
 
 const MAX_MESSAGE_LENGTH = 4000; // DO NOT TRY MAKING THIS THE EXACT SAME AS BACKEND LIMIT
@@ -10,6 +12,8 @@ const MAX_MESSAGE_LENGTH = 4000; // DO NOT TRY MAKING THIS THE EXACT SAME AS BAC
 export function MessageInput({
   isConnected,
   onSendMessage,
+  onProposeMotion,
+  showMotionButton,
 }: MessageInputProps) {
   const [newMessage, setNewMessage] = useState('');
 
@@ -44,6 +48,16 @@ export function MessageInput({
           }`}
           disabled={!isConnected}
         />
+        {showMotionButton && onProposeMotion && (
+          <button
+            type='button'
+            onClick={onProposeMotion}
+            disabled={!isConnected}
+            className='px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm'
+          >
+            Motion
+          </button>
+        )}
         <button
           type='submit'
           disabled={!newMessage.trim() || !isConnected || isMessageTooLong}

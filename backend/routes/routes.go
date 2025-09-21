@@ -87,4 +87,20 @@ func SetupRoutes(r *gin.Engine) {
 		chat.GET("/dm/:recipientId/history", handlers.GetDMHistory)
 		chat.GET("/conversations", handlers.GetUserConversations)
 	}
+
+	committees := r.Group("/committees")
+	committees.Use(middleware.AuthMiddleware())
+	{
+		committee := committees.Group("/:id")
+		{
+			committee.POST("/chat/start", handlers.StartCommitteeChat)
+			committee.GET("/chat/history", handlers.GetCommitteeHistory)
+		}
+	}
+
+	messages := r.Group("/messages")
+	messages.Use(middleware.AuthMiddleware())
+	{
+		messages.GET("/:id/replies", handlers.GetMessageReplies)
+	}
 }

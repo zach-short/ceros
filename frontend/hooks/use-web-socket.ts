@@ -3,16 +3,20 @@ import { useSession } from 'next-auth/react';
 
 interface Message {
   id: string;
-  type: 'dm' | 'group' | 'motion' | 'system';
+  type: 'dm' | 'group' | 'motion' | 'system' | 'reply';
   senderId: string;
   content: string;
   roomId: string;
   timestamp: string;
+  parentMessageId?: string;
+  threadCount?: number;
+  motionId?: string;
+  voteId?: string;
 }
 
 interface WSMessage {
   action: string;
-  type: 'dm' | 'group' | 'motion' | 'system';
+  type: 'dm' | 'group' | 'motion' | 'system' | 'reply';
   payload: any;
 }
 
@@ -80,7 +84,7 @@ export function useWebSocket({
       try {
         const wsMessage: WSMessage = JSON.parse(event.data);
 
-        if (wsMessage.action === 'new_message') {
+        if (wsMessage.action === 'new_message' || wsMessage.action === 'new_reply') {
           onMessage?.(wsMessage.payload as Message);
         }
       } catch (error) {
@@ -100,7 +104,7 @@ export function useWebSocket({
   }, []);
 
   const sendMessage = useCallback(
-    (roomId: string, content: string, type: 'dm' | 'group' = 'dm') => {
+    (roomId: string, content: string, type: 'dm' | 'group' | 'motion' = 'group') => {
       if (ws.current?.readyState === WebSocket.OPEN) {
         const message: WSMessage = {
           action: 'send_message',
@@ -108,6 +112,78 @@ export function useWebSocket({
           payload: {
             roomId,
             content,
+          },
+        };
+        ws.current.send(JSON.stringify(message));
+      }
+    },
+    [],
+  );
+
+  const replyToMessage = useCallback(
+    (roomId: string, content: string, parentMessageId: string) => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        const message: WSMessage = {
+          action: 'reply_to_message',
+          type: 'reply',
+          payload: {
+            roomId,
+            content,
+            parentMessageId,
+          },
+        };
+        ws.current.send(JSON.stringify(message));
+      }
+    },
+    [],
+  );
+
+  const proposeMotion = useCallback(
+    (roomId: string, title: string, description: string, committeeId: string) => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        const message: WSMessage = {
+          action: 'propose_motion',
+          type: 'motion',
+          payload: {
+            roomId,
+            title,
+            description,
+            committeeId,
+          },
+        };
+        ws.current.send(JSON.stringify(message));
+      }
+    },
+    [],
+  );
+
+  const secondMotion = useCallback(
+    (roomId: string, motionId: string) => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        const message: WSMessage = {
+          action: 'second_motion',
+          type: 'motion',
+          payload: {
+            roomId,
+            motionId,
+          },
+        };
+        ws.current.send(JSON.stringify(message));
+      }
+    },
+    [],
+  );
+
+  const voteOnMotion = useCallback(
+    (roomId: string, motionId: string, vote: 'aye' | 'nay' | 'abstain') => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        const message: WSMessage = {
+          action: 'vote_motion',
+          type: 'motion',
+          payload: {
+            roomId,
+            motionId,
+            vote,
           },
         };
         ws.current.send(JSON.stringify(message));
@@ -156,9 +232,13 @@ export function useWebSocket({
   }, [mounted, session?.apiToken]);
 
   return {
-    isConnected: mounted ? isConnected : false, // prevent hydration mismatch
+    isConnected: mounted ? isConnected : false,
     connectionError,
     sendMessage,
+    replyToMessage,
+    proposeMotion,
+    secondMotion,
+    voteOnMotion,
     joinRoom,
     leaveRoom,
     connect,

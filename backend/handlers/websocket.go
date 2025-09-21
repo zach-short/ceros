@@ -139,12 +139,12 @@ func GetDMHistory(c *gin.Context) {
 }
 
 type ConversationSummary struct {
-	RoomID        string             `json:"roomId"`
-	Type          models.RoomType    `json:"type"`
+	RoomID        string               `json:"roomId"`
+	Type          models.RoomType      `json:"type"`
 	Participants  []primitive.ObjectID `json:"participants"`
-	LastMessage   *models.Message    `json:"lastMessage,omitempty"`
-	LastMessageAt time.Time          `json:"lastMessageAt"`
-	UnreadCount   int                `json:"unreadCount"`
+	LastMessage   *models.Message      `json:"lastMessage,omitempty"`
+	LastMessageAt time.Time            `json:"lastMessageAt"`
+	UnreadCount   int                  `json:"unreadCount"`
 }
 
 func GetUserConversations(c *gin.Context) {
@@ -198,10 +198,10 @@ func GetUserConversations(c *gin.Context) {
 	var conversations []ConversationSummary
 	for cursor.Next(ctx) {
 		var result struct {
-			ID            string          `bson:"_id"`
-			LastMessage   models.Message  `bson:"lastMessage"`
-			LastMessageAt time.Time       `bson:"lastMessageAt"`
-			MessageCount  int             `bson:"messageCount"`
+			ID            string         `bson:"_id"`
+			LastMessage   models.Message `bson:"lastMessage"`
+			LastMessageAt time.Time      `bson:"lastMessageAt"`
+			MessageCount  int            `bson:"messageCount"`
 		}
 
 		if err := cursor.Decode(&result); err != nil {
@@ -226,6 +226,9 @@ func GetUserConversations(c *gin.Context) {
 		} else if strings.HasPrefix(result.ID, "group_") {
 			roomType = models.RoomTypeGroup
 			participants = append(participants, userID)
+		} else if strings.HasPrefix(result.ID, "committee_") {
+			roomType = models.RoomTypeCommittee
+			participants = append(participants, userID)
 		}
 
 		conversation := ConversationSummary{
@@ -234,7 +237,7 @@ func GetUserConversations(c *gin.Context) {
 			Participants:  participants,
 			LastMessage:   &result.LastMessage,
 			LastMessageAt: result.LastMessageAt,
-			UnreadCount:   0, // TODO: Implement unread tracking
+			UnreadCount:   0,
 		}
 
 		conversations = append(conversations, conversation)
@@ -248,5 +251,117 @@ func GetUserConversations(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"conversations": conversations,
+	})
+}
+
+func StartCommitteeChat(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	committeeIDStr := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid committee ID"})
+		return
+	}
+
+	roomID := models.CreateCommitteeRoomID(committeeID)
+
+	room := models.Room{
+		ID:          roomID,
+		Type:        models.RoomTypeCommittee,
+		OwnerID:     userID,
+		CommitteeID: &committeeID,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"roomId": roomID,
+		"room":   room,
+	})
+}
+
+func GetCommitteeHistory(c *gin.Context) {
+	/* userIDStr := c.MustGet("userID").(string) */
+	/* userID, err := primitive.ObjectIDFromHex(userIDStr) */
+	/* if err != nil { */
+	/* 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"}) */
+	/* 	return */
+	/* } */
+
+	committeeID := c.Param("id")
+	committeeOID, err := primitive.ObjectIDFromHex(committeeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid committee ID"})
+		return
+	}
+
+	roomID := models.CreateCommitteeRoomID(committeeOID)
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"roomId": roomID}
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(200)
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		log.Printf("Error fetching committee messages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch messages"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var messages []models.Message
+	if err = cursor.All(ctx, &messages); err != nil {
+		log.Printf("Error decoding committee messages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode messages"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"roomId":   roomID,
+		"messages": messages,
+	})
+}
+
+func GetMessageReplies(c *gin.Context) {
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"parentMessageId": messageOID}
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		log.Printf("Error fetching replies: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch replies"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var replies []models.Message
+	if err = cursor.All(ctx, &replies); err != nil {
+		log.Printf("Error decoding replies: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode replies"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"replies": replies,
 	})
 }
