@@ -9,12 +9,13 @@ import {
   useEffect,
   useCallback,
 } from 'react';
-import { friendsApi, User } from '@/lib/api/friends';
+import { friendsApi, Friendship, User } from '@/lib/api/friends';
 import { toast } from 'sonner';
+import { useFriends } from '@/hooks/api/use-friends';
 
 export function AddMemberInput() {
   const [value, setValue] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
+  const [friends, setFriends] = useState<Friendship[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -26,10 +27,8 @@ export function AddMemberInput() {
 
     setIsSearching(true);
     try {
-      const response = await friendsApi.searchUsers(searchTerm);
-      if (response.success) {
-        setUsers(response.data.users || []);
-      }
+      const response = await useFriends();
+      setFriends(response.data || []);
     } catch (error) {
       console.error('Error searching users:', error);
       setUsers([]);

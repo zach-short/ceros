@@ -2,8 +2,10 @@
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["node", "google.maps"],
     "allowJs": true,
     "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types"],
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,

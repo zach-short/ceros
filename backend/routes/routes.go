@@ -26,6 +26,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			me.GET("", handlers.GetMe)
 			me.PATCH("", handlers.UpdateProfile)
+			me.PATCH("/settings", handlers.UpdateUserSettings)
 
 			friends := me.Group("/friends")
 			{
@@ -49,7 +50,7 @@ func SetupRoutes(r *gin.Engine) {
 			{
 				notifications.GET("", handlers.GetNotifications)
 				notifications.PATCH("/mark-all-read", handlers.MarkAllNotificationsRead)
-				notifications.POST("", handlers.CreateNotification) // Admin/system use
+				notifications.POST("", handlers.CreateNotification)
 
 				notification := notifications.Group("/:notificationId")
 				{
@@ -72,5 +73,34 @@ func SetupRoutes(r *gin.Engine) {
 				}
 			}
 		}
+	}
+
+	ws := r.Group("/ws")
+	{
+		ws.GET("/chat", handlers.HandleWebSocket)
+	}
+
+	chat := r.Group("/chat")
+	chat.Use(middleware.AuthMiddleware())
+	{
+		chat.POST("/dm/start", handlers.StartDMConversation)
+		chat.GET("/dm/:recipientId/history", handlers.GetDMHistory)
+		chat.GET("/conversations", handlers.GetUserConversations)
+	}
+
+	committees := r.Group("/committees")
+	committees.Use(middleware.AuthMiddleware())
+	{
+		committee := committees.Group("/:id")
+		{
+			committee.POST("/chat/start", handlers.StartCommitteeChat)
+			committee.GET("/chat/history", handlers.GetCommitteeHistory)
+		}
+	}
+
+	messages := r.Group("/messages")
+	messages.Use(middleware.AuthMiddleware())
+	{
+		messages.GET("/:id/replies", handlers.GetMessageReplies)
 	}
 }

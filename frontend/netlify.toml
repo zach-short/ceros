@@ -1,13 +1,7 @@
 [build]
-    base = "frontend"
     command = "rm -rf node_modules .next && bun install && bun run build"
     publish = ".next"
 
 [[plugins]]
     package = "@netlify/plugin-nextjs"
-
-[[redirects]]
-    from = "/*"
-    to = "/index.html"
-    status = 200
 

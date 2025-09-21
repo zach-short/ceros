@@ -14,13 +14,16 @@ import {
 } from '@/lib/api/notifications';
 import { Bell } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import { DefaultLoader } from '@/components/shared/layout/loader';
 
 export default function Notifications() {
   const session = useSession();
   const { data, error, isLoading } = useNotifications();
   const { markAllRead } = useNotificationActions();
   const [systemCollapsed, setSystemCollapsed] = useState(false);
-  const [committeeCollapsed, setCommitteeCollapsed] = useState<Record<string, boolean>>({});
+  const [committeeCollapsed, setCommitteeCollapsed] = useState<
+    Record<string, boolean>
+  >({});
 
   const { systemNotifications, committeeNotifications } = useMemo(() => {
     if (!data?.notifications) {
@@ -72,7 +75,7 @@ export default function Notifications() {
             <h1 className='text-2xl font-bold'>Notifications</h1>
           </div>
           <div className='text-center py-12'>
-            <p className='text-muted-foreground'>Loading notifications...</p>
+            <DefaultLoader />
           </div>
         </div>
       </AuthGate>

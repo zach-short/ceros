@@ -14,11 +14,12 @@ import {
   useRemoveFriend,
 } from '@/hooks/api/use-friends';
 import { Friendship } from '@/lib/api/friends';
-import { UserCheck, UserX, Clock } from 'lucide-react';
+import { UserCheck, UserX, Clock, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type TabType = 'active' | 'pending' | 'add';
 type PendingTabType = 'incoming' | 'outgoing';
@@ -26,6 +27,7 @@ type PendingTabType = 'incoming' | 'outgoing';
 export default function Friends() {
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [pendingTab, setPendingTab] = useState<PendingTabType>('incoming');
+  const router = useRouter();
 
   const {
     data: friendsData,
@@ -87,11 +89,11 @@ export default function Friends() {
       key={tab}
       variant={activeTab === tab ? 'default' : 'ghost'}
       onClick={() => setActiveTab(tab)}
-      className={`flex-1 ${activeTab === tab ? '' : 'text-muted-foreground'}`}
+      className={`flex-1 text-xs ${activeTab === tab ? '' : 'text-muted-foreground'}`}
     >
       {label}
       {count !== undefined && count > 0 && (
-        <span className='ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs'>
+        <span className='ml-[.5] rounded-full bg-primary/20 px-1  text-xs'>
           {count}
         </span>
       )}
@@ -130,19 +132,36 @@ export default function Friends() {
                 className='flex items-center space-x-3'
               >
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage
-                    src={friendship.user?.picture}
-                    alt={friendship.user?.name || 'Friend'}
-                  />
-                  <AvatarFallback>
-                    {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                      'FR'}
-                  </AvatarFallback>
+                  {friendship.user?.picture ? (
+                    <>
+                      <AvatarImage
+                        src={friendship.user.picture}
+                        alt={friendship.user?.name || 'Friend'}
+                      />
+                      <AvatarFallback>
+                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
+                          'FR'}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback className='bg-muted'>
+                      <EyeOff className='h-4 w-4 text-muted-foreground' />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
+                  {(friendship.user?.givenName ||
+                    friendship.user?.familyName) && (
+                    <p className='text-sm text-muted-foreground'>
+                      {friendship.user?.givenName && friendship.user?.familyName
+                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
+                        : friendship.user?.givenName ||
+                          friendship.user?.familyName}
+                    </p>
+                  )}
                   <p className='text-xs text-muted-foreground'>
                     Friends since{' '}
                     {new Date(
@@ -151,13 +170,26 @@ export default function Friends() {
                   </p>
                 </div>
               </Link>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => removeFriend(friendship.id)}
-              >
-                Remove
-              </Button>
+
+              <div className={`flex flex-col gap-4`}>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className={`text-blue-600`}
+                  onClick={() => router.push(`/chat/${friendship.user?.id}`)}
+                >
+                  Message
+                </Button>
+
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className={`text-red-600`}
+                  onClick={() => removeFriend(friendship.id)}
+                >
+                  Remove
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -179,7 +211,7 @@ export default function Friends() {
     >
       {label}
       {count !== undefined && count > 0 && (
-        <span className='ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs'>
+        <span className='ml-[.5] rounded-full bg-primary/20 px-1  text-xs'>
           {count}
         </span>
       )}
@@ -214,19 +246,36 @@ export default function Friends() {
             <CardContent className='flex items-center justify-between p-4'>
               <div className='flex items-center space-x-3'>
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage
-                    src={friendship.user?.picture}
-                    alt={friendship.user?.name || 'User'}
-                  />
-                  <AvatarFallback>
-                    {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                      'U'}
-                  </AvatarFallback>
+                  {friendship.user?.picture ? (
+                    <>
+                      <AvatarImage
+                        src={friendship.user.picture}
+                        alt={friendship.user?.name || 'User'}
+                      />
+                      <AvatarFallback>
+                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
+                          'U'}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback className='bg-muted'>
+                      <EyeOff className='h-4 w-4 text-muted-foreground' />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
+                  {(friendship.user?.givenName ||
+                    friendship.user?.familyName) && (
+                    <p className='text-sm text-muted-foreground'>
+                      {friendship.user?.givenName && friendship.user?.familyName
+                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
+                        : friendship.user?.givenName ||
+                          friendship.user?.familyName}
+                    </p>
+                  )}
                   <p className='text-xs text-muted-foreground'>
                     Sent request{' '}
                     {new Date(friendship.requestedAt).toLocaleDateString()}
@@ -282,16 +331,36 @@ export default function Friends() {
             <CardContent className='flex items-center justify-between p-4'>
               <div className='flex items-center space-x-3'>
                 <Avatar className='h-10 w-10'>
-                  <AvatarImage
-                    src={friendship.user?.picture}
-                    alt={friendship.user?.name || 'User'}
-                  />
-                  <AvatarFallback />
+                  {friendship.user?.picture ? (
+                    <>
+                      <AvatarImage
+                        src={friendship.user.picture}
+                        alt={friendship.user?.name || 'User'}
+                      />
+                      <AvatarFallback>
+                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
+                          'U'}
+                      </AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback className='bg-muted'>
+                      <EyeOff className='h-4 w-4 text-muted-foreground' />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div>
                   <p className='font-medium'>
                     {friendship.user?.name || 'Unknown User'}
                   </p>
+                  {(friendship.user?.givenName ||
+                    friendship.user?.familyName) && (
+                    <p className='text-sm text-muted-foreground'>
+                      {friendship.user?.givenName && friendship.user?.familyName
+                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
+                        : friendship.user?.givenName ||
+                          friendship.user?.familyName}
+                    </p>
+                  )}
                   <p className='text-xs text-muted-foreground'>
                     Request sent{' '}
                     {new Date(friendship.requestedAt).toLocaleDateString()}

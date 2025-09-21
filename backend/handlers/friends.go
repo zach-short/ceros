@@ -140,7 +140,7 @@ func RemoveFriend(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Listing")
+	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 	var friend models.Friendship
 	err = friendCollection.FindOneAndDelete(ctx, bson.M{"_id": friendshipID}).Decode(&friend)
 
@@ -472,6 +472,29 @@ func GetFriendships(c *gin.Context) {
 			continue
 		}
 
+		settings := user.Settings
+		if settings == (models.UserSettings{}) {
+			settings = models.GetDefaultUserSettings()
+		}
+
+		userInfo := map[string]any{
+			"id":   user.ID.Hex(),
+			"name": user.Name,
+		}
+
+		if settings.Privacy.ShowPicture || true {
+			userInfo["picture"] = user.Picture
+		}
+		if settings.Privacy.ShowGivenName || true {
+			userInfo["givenName"] = user.GivenName
+		}
+		if settings.Privacy.ShowFamilyName || true {
+			userInfo["familyName"] = user.FamilyName
+		}
+		if settings.Privacy.ShowEmail {
+			userInfo["email"] = user.Email
+		}
+
 		enrichedFriendship := map[string]any{
 			"id":          friendship["_id"],
 			"requesterId": friendship["requesterId"],
@@ -479,12 +502,7 @@ func GetFriendships(c *gin.Context) {
 			"status":      friendship["status"],
 			"requestedAt": friendship["requestedAt"],
 			"respondedAt": friendship["respondedAt"],
-			"user": map[string]any{
-				"id":      user.ID.Hex(),
-				"name":    user.Name,
-				"email":   user.Email,
-				"picture": user.Picture,
-			},
+			"user":        userInfo,
 		}
 
 		enrichedFriendships = append(enrichedFriendships, enrichedFriendship)
@@ -582,12 +600,31 @@ func SearchUsers(c *gin.Context) {
 
 	var usersWithStatus []map[string]any
 	for _, user := range users {
+		settings := user.Settings
+		if settings == (models.UserSettings{}) {
+			settings = models.GetDefaultUserSettings()
+		}
+
+		isFriend := false
+		if friendshipStatus, exists := statusMap[user.ID]; exists {
+			status := friendshipStatus["status"].(string)
+			isFriend = status == "accepted"
+		}
+
 		userMap := map[string]any{
 			"id":            user.ID.Hex(),
 			"name":          user.Name,
-			"email":         user.Email,
-			"picture":       user.Picture,
 			"isCurrentUser": user.ID == currentUserID,
+		}
+
+		if settings.Privacy.ShowPicture || isFriend {
+			userMap["picture"] = user.Picture
+		}
+		if settings.Privacy.ShowGivenName || isFriend {
+			userMap["givenName"] = user.GivenName
+		}
+		if settings.Privacy.ShowFamilyName || isFriend {
+			userMap["familyName"] = user.FamilyName
 		}
 
 		if friendshipStatus, exists := statusMap[user.ID]; exists {
