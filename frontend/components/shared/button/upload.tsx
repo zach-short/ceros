@@ -22,7 +22,7 @@ export function UploadImageButton({
           allowedContent: '',
         }}
       />
-      <PencilIcon className='absolute text-white top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none h-8 w-8 z-10' />
+      <PencilIcon className='absolute text-white bottom-3 left-1/3 transform   pointer-events-none h-4 w-4 sm:h-6 sm:w-6 z-10' />
     </div>
   );
 }

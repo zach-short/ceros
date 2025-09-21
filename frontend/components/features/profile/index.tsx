@@ -85,7 +85,7 @@ export function Profile() {
     setAddressInput(
       user.address?.street
         ? `${user.address.street}${user.address.city ? `, ${user.address.city}` : ''}${user.address.state ? `, ${user.address.state}` : ''}${user.address.zip ? ` ${user.address.zip}` : ''}`
-        : ''
+        : '',
     );
     setIsEditing(true);
   };
@@ -221,9 +221,9 @@ export function Profile() {
             <CardTitle>Profile Picture</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='flex items-center space-x-6'>
+            <div className='flex items-center space-x-2'>
               <div className='relative'>
-                <Avatar className='h-24 w-24'>
+                <Avatar className='sm:h-16 sm:w-16 h-8 w-8'>
                   <AvatarImage
                     src={formData?.picture || user.picture}
                     alt={user.name || 'Profile'}
@@ -249,10 +249,10 @@ export function Profile() {
                 )}
               </div>
               <div>
-                <h3 className='text-lg font-semibold'>
+                <h3 className='text-sm sm:text-lg font-semibold'>
                   {user.name || 'Unknown User'}
                 </h3>
-                <p className='text-sm text-muted-foreground'>{user.email}</p>
+                <p className='text-xs text-muted-foreground'>{user.email}</p>
               </div>
             </div>
           </CardContent>
