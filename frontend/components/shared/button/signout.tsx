@@ -5,7 +5,7 @@ export function SignoutButton({ className }: { className?: string }) {
   return (
     <Button
       onClick={() => signOut({ callbackUrl: '/' })}
-      className={className}
+      className={`w-full  mx-auto ${className}`}
       variant='outline'
     >
       Sign out

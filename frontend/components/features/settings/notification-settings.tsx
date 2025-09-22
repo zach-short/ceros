@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Bell } from 'lucide-react';
-import { UserSettings, NotificationSettings as NotificationSettingsType } from '@/lib/api/users';
+import {
+  UserSettings,
+  NotificationSettings as NotificationSettingsType,
+} from '@/lib/api/users';
 
 interface NotificationSettingsProps {
   settings: UserSettings;
@@ -19,7 +22,13 @@ interface NotificationSettingProps {
   onToggle: (checked: boolean) => void;
 }
 
-function NotificationSetting({ settingKey, label, description, isChecked, onToggle }: NotificationSettingProps) {
+function NotificationSetting({
+  settingKey,
+  label,
+  description,
+  isChecked,
+  onToggle,
+}: NotificationSettingProps) {
   return (
     <div className='flex items-center justify-between space-x-2 p-4 border rounded-lg'>
       <div className='space-y-1 flex-1'>
@@ -33,16 +42,15 @@ function NotificationSetting({ settingKey, label, description, isChecked, onTogg
         </div>
         <p className='text-sm text-muted-foreground'>{description}</p>
       </div>
-      <Switch
-        id={settingKey}
-        checked={isChecked}
-        onCheckedChange={onToggle}
-      />
+      <Switch id={settingKey} checked={isChecked} onCheckedChange={onToggle} />
     </div>
   );
 }
 
-export function NotificationSettings({ settings, onSettingChange }: NotificationSettingsProps) {
+export function NotificationSettings({
+  settings,
+  onSettingChange,
+}: NotificationSettingsProps) {
   return (
     <Card>
       <CardHeader>
@@ -56,41 +64,43 @@ export function NotificationSettings({ settings, onSettingChange }: Notification
       </CardHeader>
       <CardContent className='space-y-4'>
         <NotificationSetting
-          settingKey='emailNotifications'
-          label='Email Notifications'
-          description='Receive email notifications for important activities'
-          isChecked={settings.notifications.emailNotifications}
-          onToggle={(checked) => onSettingChange('notifications.emailNotifications', checked)}
-        />
-        <NotificationSetting
           settingKey='committeeInvitations'
           label='Committee Invitations'
           description='Get notified when you receive committee invitations'
           isChecked={settings.notifications.committeeInvitations}
-          onToggle={(checked) => onSettingChange('notifications.committeeInvitations', checked)}
+          onToggle={(checked) =>
+            onSettingChange('notifications.committeeInvitations', checked)
+          }
         />
         <NotificationSetting
           settingKey='motionNotifications'
           label='Motion Updates'
           description='Receive notifications about new motions and discussions'
           isChecked={settings.notifications.motionNotifications}
-          onToggle={(checked) => onSettingChange('notifications.motionNotifications', checked)}
+          onToggle={(checked) =>
+            onSettingChange('notifications.motionNotifications', checked)
+          }
         />
         <NotificationSetting
           settingKey='voteNotifications'
           label='Voting Reminders'
           description='Get reminded when votes are open and closing'
           isChecked={settings.notifications.voteNotifications}
-          onToggle={(checked) => onSettingChange('notifications.voteNotifications', checked)}
+          onToggle={(checked) =>
+            onSettingChange('notifications.voteNotifications', checked)
+          }
         />
         <NotificationSetting
           settingKey='friendRequestNotifications'
           label='Friend Requests'
           description='Receive notifications for new friend requests'
           isChecked={settings.notifications.friendRequestNotifications}
-          onToggle={(checked) => onSettingChange('notifications.friendRequestNotifications', checked)}
+          onToggle={(checked) =>
+            onSettingChange('notifications.friendRequestNotifications', checked)
+          }
         />
       </CardContent>
     </Card>
   );
 }
+

@@ -8,6 +8,8 @@ import { ChatHeader } from './chat-header';
 import { MessagesList } from './messages-list';
 import { MessageInput } from './message-input';
 import { Message } from './types';
+import { CenteredDiv } from '@/components/shared/layout/centered-div';
+import { DefaultLoader } from '@/components/shared/layout/loader';
 
 interface DMChatProps {
   recipientId: string;
@@ -152,7 +154,11 @@ export function DMChat({
   };
 
   if (!session) {
-    return <div className='text-center p-4'>Loading...</div>;
+    return (
+      <CenteredDiv>
+        <DefaultLoader />
+      </CenteredDiv>
+    );
   }
 
   if (startDMError) {

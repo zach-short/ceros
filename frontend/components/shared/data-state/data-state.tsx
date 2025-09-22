@@ -1,5 +1,7 @@
 import { ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
+import { CenteredDiv } from '../layout/centered-div';
+import { DefaultLoader } from '../layout/loader';
 
 type DataStateProps<T> = {
   data: T | undefined;
@@ -13,13 +15,6 @@ type DataStateProps<T> = {
   isEmpty?: (data: T) => boolean;
   validate?: (data: T) => { isValid: boolean; error?: Error };
 };
-
-const DefaultLoadingComponent = () => (
-  <div className='flex items-center justify-center p-8'>
-    <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
-    <span className='ml-2 text-muted-foreground'>Loading...</span>
-  </div>
-);
 
 const DefaultErrorComponent = ({
   error,
@@ -88,7 +83,11 @@ export function DataState<T>({
   error,
   isLoading,
   refetch,
-  LoadingComponent = DefaultLoadingComponent,
+  LoadingComponent = () => (
+    <CenteredDiv>
+      <DefaultLoader />
+    </CenteredDiv>
+  ),
   ErrorComponent = DefaultErrorComponent,
   EmptyComponent = DefaultEmptyComponent,
   children,
@@ -121,4 +120,3 @@ export function DataState<T>({
 
   return <>{children(data)}</>;
 }
-

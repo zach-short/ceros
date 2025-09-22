@@ -7,7 +7,7 @@ interface MessageInputProps {
   showMotionButton?: boolean;
 }
 
-const MAX_MESSAGE_LENGTH = 4000; // DO NOT TRY MAKING THIS THE EXACT SAME AS BACKEND LIMIT
+const MAX_MESSAGE_LENGTH = 4000;
 
 export function MessageInput({
   isConnected,

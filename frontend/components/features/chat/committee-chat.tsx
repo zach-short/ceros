@@ -13,6 +13,8 @@ import {
   useCommitteeChat,
   useCommitteeHistory,
 } from '@/hooks/api/use-committee-chat';
+import { CenteredDiv } from '@/components/shared/layout/centered-div';
+import { DefaultLoader } from '@/components/shared/layout/loader';
 
 export default function CommitteeChat() {
   const params = useParams();
@@ -175,7 +177,11 @@ export default function CommitteeChat() {
   };
 
   if (!session) {
-    return <div className='text-center p-4'>Loading...</div>;
+    return (
+      <CenteredDiv>
+        <DefaultLoader />
+      </CenteredDiv>
+    );
   }
 
   if (startChatError) {
@@ -191,11 +197,13 @@ export default function CommitteeChat() {
     <div className='flex h-[calc(100vh-4rem)] lg:h-screen'>
       <div className='flex flex-col flex-1 max-w-4xl mx-auto'>
         <ChatHeader
-          recipientName={`Committee `}
+          recipientName={`Committee`}
           recipientId={committeeId}
           isConnected={isConnected}
           isLoading={historyLoading || startingChat}
-          onToggleMotions={() => setShowMotionPanel(!showMotionPanel)}
+          onToggleMotions={() => {
+            window.location.href = `/committees/${committeeId}/motions`;
+          }}
           showMotionPanel={showMotionPanel}
         />
 

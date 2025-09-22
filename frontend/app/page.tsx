@@ -1,14 +1,5 @@
-import { UnifiedAuth } from '@/components/auth/unified-auth';
-import { ThemeToggle } from '@/components/shared/button/theme-toggle';
+import Landing from '@/components/features/landing';
 
 export default function LandingPage() {
-  return (
-    <div>
-      <div className={`absolute top-5 right-5`}>
-        <ThemeToggle />
-      </div>
-
-      <UnifiedAuth />
-    </div>
-  );
+  return <Landing />;
 }

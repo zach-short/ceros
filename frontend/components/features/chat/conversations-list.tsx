@@ -5,7 +5,13 @@ import { ConversationItem } from './conversation-item';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { ConversationSummary } from '@/lib/api/chat';
 
-export function ConversationsList() {
+interface ConversationsListProps {
+  searchQuery?: string;
+}
+
+export function ConversationsList({
+  searchQuery,
+}: ConversationsListProps = {}) {
   const { data: conversationsData, loading, error } = useConversations();
 
   if (loading) {
@@ -33,9 +39,7 @@ export function ConversationsList() {
     return (
       <div className='text-center py-12'>
         <div className='max-w-md mx-auto'>
-          <h3 className='text-lg font-medium text-gray-900 mb-2'>
-            No conversations yet
-          </h3>
+          <h3 className='text-lg font-medium mb-2'>No conversations yet</h3>
           <p className='text-gray-500'>
             Start a conversation by visiting a friend&apos;s profile and sending
             them a message.
@@ -47,11 +51,12 @@ export function ConversationsList() {
 
   return (
     <div className='rounded-lg border'>
-      <div className='divide-y divide-gray-200'>
+      <div className='gap-y-2'>
         {conversations.map((conversation: ConversationSummary) => (
           <ConversationItem
             key={conversation.roomId}
             conversation={conversation}
+            searchQuery={searchQuery}
           />
         ))}
       </div>

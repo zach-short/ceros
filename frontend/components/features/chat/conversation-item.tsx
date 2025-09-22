@@ -9,9 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface ConversationItemProps {
   conversation: ConversationSummary;
+  searchQuery?: string;
 }
 
-export function ConversationItem({ conversation }: ConversationItemProps) {
+export function ConversationItem({
+  conversation,
+  searchQuery,
+}: ConversationItemProps) {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -64,7 +68,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
       );
     }
 
-    return 'Loading...';
+    return '';
   };
 
   const getLastMessagePreview = () => {
@@ -80,6 +84,21 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
 
     return prefix + content;
   };
+
+  const matchesSearch = () => {
+    if (!searchQuery?.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    const displayName = getDisplayName().toLowerCase();
+    const messageContent =
+      conversation.lastMessage?.content?.toLowerCase() || '';
+
+    return displayName.includes(query) || messageContent.includes(query);
+  };
+
+  if (!matchesSearch()) {
+    return null;
+  }
 
   return (
     <div onClick={handleClick} className='p-4 cursor-pointer transition-colors'>
@@ -115,4 +134,3 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
     </div>
   );
 }
-
