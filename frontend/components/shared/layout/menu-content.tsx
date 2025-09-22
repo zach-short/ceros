@@ -2,29 +2,13 @@
 
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import {
-  MessagesSquareIcon,
-  User,
-  Users,
-  LayoutDashboard,
-  GavelIcon,
-  Bell,
-  FileText,
-  Vote,
-  History,
-  Settings,
-} from 'lucide-react';
+import { MessagesSquareIcon, User, Users, Bell, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SignoutButton } from '../button/signout';
 
 const menuItems = [
   { title: 'Messages', href: '/chat', icon: MessagesSquareIcon },
   { title: 'Notifications', href: '/notifications', icon: Bell },
-  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { title: 'Committees', href: '/committee', icon: GavelIcon },
-  { title: 'Motions', href: '/motions', icon: FileText },
-  { title: 'Voting', href: '/voting', icon: Vote },
-  { title: 'History', href: '/history', icon: History },
   { title: 'Friends', href: '/friends', icon: Users },
   { title: 'Profile', href: '/profile', icon: User },
   { title: 'Settings', href: '/settings', icon: Settings },
@@ -62,7 +46,11 @@ function MenuItem({
   onClick?: () => void;
 }) {
   return (
-    <Link className={`mt-2 flex items-center gap-3`} href={href} onClick={onClick}>
+    <Link
+      className={`mt-2 flex items-center gap-3`}
+      href={href}
+      onClick={onClick}
+    >
       <Icon size={20} />
       {title}
     </Link>
@@ -78,7 +66,7 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
   return (
     <div className={`flex flex-col ${className}`}>
       <ProfileCard />
-      <div className="mt-4 flex flex-col overflow-y-auto flex-1">
+      <div className='mt-4 flex flex-col overflow-y-auto flex-1'>
         {menuItems.map((menuItem) => (
           <MenuItem
             title={menuItem.title}
@@ -89,9 +77,10 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
           />
         ))}
       </div>
-      <div className="mt-4">
+      <div className='mt-4'>
         <SignoutButton />
       </div>
     </div>
   );
 }
+

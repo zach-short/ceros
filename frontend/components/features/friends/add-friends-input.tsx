@@ -92,7 +92,7 @@ export function AddFriendsInput() {
 
   return (
     <>
-      <div className={`relative max-w-80`}>
+      <div className={`relative `}>
         <Input
           placeholder='Find Friends'
           value={value}
