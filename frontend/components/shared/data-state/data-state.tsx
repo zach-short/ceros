@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { Loader2 } from 'lucide-react';
 import { CenteredDiv } from '../layout/centered-div';
 import { DefaultLoader } from '../layout/loader';
 

@@ -34,7 +34,7 @@ export function ChatSearchResults({ searchQuery, conversationsCount }: ChatSearc
 
       {conversationsCount === 0 && (
         <div className='text-center py-12'>
-          <p className='opacity-60'>No results found for "{searchQuery}"</p>
+          <p className='opacity-60'>No results found for &quot;{searchQuery}&quot;</p>
         </div>
       )}
     </div>

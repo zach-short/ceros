@@ -36,7 +36,7 @@ export default function MessagesPage() {
   const { data: conversationsData, loading: conversationsLoading } =
     useConversations();
 
-  const conversations = conversationsData?.conversations || [];
+  const conversations = useMemo(() => conversationsData?.conversations || [], [conversationsData]);
 
   const filteredResults = useMemo(() => {
     if (!searchQuery.trim()) {
