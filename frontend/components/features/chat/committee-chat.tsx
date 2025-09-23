@@ -204,7 +204,6 @@ export default function CommitteeChat() {
           onToggleMotions={() => {
             window.location.href = `/committees/${committeeId}/motions`;
           }}
-          showMotionPanel={showMotionPanel}
         />
 
         <div className='flex flex-1 overflow-hidden relative min-h-0'>

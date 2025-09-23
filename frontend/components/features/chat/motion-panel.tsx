@@ -23,7 +23,6 @@ export function MotionPanel({
   onClose,
   onProposeMotion,
   roomId,
-  committeeId,
   onSecondMotion,
   onVoteMotion,
 }: MotionPanelProps) {

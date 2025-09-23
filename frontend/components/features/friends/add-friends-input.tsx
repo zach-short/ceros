@@ -3,8 +3,6 @@
 import { Input } from '@/components/ui/input';
 import { SearchIcon, UserPlus, UserCheck, Clock, UserX } from 'lucide-react';
 import {
-  Dispatch,
-  SetStateAction,
   useState,
   useEffect,
   useCallback,
@@ -108,7 +106,6 @@ export function AddFriendsInput() {
         <SearchIcon className={`absolute top-2 right-3`} size={20} />
         {showSuggestions && (
           <Suggestions
-            setValue={setValue}
             users={users}
             isSearching={isSearching}
             onUserAction={(user) => handleUserAction(user)}
@@ -121,12 +118,10 @@ export function AddFriendsInput() {
 
 function Suggestions({
   users,
-  setValue,
   isSearching,
   onUserAction,
 }: {
   users: User[];
-  setValue: Dispatch<SetStateAction<string>>;
   isSearching: boolean;
   onUserAction: (user: User) => void;
 }) {

@@ -470,6 +470,7 @@ export function GooglePlacesAutocomplete({
     };
   }, [
     onAddressSelect,
+    onValueChange,
     isLoaded,
     error,
     addMapPinIcons,

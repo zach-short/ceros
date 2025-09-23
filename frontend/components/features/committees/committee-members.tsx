@@ -1,6 +1,5 @@
 'use client';
 
-import { useParams } from 'next/navigation';
 import { CommitteeHeader } from './committee-header';
 import { MemberListSection } from './member-list-section';
 import { CommitteeActions } from './committee-actions';
@@ -57,8 +56,6 @@ const dummyMembers = [
 ];
 
 export default function CommitteeMembers() {
-  const params = useParams();
-  const committeeId = params.id as string;
 
   const onlineMembers = dummyMembers.filter(member => member.isOnline);
   const offlineMembers = dummyMembers.filter(member => !member.isOnline);
