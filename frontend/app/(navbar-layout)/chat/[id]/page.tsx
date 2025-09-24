@@ -1,4 +1,4 @@
-import { DMChatWrapper } from '@/components/features/chat/dm-chat-wrapper';
+import { DMChatWrapper } from '@/components/features/chat/conversations/dm-chat-wrapper';
 
 interface DMChatPageProps {
   params: Promise<{ id: string }>;

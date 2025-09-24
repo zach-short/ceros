@@ -2,8 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { UserAvatar, UserName } from '@/components/shared/user';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import {
@@ -12,13 +12,19 @@ import {
   UserPlus,
   Clock,
   UserX,
-  EyeOff,
   Lock,
   PinIcon,
   PhoneIcon,
   MailIcon,
   MessageSquare,
 } from 'lucide-react';
+import {
+  getDisplayEmail,
+  getDisplayPhone,
+  getDisplayBio,
+  getDisplayAddress,
+  UserPrivacyContext,
+} from '@/lib/user-privacy';
 import { usePublicProfile } from '@/hooks/api/use-users';
 import { useSession } from 'next-auth/react';
 import { friendsApi } from '@/lib/api/friends';
@@ -157,16 +163,26 @@ export function PublicProfile({ userId }: PublicProfileProps) {
     );
   }
 
-  const userHasFullName = user?.familyName && user?.givenName;
   const friendButtonContent = getFriendButtonContent();
 
-  const canSeeEmail = user?.email !== undefined;
-  const canSeePhone = user?.phoneNumber !== undefined;
-  const canSeeAddress = user?.address !== undefined;
-  const canSeeBio = user?.bio !== undefined;
-  const canSeeGivenName = user?.givenName !== undefined;
-  const canSeeFamilyName = user?.familyName !== undefined;
-  const canSeePicture = user?.picture !== undefined;
+  const context: UserPrivacyContext = {
+    user,
+    viewerUserId: session.data?.user.id,
+    friendship: user.friendshipStatus ? {
+      id: user.friendshipStatus.friendshipId,
+      status: user.friendshipStatus.status,
+      requesterId: '',
+      addresseeId: '',
+      requestedAt: '',
+      user
+    } : undefined,
+    isOwnProfile,
+  };
+
+  const displayEmail = getDisplayEmail(user, context);
+  const displayPhone = getDisplayPhone(user, context);
+  const displayBio = getDisplayBio(user, context);
+  const displayAddress = getDisplayAddress(user, context);
 
   const isFriend = user?.friendshipStatus?.status === 'accepted';
 
@@ -177,31 +193,31 @@ export function PublicProfile({ userId }: PublicProfileProps) {
           <CardContent className={`relative pt-6`}>
             <div className='flex items-center space-x-6'>
               <div className='relative'>
-                <Avatar className='h-24 w-24'>
-                  {canSeePicture ? (
-                    <>
-                      <AvatarImage
-                        src={user?.picture || user.picture}
-                        alt={user.name || 'Profile'}
-                      />
-                      <AvatarFallback />
-                    </>
-                  ) : (
-                    <div className='flex items-center justify-center h-full w-full bg-muted'>
-                      <EyeOff className='h-8 w-8 text-muted-foreground' />
-                    </div>
-                  )}
-                </Avatar>
+                <UserAvatar
+                  user={user}
+                  viewerUserId={session.data?.user.id}
+                  friendship={context.friendship}
+                  isOwnProfile={isOwnProfile}
+                  size='xl'
+                />
               </div>
               <div className='flex-1'>
-                {userHasFullName && canSeeGivenName && canSeeFamilyName && (
-                  <h3 className='text-xl font-semibold'>
-                    {user?.givenName} {user?.familyName}
-                  </h3>
-                )}
-                <h3 className='text-base font-semibold'>
-                  {user.name || 'Unknown User'}
-                </h3>
+                <UserName
+                  user={user}
+                  viewerUserId={session.data?.user.id}
+                  friendship={context.friendship}
+                  isOwnProfile={isOwnProfile}
+                  showFullName={true}
+                  className='text-xl font-semibold'
+                />
+                <UserName
+                  user={user}
+                  viewerUserId={session.data?.user.id}
+                  friendship={context.friendship}
+                  isOwnProfile={isOwnProfile}
+                  showFullName={false}
+                  className='text-base font-semibold'
+                />
 
                 {isAuthenticated &&
                   !isOwnProfile &&
@@ -218,9 +234,9 @@ export function PublicProfile({ userId }: PublicProfileProps) {
             </div>
 
             <div className='mt-6 ml-1'>
-              {canSeeBio ? (
+              {displayBio ? (
                 <p className='text-sm text-muted-foreground whitespace-pre-wrap'>
-                  {user.bio || 'No bio yet'}
+                  {displayBio}
                 </p>
               ) : (
                 <div className='flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg'>
@@ -258,43 +274,43 @@ export function PublicProfile({ userId }: PublicProfileProps) {
           </CardContent>
         </Card>
 
-        {(canSeeEmail ||
-          canSeePhone ||
-          canSeeAddress ||
+        {(displayEmail ||
+          displayPhone ||
+          displayAddress ||
           (!isOwnProfile &&
-            !canSeeEmail &&
-            !canSeePhone &&
-            !canSeeAddress)) && (
+            !displayEmail &&
+            !displayPhone &&
+            !displayAddress)) && (
           <Card>
             <CardHeader>
               <CardTitle>Contact Information</CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
-              {canSeeEmail && (
+              {displayEmail && (
                 <div className='flex items-center gap-3'>
                   <MailIcon />
-                  <span className='text-sm'>{user.email}</span>
+                  <span className='text-sm'>{displayEmail}</span>
                 </div>
               )}
-              {canSeePhone && user.phoneNumber && (
+              {displayPhone && (
                 <div className='flex items-center gap-3'>
                   <PhoneIcon />
-                  <span className='text-sm'>{user.phoneNumber}</span>
+                  <span className='text-sm'>{displayPhone}</span>
                 </div>
               )}
-              {canSeeAddress && user.address && user.address.city && (
+              {displayAddress && displayAddress.city && (
                 <div className='flex items-center gap-3'>
                   <PinIcon />
                   <span className='text-sm'>
-                    {user.address.city && `${user.address.city}, `}
-                    {user.address.state && `${user.address.state} `}
+                    {displayAddress.city && `${displayAddress.city}, `}
+                    {displayAddress.state && `${displayAddress.state} `}
                   </span>
                 </div>
               )}
 
-              {!canSeeEmail &&
-                !canSeePhone &&
-                !canSeeAddress &&
+              {!displayEmail &&
+                !displayPhone &&
+                !displayAddress &&
                 !isOwnProfile && (
                   <div className='flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg'>
                     <Lock className='h-4 w-4' />

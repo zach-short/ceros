@@ -103,7 +103,7 @@ export function ConversationItem({
   return (
     <div onClick={handleClick} className='p-4 cursor-pointer transition-colors'>
       <div className='flex items-center space-x-3'>
-        <Avatar>
+        <Avatar className={`h-12 w-12`}>
           <AvatarImage src={otherUser?.picture as string | undefined} />
           <AvatarFallback>{getDisplayName().charAt(0)}</AvatarFallback>
         </Avatar>

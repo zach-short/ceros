@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from '@/hooks/use-web-socket';
 import { useSession } from 'next-auth/react';
 import { useStartDM, useDMHistory } from '@/hooks/api/use-chat';
-import { ChatHeader } from './chat-header';
-import { MessagesList } from './messages-list';
-import { MessageInput } from './message-input';
-import { Message } from './types';
+import { ChatHeader } from '../ui/chat-header';
+import { MessagesList } from '../ui/messages-list';
+import { MessageInput } from '../ui/message-input';
+import { ThreadView } from '../ui/thread-view';
+import { Message } from '../ui/types';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 
@@ -25,6 +26,7 @@ export function DMChat({
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [threadMessage, setThreadMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
 
@@ -83,7 +85,7 @@ export function DMChat({
     }
   };
 
-  const { isConnected, sendMessage, joinRoom } = useWebSocket({
+  const { isConnected, sendMessage, replyToMessage, joinRoom } = useWebSocket({
     onMessage: handleNewMessage,
     onConnect: () => console.log('Connected to chat'),
     onDisconnect: () => console.log('Disconnected from chat'),
@@ -153,6 +155,57 @@ export function DMChat({
     sendMessage(roomId, content, 'dm');
   };
 
+  const handleReply = (parentMessageId: string, content: string) => {
+    if (!roomId || !isConnected || !session?.user?.id) return;
+
+    const tempReply: Message = {
+      id: `temp-${Date.now()}`,
+      type: 'reply',
+      senderId: session.user.id,
+      content,
+      roomId: roomId,
+      timestamp: new Date().toISOString(),
+      parentMessageId,
+    };
+
+    setMessages((prev) => [...prev, tempReply]);
+    replyToMessage(roomId, content, parentMessageId);
+  };
+
+  const handleOpenThread = (messageId: string) => {
+    const message = messages.find((m) => m.id === messageId);
+    if (message) {
+      setThreadMessage(message);
+    }
+  };
+
+  const handleCloseThread = () => {
+    setThreadMessage(null);
+  };
+
+  const handleSendReply = (content: string) => {
+    if (!threadMessage) return;
+    handleReply(threadMessage.id, content);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === threadMessage.id
+          ? { ...m, threadCount: (m.threadCount || 0) + 1 }
+          : m,
+      ),
+    );
+  };
+
+  const handleScrollToMessage = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('', 'transition-colors', 'duration-1000');
+      setTimeout(() => {
+        element.classList.remove('bg-yellow-100');
+      }, 2000);
+    }
+  };
+
   if (!session) {
     return (
       <CenteredDiv>
@@ -171,13 +224,14 @@ export function DMChat({
   }
 
   return (
-    <div className='flex flex-col h-full max-w-3xl mx-auto border rounded-lg mt-8 lg:mt-6'>
+    <div className='flex flex-col h-full max-w-3xl mx-auto border rounded-lg lg:mt-6'>
       <ChatHeader
         recipientName={recipientName}
         recipientId={recipientId}
         recipientPicture={recipientPicture}
         isConnected={isConnected}
         isLoading={historyLoading || startingDM}
+        chatType='dm'
       />
 
       <MessagesList
@@ -186,12 +240,24 @@ export function DMChat({
         currentUserId={session.user.id}
         recipientName={recipientName}
         isLoading={historyLoading && messages.length === 0}
+        onReply={handleReply}
+        onOpenThread={handleOpenThread}
+        onScrollToMessage={handleScrollToMessage}
       />
 
       <MessageInput
         isConnected={isConnected}
         onSendMessage={handleSendMessage}
       />
+
+      {threadMessage && (
+        <ThreadView
+          parentMessage={threadMessage}
+          onClose={handleCloseThread}
+          onSendReply={handleSendReply}
+          currentUserId={session.user.id}
+        />
+      )}
     </div>
   );
 }

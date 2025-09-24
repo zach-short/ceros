@@ -7,8 +7,11 @@ import {
   useEffect,
   useCallback,
 } from 'react';
-import { friendsApi, User } from '@/lib/api/friends';
+import { friendsApi } from '@/lib/api/friends';
+import { User } from '@/models';
 import { toast } from 'sonner';
+import { UserName } from '@/components/shared/user';
+import { getDisplayEmail } from '@/lib/user-privacy';
 
 export function AddFriendsInput() {
   const [value, setValue] = useState('');
@@ -187,18 +190,23 @@ function Suggestions({
           >
             <div className='flex flex-col items-start'>
               <p className='font-medium'>
-                {user.name || 'Unnamed User'}
+                <UserName
+                  user={user}
+                  showFullName={false}
+                  fallback='Unnamed User'
+                />
                 {user.isCurrentUser && ' (You)'}
               </p>
-              {(user.givenName || user.familyName) && (
-                <p className='text-sm text-gray-500'>
-                  {user.givenName && user.familyName
-                    ? `${user.givenName} ${user.familyName}`
-                    : user.givenName || user.familyName}
+              <p className='text-sm text-gray-500'>
+                <UserName
+                  user={user}
+                  showFullName={true}
+                />
+              </p>
+              {getDisplayEmail(user, { user, isOwnProfile: user.isCurrentUser }) && (
+                <p className='text-xs text-gray-400'>
+                  {getDisplayEmail(user, { user, isOwnProfile: user.isCurrentUser })}
                 </p>
-              )}
-              {user.email && (
-                <p className='text-xs text-gray-400'>{user.email}</p>
               )}
             </div>
             <Icon size={16} className={color} />

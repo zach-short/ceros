@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card';
+import Dashboard from '../features/dashboard';
 
 type AuthStep = 'providers' | 'email' | 'password';
 
@@ -307,8 +308,7 @@ export function UnifiedAuth() {
   }
 
   if (session) {
-    window.location.href = '/dashboard';
-    return null;
+    return <Dashboard />;
   }
 
   return (

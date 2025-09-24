@@ -17,9 +17,7 @@ export function ConversationsList({
   if (loading) {
     return (
       <div className='flex items-center justify-center py-12'>
-        <div className='text-center'>
-          <DefaultLoader />
-        </div>
+        <DefaultLoader />
       </div>
     );
   }

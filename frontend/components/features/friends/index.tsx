@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AddFriendsInput } from '@/components/features/friends/add-friends-input';
+import { UserCard } from '@/components/shared/user';
 import {
   useFriends,
   usePendingRequests,
@@ -18,7 +18,6 @@ import {
   UserCheck,
   UserX,
   Clock,
-  EyeOff,
   MessageSquare,
   Trash2,
 } from 'lucide-react';
@@ -137,42 +136,12 @@ export default function Friends() {
             className={`border-none bg-transparent py-1 sm:py-3`}
           >
             <CardContent className='flex items-center justify-between p-0'>
-              <Link
-                href={`/profile/${friendship?.user?.id}`}
-                className='flex items-center space-x-3'
-              >
-                <Avatar className='h-10 w-10'>
-                  {friendship.user?.picture ? (
-                    <>
-                      <AvatarImage
-                        src={friendship.user.picture}
-                        alt={friendship.user?.name || 'Friend'}
-                      />
-                      <AvatarFallback>
-                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                          'FR'}
-                      </AvatarFallback>
-                    </>
-                  ) : (
-                    <AvatarFallback className='bg-muted'>
-                      <EyeOff className='h-4 w-4 text-muted-foreground' />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div>
-                  <p className='font-medium text-sm'>
-                    {friendship.user?.name || 'Unknown User'}
-                  </p>
-                  {(friendship.user?.givenName ||
-                    friendship.user?.familyName) && (
-                    <p className='text-xs text-muted-foreground'>
-                      {friendship.user?.givenName && friendship.user?.familyName
-                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
-                        : friendship.user?.givenName ||
-                          friendship.user?.familyName}
-                    </p>
-                  )}
-                </div>
+              <Link href={`/profile/${friendship?.user?.id}`} className='flex-1'>
+                <UserCard
+                  user={friendship.user!}
+                  friendship={friendship}
+                  showFullName={true}
+                />
               </Link>
 
               <div className={`flex flex-row gap-4 items-center`}>
@@ -242,40 +211,12 @@ export default function Friends() {
             className={`border-none bg-transparent py-1 sm:py-3`}
           >
             <CardContent className='flex items-center justify-between p-0'>
-              <div className='flex items-center space-x-3'>
-                <Avatar className='h-10 w-10'>
-                  {friendship.user?.picture ? (
-                    <>
-                      <AvatarImage
-                        src={friendship.user.picture}
-                        alt={friendship.user?.name || 'User'}
-                      />
-                      <AvatarFallback>
-                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                          'U'}
-                      </AvatarFallback>
-                    </>
-                  ) : (
-                    <AvatarFallback className='bg-muted'>
-                      <EyeOff className='h-4 w-4 text-muted-foreground' />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div>
-                  <p className='font-medium text-sm'>
-                    {friendship.user?.name || 'Unknown User'}
-                  </p>
-                  {(friendship.user?.givenName ||
-                    friendship.user?.familyName) && (
-                    <p className='text-xs text-muted-foreground'>
-                      {friendship.user?.givenName && friendship.user?.familyName
-                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
-                        : friendship.user?.givenName ||
-                          friendship.user?.familyName}
-                    </p>
-                  )}
-                </div>
-              </div>
+              <UserCard
+                user={friendship.user!}
+                friendship={friendship}
+                showFullName={true}
+                className='flex-1'
+              />
               <div className='flex flex-row gap-4 items-center'>
                 <UserCheck
                   onClick={() => acceptFriend(friendship.id)}
@@ -322,40 +263,12 @@ export default function Friends() {
             className={`border-none bg-transparent py-1 sm:py-3`}
           >
             <CardContent className='flex items-center justify-between p-0'>
-              <div className='flex items-center space-x-3'>
-                <Avatar className='h-10 w-10'>
-                  {friendship.user?.picture ? (
-                    <>
-                      <AvatarImage
-                        src={friendship.user.picture}
-                        alt={friendship.user?.name || 'User'}
-                      />
-                      <AvatarFallback>
-                        {friendship.user?.name?.substring(0, 2).toUpperCase() ||
-                          'U'}
-                      </AvatarFallback>
-                    </>
-                  ) : (
-                    <AvatarFallback className='bg-muted'>
-                      <EyeOff className='h-4 w-4 text-muted-foreground' />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div>
-                  <p className='font-medium text-sm'>
-                    {friendship.user?.name || 'Unknown User'}
-                  </p>
-                  {(friendship.user?.givenName ||
-                    friendship.user?.familyName) && (
-                    <p className='text-xs text-muted-foreground'>
-                      {friendship.user?.givenName && friendship.user?.familyName
-                        ? `${friendship.user.givenName} ${friendship.user.familyName}`
-                        : friendship.user?.givenName ||
-                          friendship.user?.familyName}
-                    </p>
-                  )}
-                </div>
-              </div>
+              <UserCard
+                user={friendship.user!}
+                friendship={friendship}
+                showFullName={true}
+                className='flex-1'
+              />
               <div className='flex items-center'>
                 <Clock className='h-4 w-4 text-orange-500' />
               </div>

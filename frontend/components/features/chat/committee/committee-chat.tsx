@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useWebSocket } from '@/hooks/use-web-socket';
 import { useSession } from 'next-auth/react';
-import { ChatHeader } from './chat-header';
-import { MessagesList } from './messages-list';
-import { MessageInput } from './message-input';
+import { ChatHeader } from '../ui/chat-header';
+import { MessagesList } from '../ui/messages-list';
+import { MessageInput } from '../ui/message-input';
+import { ThreadView } from '../ui/thread-view';
 import { MotionPanel } from './motion-panel';
-import { Message } from './types';
+import { Message } from '../ui/types';
 import {
   useCommitteeChat,
   useCommitteeHistory,
@@ -23,6 +24,7 @@ export default function CommitteeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [showMotionPanel, setShowMotionPanel] = useState(false);
+  const [threadMessage, setThreadMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
 
@@ -170,6 +172,40 @@ export default function CommitteeChat() {
     replyToMessage(roomId, content, parentMessageId);
   };
 
+  const handleOpenThread = (messageId: string) => {
+    const message = messages.find((m) => m.id === messageId);
+    if (message) {
+      setThreadMessage(message);
+    }
+  };
+
+  const handleCloseThread = () => {
+    setThreadMessage(null);
+  };
+
+  const handleSendReply = (content: string) => {
+    if (!threadMessage) return;
+    handleReplyToMessage(threadMessage.id, content);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === threadMessage.id
+          ? { ...m, threadCount: (m.threadCount || 0) + 1 }
+          : m,
+      ),
+    );
+  };
+
+  const handleScrollToMessage = (messageId: string) => {
+    const element = document.getElementById(`message-${messageId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('bg-yellow-100', 'transition-colors', 'duration-1000');
+      setTimeout(() => {
+        element.classList.remove('bg-yellow-100');
+      }, 2000);
+    }
+  };
+
   const handleProposeMotion = (title: string, description: string) => {
     if (!roomId || !isConnected || !committeeId) return;
     proposeMotion(roomId, title, description, committeeId);
@@ -204,6 +240,7 @@ export default function CommitteeChat() {
           onToggleMotions={() => {
             window.location.href = `/committees/${committeeId}/motions`;
           }}
+          chatType='committee'
         />
 
         <div className='flex flex-1 overflow-hidden relative min-h-0'>
@@ -215,6 +252,8 @@ export default function CommitteeChat() {
               recipientName={`Committee ${committeeId}`}
               isLoading={historyLoading && messages.length === 0}
               onReply={handleReplyToMessage}
+              onOpenThread={handleOpenThread}
+              onScrollToMessage={handleScrollToMessage}
             />
 
             <MessageInput
@@ -245,6 +284,15 @@ export default function CommitteeChat() {
             </>
           )}
         </div>
+
+        {threadMessage && (
+          <ThreadView
+            parentMessage={threadMessage}
+            onClose={handleCloseThread}
+            onSendReply={handleSendReply}
+            currentUserId={session.user.id}
+          />
+        )}
       </div>
     </div>
   );

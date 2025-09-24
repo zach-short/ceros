@@ -83,4 +83,3 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
     </div>
   );
 }
-

@@ -1,8 +1,8 @@
 'use client';
 
 import { MessageSquare, Users } from 'lucide-react';
-import { ConversationsList } from '@/components/features/chat/conversations-list';
-import { CommitteeList } from '@/components/features/chat/committee-list';
+import { ConversationsList } from '@/components/features/chat/conversations/conversations-list';
+import { CommitteeList } from '@/components/features/chat/committee/committee-list';
 
 interface ChatSearchResultsProps {
   searchQuery: string;

@@ -3,9 +3,9 @@
 import { useState, useMemo } from 'react';
 import { useConversations } from '@/hooks/api/use-chat';
 import { DefaultLoader } from '@/components/shared/layout/loader';
-import { ChatSearch } from '@/components/features/chat/chat-search';
-import { ChatSearchResults } from '@/components/features/chat/chat-search-results';
-import { ChatSections } from '@/components/features/chat/chat-sections';
+import { ChatSearch } from '@/components/features/chat/search/chat-search';
+import { ChatSearchResults } from '@/components/features/chat/search/chat-search-results';
+import { ChatSections } from '@/components/features/chat/pages/chat-sections';
 
 const dummyCommittees = [
   {
