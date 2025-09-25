@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MenuIcon,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface NavItem {
   href: string;
@@ -28,7 +29,7 @@ const navItems: NavItem[] = [
     label: 'Friends',
   },
   {
-    href: '/dashboard',
+    href: '/',
     icon: LayoutDashboard,
     label: 'Dashboard',
   },
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const session = useSession();
 
   const isActive = (href: string) => {
     if (href === '/chat') {
@@ -54,9 +56,13 @@ export function MobileBottomNav() {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
+  if (!session) {
+    return null;
+  }
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border lg:hidden z-50">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className='fixed bottom-0 left-0 right-0 bg-background border-t border-border lg:hidden z-50'>
+      <div className='flex items-center justify-around h-16 px-2'>
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
@@ -73,7 +79,7 @@ export function MobileBottomNav() {
                 size={20}
                 className={active ? 'text-primary' : 'text-muted-foreground'}
               />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className='text-xs font-medium'>{item.label}</span>
             </Link>
           );
         })}
@@ -81,3 +87,4 @@ export function MobileBottomNav() {
     </nav>
   );
 }
+
