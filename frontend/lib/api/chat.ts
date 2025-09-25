@@ -2,11 +2,15 @@ import { apiRequest } from '../api';
 
 export interface Message {
   id: string;
-  type: 'dm' | 'group' | 'motion' | 'system';
+  type: 'dm' | 'group' | 'motion' | 'system' | 'reply';
   senderId: string;
   content: string;
   roomId: string;
   timestamp: string;
+  parentMessageId?: string;
+  threadCount?: number;
+  motionId?: string;
+  voteId?: string;
   metadata?: Record<string, any>;
 }
 
@@ -56,5 +60,11 @@ export const chatApi = {
 
   getConversations: (): Promise<any> =>
     apiRequest('get', '/chat/conversations'),
+
+  getMessageReplies: (messageId: string): Promise<any> =>
+    apiRequest('get', `/messages/${messageId}/replies`),
+
+  toggleMessageReaction: (messageId: string, emoji: string): Promise<any> =>
+    apiRequest('post', `/messages/${messageId}/reaction`, { emoji }),
 };
 

@@ -32,6 +32,7 @@ type Message struct {
 	Metadata map[string]any `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 
+
 type WSMessage struct {
 	Action  string      `json:"action"`
 	Type    MessageType `json:"type"`

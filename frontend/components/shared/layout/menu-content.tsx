@@ -8,10 +8,14 @@ import { SignoutButton } from '../button/signout';
 
 const menuItems = [
   { title: 'Messages', href: '/chat', icon: MessagesSquareIcon },
-  { title: 'Notifications', href: '/notifications', icon: Bell },
+  {
+    title: 'Notifications',
+    href: '/profile/settings/notifications',
+    icon: Bell,
+  },
   { title: 'Friends', href: '/friends', icon: Users },
   { title: 'Profile', href: '/profile', icon: User },
-  { title: 'Settings', href: '/settings', icon: Settings },
+  { title: 'Settings', href: '/profile/settings', icon: Settings },
 ];
 
 function ProfileCard() {
@@ -83,4 +87,3 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
     </div>
   );
 }
-

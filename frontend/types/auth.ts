@@ -1,6 +1,5 @@
 import { DefaultSession } from 'next-auth';
-
-export type UserRole = 'admin' | 'member' | 'user';
+import { UserRole } from '@/models';
 
 declare module 'next-auth' {
   interface Session {

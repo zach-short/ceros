@@ -22,12 +22,14 @@ interface WSMessage {
 
 interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
+  onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
 
 export function useWebSocket({
   onMessage,
+  onReactionUpdate,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -86,12 +88,14 @@ export function useWebSocket({
 
         if (wsMessage.action === 'new_message' || wsMessage.action === 'new_reply') {
           onMessage?.(wsMessage.payload as Message);
+        } else if (wsMessage.action === 'reaction_update') {
+          onReactionUpdate?.(wsMessage.payload as { messageId: string; reactions: any[] });
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     };
-  }, [mounted, session?.apiToken, onMessage, onConnect, onDisconnect]);
+  }, [mounted, session?.apiToken, onMessage, onReactionUpdate, onConnect, onDisconnect]);
 
   const disconnect = useCallback(() => {
     if (ws.current) {

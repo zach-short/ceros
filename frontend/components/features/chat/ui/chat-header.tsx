@@ -8,6 +8,7 @@ interface ChatHeaderProps {
   isConnected: boolean;
   isLoading?: boolean;
   onToggleMotions?: () => void;
+  chatType?: 'dm' | 'committee';
 }
 
 export function ChatHeader({
@@ -17,8 +18,9 @@ export function ChatHeader({
   isConnected,
   isLoading,
   onToggleMotions,
+  chatType = 'dm',
 }: ChatHeaderProps) {
-  const isCommittee = recipientId && recipientId.length === 24;
+  const isCommittee = chatType === 'committee';
   const profileLink = isCommittee
     ? `/committees/${recipientId}`
     : `/profile/${recipientId}`;

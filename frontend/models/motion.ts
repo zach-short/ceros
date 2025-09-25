@@ -1,17 +1,3 @@
-export interface Message {
-  id: string;
-  type: 'dm' | 'group' | 'motion' | 'system' | 'reply';
-  senderId: string;
-  content: string;
-  roomId: string;
-  timestamp: string;
-  parentMessageId?: string;
-  threadCount?: number;
-  motionId?: string;
-  voteId?: string;
-  metadata?: Record<string, any>;
-}
-
 export interface Motion {
   id: string;
   committeeId: string;

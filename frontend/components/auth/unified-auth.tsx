@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card';
+import Dashboard from '../features/dashboard';
 
 type AuthStep = 'providers' | 'email' | 'password';
 
@@ -41,7 +42,7 @@ function UnifiedAuthForm({
 
     try {
       await signIn(provider, {
-        callbackUrl: '/dashboard',
+        callbackUrl: '/',
       });
     } catch (error) {
       console.error('Social auth error:', error);
@@ -109,7 +110,7 @@ function UnifiedAuthForm({
               await signIn('credentials', {
                 email,
                 password,
-                callbackUrl: '/dashboard',
+                callbackUrl: '/',
               });
             } catch (registerError: unknown) {
               console.error('Registration error:', registerError);
@@ -128,7 +129,7 @@ function UnifiedAuthForm({
           toast.error('An error occurred. Please try again.');
         }
       } else {
-        window.location.href = '/dashboard';
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -307,8 +308,7 @@ export function UnifiedAuth() {
   }
 
   if (session) {
-    window.location.href = '/dashboard';
-    return null;
+    return <Dashboard />;
   }
 
   return (
