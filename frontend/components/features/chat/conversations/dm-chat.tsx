@@ -110,8 +110,8 @@ export function DMChat({
 
   const { isConnected, sendMessage, replyToMessage, joinRoom } = useWebSocket({
     onMessage: handleNewMessage,
-    onConnect: () => console.log('Connected to chat'),
-    onDisconnect: () => console.log('Disconnected from chat'),
+    onConnect: () => {},
+    onDisconnect: () => {},
   });
 
   useEffect(() => {
@@ -151,14 +151,12 @@ export function DMChat({
 
   useEffect(() => {
     if (roomId && isConnected) {
-      console.log('Joining room:', roomId);
       joinRoom(roomId);
     }
   }, [roomId, isConnected, joinRoom]);
 
   useEffect(() => {
     if (historyData?.roomId && isConnected && !roomId) {
-      console.log('Setting roomId from history:', historyData.roomId);
       setRoomId(historyData.roomId);
     }
   }, [historyData?.roomId, isConnected, roomId]);

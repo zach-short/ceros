@@ -68,7 +68,9 @@ const MessageActions = ({
         {QUICK_REACTIONS.map((emoji) => (
           <button
             key={emoji}
-            onClick={() => onActionClick(`react:${emoji}`)}
+            onClick={() => {
+              onActionClick(`react:${emoji}`);
+            }}
             className='w-10 h-10 rounded-full hover:bg-accent flex items-center justify-center text-lg transition-colors'
           >
             {emoji}
@@ -285,9 +287,7 @@ export function MessageBubble({
   };
 
   const handleReaction = (emoji: string) => {
-    if (onReaction) {
-      onReaction(message.id, emoji);
-    }
+    onReaction?.(message.id, emoji);
   };
 
   const handleActionClick = (action: string) => {

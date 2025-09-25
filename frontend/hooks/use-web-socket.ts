@@ -51,7 +51,6 @@ export function useWebSocket({
     )
       return;
 
-    console.log('Attempting WebSocket connection...');
     isConnecting.current = true;
     connectionAttempted.current = true;
 
@@ -86,16 +85,28 @@ export function useWebSocket({
       try {
         const wsMessage: WSMessage = JSON.parse(event.data);
 
-        if (wsMessage.action === 'new_message' || wsMessage.action === 'new_reply') {
+        if (
+          wsMessage.action === 'new_message' ||
+          wsMessage.action === 'new_reply'
+        ) {
           onMessage?.(wsMessage.payload as Message);
         } else if (wsMessage.action === 'reaction_update') {
-          onReactionUpdate?.(wsMessage.payload as { messageId: string; reactions: any[] });
+          onReactionUpdate?.(
+            wsMessage.payload as { messageId: string; reactions: any[] },
+          );
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     };
-  }, [mounted, session?.apiToken, onMessage, onReactionUpdate, onConnect, onDisconnect]);
+  }, [
+    mounted,
+    session?.apiToken,
+    onMessage,
+    onReactionUpdate,
+    onConnect,
+    onDisconnect,
+  ]);
 
   const disconnect = useCallback(() => {
     if (ws.current) {
@@ -108,7 +119,11 @@ export function useWebSocket({
   }, []);
 
   const sendMessage = useCallback(
-    (roomId: string, content: string, type: 'dm' | 'group' | 'motion' = 'group') => {
+    (
+      roomId: string,
+      content: string,
+      type: 'dm' | 'group' | 'motion' = 'group',
+    ) => {
       if (ws.current?.readyState === WebSocket.OPEN) {
         const message: WSMessage = {
           action: 'send_message',
@@ -143,7 +158,12 @@ export function useWebSocket({
   );
 
   const proposeMotion = useCallback(
-    (roomId: string, title: string, description: string, committeeId: string) => {
+    (
+      roomId: string,
+      title: string,
+      description: string,
+      committeeId: string,
+    ) => {
       if (ws.current?.readyState === WebSocket.OPEN) {
         const message: WSMessage = {
           action: 'propose_motion',
@@ -161,22 +181,19 @@ export function useWebSocket({
     [],
   );
 
-  const secondMotion = useCallback(
-    (roomId: string, motionId: string) => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        const message: WSMessage = {
-          action: 'second_motion',
-          type: 'motion',
-          payload: {
-            roomId,
-            motionId,
-          },
-        };
-        ws.current.send(JSON.stringify(message));
-      }
-    },
-    [],
-  );
+  const secondMotion = useCallback((roomId: string, motionId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      const message: WSMessage = {
+        action: 'second_motion',
+        type: 'motion',
+        payload: {
+          roomId,
+          motionId,
+        },
+      };
+      ws.current.send(JSON.stringify(message));
+    }
+  }, []);
 
   const voteOnMotion = useCallback(
     (roomId: string, motionId: string, vote: 'aye' | 'nay' | 'abstain') => {

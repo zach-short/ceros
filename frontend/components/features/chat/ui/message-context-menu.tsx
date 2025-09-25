@@ -12,11 +12,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import {
-  Reply,
-  Edit,
-  Heart,
-} from 'lucide-react';
+import { Reply, Edit, Heart } from 'lucide-react';
 
 interface MessageContextMenuProps {
   message: Message;
@@ -29,9 +25,42 @@ interface MessageContextMenuProps {
 
 const QUICK_REACTIONS = ['❤️', '👍', '😂', '😢', '😮', '😡'];
 const MORE_REACTIONS = [
-  '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉',
-  '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨',
-  '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁',
+  '😀',
+  '😃',
+  '😄',
+  '😁',
+  '😅',
+  '😂',
+  '🤣',
+  '😊',
+  '😇',
+  '🙂',
+  '🙃',
+  '😉',
+  '😍',
+  '🥰',
+  '😘',
+  '😗',
+  '😙',
+  '😚',
+  '😋',
+  '😛',
+  '😝',
+  '😜',
+  '🤪',
+  '🤨',
+  '🧐',
+  '🤓',
+  '😎',
+  '🤩',
+  '🥳',
+  '😏',
+  '😒',
+  '😞',
+  '😔',
+  '😟',
+  '😕',
+  '🙁',
 ];
 
 export function MessageContextMenu({
@@ -58,54 +87,51 @@ export function MessageContextMenu({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
-        {children}
-      </ContextMenuTrigger>
-      <ContextMenuContent className="min-w-[200px]">
-        {/* Quick Emoji Reactions */}
-        <div className="flex gap-1 p-2">
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className='min-w-[200px]'>
+        <div className='flex gap-1 p-2'>
           {QUICK_REACTIONS.map((emoji) => (
-            <button
+            <ContextMenuItem
               key={emoji}
               onClick={() => handleReaction(emoji)}
-              className="w-8 h-8 rounded hover:bg-accent flex items-center justify-center text-lg transition-colors"
+              className='w-8 h-8 rounded hover:bg-accent flex items-center justify-center text-lg transition-colors p-0 justify-center'
               title={`React with ${emoji}`}
             >
               {emoji}
-            </button>
+            </ContextMenuItem>
           ))}
         </div>
 
         <ContextMenuSeparator />
 
         <ContextMenuItem onClick={handleReply}>
-          <Reply className="w-4 h-4 mr-2" />
+          <Reply className='w-4 h-4 mr-2' />
           Reply
         </ContextMenuItem>
 
         {isOwn && onEdit && (
           <ContextMenuItem onClick={handleEdit}>
-            <Edit className="w-4 h-4 mr-2" />
+            <Edit className='w-4 h-4 mr-2' />
             Edit
           </ContextMenuItem>
         )}
 
         <ContextMenuSub>
           <ContextMenuSubTrigger>
-            <Heart className="w-4 h-4 mr-2" />
+            <Heart className='w-4 h-4 mr-2' />
             More Reactions
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="w-[240px]">
-            <div className="grid grid-cols-8 gap-1 p-2">
+          <ContextMenuSubContent className='w-[240px]'>
+            <div className='grid grid-cols-8 gap-1 p-2'>
               {MORE_REACTIONS.map((emoji) => (
-                <button
+                <ContextMenuItem
                   key={emoji}
                   onClick={() => handleReaction(emoji)}
-                  className="w-8 h-8 rounded hover:bg-accent flex items-center justify-center text-lg transition-colors"
+                  className='w-8 h-8 rounded hover:bg-accent flex items-center justify-center text-lg transition-colors p-0'
                   title={`React with ${emoji}`}
                 >
                   {emoji}
-                </button>
+                </ContextMenuItem>
               ))}
             </div>
           </ContextMenuSubContent>

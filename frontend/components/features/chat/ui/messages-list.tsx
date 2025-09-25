@@ -84,7 +84,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
       recipientName,
       isLoading,
       onReply,
-      onOpenThread: onReaction,
+      onReaction,
       onEdit,
       onScrollToMessage,
       chatType = 'dm',

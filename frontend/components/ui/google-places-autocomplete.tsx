@@ -277,19 +277,12 @@ export function GooglePlacesAutocomplete({
 
         const processPlace = (place: google.maps.places.PlaceResult) => {
           const addressComponents = place.address_components;
-          console.log('Raw address components from Google:', addressComponents);
           const address: Address = {
             formattedAddress: place.formatted_address,
           };
 
           addressComponents?.forEach((component) => {
             const types = component.types;
-            console.log(
-              'Processing component:',
-              component.long_name,
-              'types:',
-              types,
-            );
 
             if (types.includes('street_number')) {
               address.street = component.long_name;
@@ -307,8 +300,6 @@ export function GooglePlacesAutocomplete({
               address.country = component.long_name;
             }
           });
-
-          console.log('Final parsed address object:', address);
 
           setError(null);
           const formattedAddr = place.formatted_address || '';
@@ -328,25 +319,17 @@ export function GooglePlacesAutocomplete({
                   const element = node as Element;
                   if (element.classList?.contains('pac-item')) {
                     element.addEventListener('mousedown', () => {
-                      console.log('PAC item mousedown detected');
-                      const pacText = element.textContent || '';
-                      console.log('PAC item text:', pacText);
-
                       element.setAttribute('data-clicked', 'true');
 
                       const attemptPlace = (attempt = 1) => {
                         setTimeout(() => {
                           const place = autocompleteRef.current?.getPlace();
-                          console.log(`PAC click attempt ${attempt}:`, place);
 
                           if (
                             place &&
                             place.address_components &&
                             place.address_components.length > 0
                           ) {
-                            console.log(
-                              `PAC click success on attempt ${attempt}`,
-                            );
                             processPlace(place);
                           } else if (attempt < 6) {
                             attemptPlace(attempt + 1);
@@ -357,10 +340,6 @@ export function GooglePlacesAutocomplete({
                       };
 
                       attemptPlace();
-                    });
-
-                    element.addEventListener('click', () => {
-                      console.log('PAC item click detected');
                     });
                   }
                 }
@@ -386,8 +365,6 @@ export function GooglePlacesAutocomplete({
 
           setTimeout(() => {
             if (inputRef.current && autocompleteRef.current) {
-              console.log('Google Places Autocomplete fully initialized');
-
               inputRef.current.addEventListener('focus', startObserving);
               inputRef.current.addEventListener('blur', () => {
                 setTimeout(stopObserving, 200);
@@ -398,30 +375,21 @@ export function GooglePlacesAutocomplete({
               });
 
               autocompleteRef.current.addListener('place_changed', () => {
-                console.log('place_changed event triggered!');
-
                 const attemptToGetPlace = (attempt = 1) => {
                   const delay = attempt * 25;
 
                   setTimeout(() => {
                     const place = autocompleteRef.current?.getPlace();
-                    console.log(
-                      `Attempt ${attempt} - Retrieved place object:`,
-                      place,
-                    );
 
                     if (
                       place &&
                       place.address_components &&
                       place.address_components.length > 0
                     ) {
-                      console.log(`Success on attempt ${attempt}`);
                       processPlace(place);
                     } else if (attempt < 4) {
-                      console.log(`Attempt ${attempt} failed, retrying...`);
                       attemptToGetPlace(attempt + 1);
                     } else {
-                      console.log('All attempts failed');
                       setError(
                         'Please select a valid address from the dropdown',
                       );
@@ -435,11 +403,9 @@ export function GooglePlacesAutocomplete({
               inputRef.current.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  console.log('Enter key pressed, checking for place...');
                   setTimeout(() => {
                     const place = autocompleteRef.current?.getPlace();
                     if (place && place.address_components) {
-                      console.log('Place found via Enter key:', place);
                       processPlace(place);
                     }
                   }, 100);
@@ -488,13 +454,6 @@ export function GooglePlacesAutocomplete({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-
-      setTimeout(() => {
-        const place = autocompleteRef.current?.getPlace();
-        if (place && place.address_components) {
-          console.log('Place selected via Enter key:', place);
-        }
-      }, 100);
     }
   };
 

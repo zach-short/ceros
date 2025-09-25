@@ -12,7 +12,6 @@ export function useCommitteeChat(options?: {
 }) {
   return useMutation(committeeApi.startChat, {
     onSuccess: (data: StartCommitteeChatResponse) => {
-      console.log('Committee chat started:', data);
       options?.onSuccess?.(data);
     },
     onError: (error) => {
@@ -26,28 +25,19 @@ export function useCommitteeHistory(
   committeeId: string,
   enabled: boolean = true,
 ) {
-  return useFetch<GetCommitteeHistoryResponse>(
-    committeeApi.getHistory,
-    {
-      resourceParams: [committeeId],
-      dependencies: [committeeId],
-      enabled: !!committeeId && enabled,
-    },
-  );
+  return useFetch<GetCommitteeHistoryResponse>(committeeApi.getHistory, {
+    resourceParams: [committeeId],
+    dependencies: [committeeId],
+    enabled: !!committeeId && enabled,
+  });
 }
 
-export function useMessageReplies(
-  messageId: string,
-  enabled: boolean = true,
-) {
-  return useFetch<GetMessageRepliesResponse>(
-    committeeApi.getMessageReplies,
-    {
-      resourceParams: [messageId],
-      dependencies: [messageId],
-      enabled: !!messageId && enabled,
-    },
-  );
+export function useMessageReplies(messageId: string, enabled: boolean = true) {
+  return useFetch<GetMessageRepliesResponse>(committeeApi.getMessageReplies, {
+    resourceParams: [messageId],
+    dependencies: [messageId],
+    enabled: !!messageId && enabled,
+  });
 }
 
 export function useToggleMessageReaction(options?: {
@@ -65,6 +55,7 @@ export function useToggleMessageReaction(options?: {
         console.error('Failed to toggle message reaction:', error);
         options?.onError?.(error);
       },
-    }
+    },
   );
 }
+
