@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
     label: 'Friends',
   },
   {
-    href: '/dashboard',
+    href: '/',
     icon: LayoutDashboard,
     label: 'Dashboard',
   },
@@ -55,8 +55,8 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border lg:hidden z-50">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className='fixed bottom-0 left-0 right-0 bg-background border-t border-border lg:hidden z-50'>
+      <div className='flex items-center justify-around h-16 px-2'>
         {navItems.map((item) => {
           const active = isActive(item.href);
           return (
@@ -73,7 +73,7 @@ export function MobileBottomNav() {
                 size={20}
                 className={active ? 'text-primary' : 'text-muted-foreground'}
               />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className='text-xs font-medium'>{item.label}</span>
             </Link>
           );
         })}
@@ -81,3 +81,4 @@ export function MobileBottomNav() {
     </nav>
   );
 }
+
