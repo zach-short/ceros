@@ -3,14 +3,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWebSocket } from '@/hooks/use-web-socket';
 import { useSession } from 'next-auth/react';
-import { useStartDM, useDMHistory } from '@/hooks/api/use-chat';
+import {
+  useStartDM,
+  useDMHistory,
+  useToggleMessageReaction,
+} from '@/hooks/api/use-chat';
 import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
 import { ThreadView } from '../ui/thread-view';
-import { Message } from '../ui/types';
+import { Message, User } from '../ui/types';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
 
 interface DMChatProps {
   recipientId: string;
@@ -25,6 +30,7 @@ export function DMChat({
 }: DMChatProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,6 +66,10 @@ export function DMChat({
         (message.senderId === session.user.id ||
           message.senderId === recipientId))
     ) {
+      const transformedMessage = session?.user?.id
+        ? transformMessagesWithReactions([message], session.user.id)[0]
+        : message;
+
       setMessages((prev) => {
         const exists = prev.some(
           (m) =>
@@ -76,11 +86,24 @@ export function DMChat({
             m.id.startsWith('temp-') &&
             m.content === message.content &&
             m.senderId === message.senderId
-              ? message
+              ? transformedMessage
               : m,
           );
         }
-        return [...prev, message];
+        return [...prev, transformedMessage];
+      });
+
+      setUsers((prevUsers) => {
+        const userExists = prevUsers.some((u) => u.id === message.senderId);
+        if (!userExists && message.senderId !== session?.user?.id) {
+          const placeholderUser: User = {
+            id: message.senderId,
+            name: 'Unknown User',
+            email: '',
+          };
+          return [...prevUsers, placeholderUser];
+        }
+        return prevUsers;
       });
     }
   };
@@ -116,10 +139,15 @@ export function DMChat({
   ]);
 
   useEffect(() => {
-    if (historyData?.messages) {
-      setMessages(historyData.messages);
+    if (historyData?.messages && session?.user?.id) {
+      setMessages(
+        transformMessagesWithReactions(historyData.messages, session.user.id),
+      );
     }
-  }, [historyData]);
+    if (historyData?.users) {
+      setUsers(historyData.users);
+    }
+  }, [historyData, session?.user?.id]);
 
   useEffect(() => {
     if (roomId && isConnected) {
@@ -201,9 +229,26 @@ export function DMChat({
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       element.classList.add('', 'transition-colors', 'duration-1000');
       setTimeout(() => {
-        element.classList.remove('bg-yellow-100');
+        element.classList.remove('bg-blue-600');
       }, 2000);
     }
+  };
+
+  const { mutate: toggleReaction } = useToggleMessageReaction({
+    onSuccess: (data) => {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (msg.id === data.messageId) {
+            return { ...msg, reactions: data.reactions };
+          }
+          return msg;
+        }),
+      );
+    },
+  });
+
+  const handleReaction = (messageId: string, emoji: string) => {
+    toggleReaction({ messageId, emoji });
   };
 
   if (!session) {
@@ -237,12 +282,15 @@ export function DMChat({
       <MessagesList
         ref={messagesEndRef}
         messages={messages}
+        users={users}
         currentUserId={session.user.id}
         recipientName={recipientName}
         isLoading={historyLoading && messages.length === 0}
         onReply={handleReply}
         onOpenThread={handleOpenThread}
+        onReaction={handleReaction}
         onScrollToMessage={handleScrollToMessage}
+        chatType='dm'
       />
 
       <MessageInput

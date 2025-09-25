@@ -49,3 +49,22 @@ export function useMessageReplies(
     },
   );
 }
+
+export function useToggleMessageReaction(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      committeeApi.toggleMessageReaction(messageId, emoji),
+    {
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to toggle message reaction:', error);
+        options?.onError?.(error);
+      },
+    }
+  );
+}

@@ -18,7 +18,7 @@ export function useStartDM(options?: {
 }
 
 export function useDMHistory(recipientId: string | undefined, enabled = true) {
-  return useFetch<{ roomId: string; messages: Message[] }>(
+  return useFetch<{ roomId: string; messages: Message[]; users: any[] }>(
     chatApi.getDMHistory,
     {
       resourceParams: [recipientId],
@@ -31,5 +31,24 @@ export function useDMHistory(recipientId: string | undefined, enabled = true) {
 export function useConversations() {
   return useFetch<{ conversations: ConversationSummary[] }>(
     chatApi.getConversations,
+  );
+}
+
+export function useToggleMessageReaction(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      chatApi.toggleMessageReaction(messageId, emoji),
+    {
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to toggle message reaction:', error);
+        options?.onError?.(error);
+      },
+    }
   );
 }

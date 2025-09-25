@@ -102,5 +102,6 @@ func SetupRoutes(r *gin.Engine) {
 	messages.Use(middleware.AuthMiddleware())
 	{
 		messages.GET("/:id/replies", handlers.GetMessageReplies)
+		messages.POST("/:id/reaction", handlers.ToggleMessageReaction)
 	}
 }

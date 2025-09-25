@@ -63,5 +63,8 @@ export const chatApi = {
 
   getMessageReplies: (messageId: string): Promise<any> =>
     apiRequest('get', `/messages/${messageId}/replies`),
+
+  toggleMessageReaction: (messageId: string, emoji: string): Promise<any> =>
+    apiRequest('post', `/messages/${messageId}/reaction`, { emoji }),
 };
 

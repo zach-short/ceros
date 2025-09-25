@@ -6,7 +6,7 @@ export default function NavbarLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <Navbar />
-      <div className={`pb-16 lg:pb-0`}>{children}</div>
+      {children}
       <MobileBottomNav />
     </>
   );

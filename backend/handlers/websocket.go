@@ -132,9 +132,35 @@ func GetDMHistory(c *gin.Context) {
 		return
 	}
 
+	senderIDs := make(map[primitive.ObjectID]bool)
+	for _, msg := range messages {
+		senderIDs[msg.SenderID] = true
+	}
+
+	var uniqueSenderIDs []primitive.ObjectID
+	for senderID := range senderIDs {
+		uniqueSenderIDs = append(uniqueSenderIDs, senderID)
+	}
+
+	var users []models.User
+	if len(uniqueSenderIDs) > 0 {
+		usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+		userFilter := bson.M{"_id": bson.M{"$in": uniqueSenderIDs}}
+		userCursor, err := usersCollection.Find(ctx, userFilter)
+		if err != nil {
+			log.Printf("Error fetching users: %v", err)
+		} else {
+			defer userCursor.Close(ctx)
+			if err = userCursor.All(ctx, &users); err != nil {
+				log.Printf("Error decoding users: %v", err)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":   roomID,
 		"messages": messages,
+		"users":    users,
 	})
 }
 
@@ -325,9 +351,35 @@ func GetCommitteeHistory(c *gin.Context) {
 		return
 	}
 
+	senderIDs := make(map[primitive.ObjectID]bool)
+	for _, msg := range messages {
+		senderIDs[msg.SenderID] = true
+	}
+
+	var uniqueSenderIDs []primitive.ObjectID
+	for senderID := range senderIDs {
+		uniqueSenderIDs = append(uniqueSenderIDs, senderID)
+	}
+
+	var users []models.User
+	if len(uniqueSenderIDs) > 0 {
+		usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+		userFilter := bson.M{"_id": bson.M{"$in": uniqueSenderIDs}}
+		userCursor, err := usersCollection.Find(ctx, userFilter)
+		if err != nil {
+			log.Printf("Error fetching users: %v", err)
+		} else {
+			defer userCursor.Close(ctx)
+			if err = userCursor.All(ctx, &users); err != nil {
+				log.Printf("Error decoding users: %v", err)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":   roomID,
 		"messages": messages,
+		"users":    users,
 	})
 }
 
@@ -363,5 +415,156 @@ func GetMessageReplies(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"replies": replies,
+	})
+}
+
+func ToggleMessageReaction(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	var req struct {
+		Emoji string `json:"emoji" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	if message.Metadata == nil {
+		message.Metadata = make(map[string]any)
+	}
+
+	reactions, ok := message.Metadata["reactions"].([]any)
+	if !ok {
+		reactions = []any{}
+	}
+
+	var reactionList []map[string]any
+	for _, r := range reactions {
+		if reaction, ok := r.(map[string]any); ok {
+			reactionList = append(reactionList, reaction)
+		}
+	}
+
+	var existingReactionIndex = -1
+	var userReactionIndex = -1
+
+	for i, reaction := range reactionList {
+		if emoji, ok := reaction["emoji"].(string); ok && emoji == req.Emoji {
+			existingReactionIndex = i
+			if users, ok := reaction["users"].([]any); ok {
+				for j, userId := range users {
+					if userIdStr, ok := userId.(string); ok && userIdStr == userID.Hex() {
+						userReactionIndex = j
+						break
+					}
+				}
+			}
+			break
+		}
+	}
+
+	if existingReactionIndex >= 0 {
+		reaction := reactionList[existingReactionIndex]
+		users := reaction["users"].([]any)
+
+		if userReactionIndex >= 0 {
+			users = append(users[:userReactionIndex], users[userReactionIndex+1:]...)
+			reaction["users"] = users
+			reaction["count"] = len(users)
+
+			if len(users) == 0 {
+				reactionList = append(reactionList[:existingReactionIndex], reactionList[existingReactionIndex+1:]...)
+			} else {
+				reactionList[existingReactionIndex] = reaction
+			}
+		} else {
+			users = append(users, userID.Hex())
+			reaction["users"] = users
+			reaction["count"] = len(users)
+			reactionList[existingReactionIndex] = reaction
+		}
+	} else {
+		newReaction := map[string]any{
+			"emoji": req.Emoji,
+			"count": 1,
+			"users": []any{userID.Hex()},
+		}
+		reactionList = append(reactionList, newReaction)
+	}
+
+	var updatedReactions []any
+	for _, r := range reactionList {
+		updatedReactions = append(updatedReactions, r)
+	}
+
+	message.Metadata["reactions"] = updatedReactions
+
+	update := bson.M{"$set": bson.M{"metadata": message.Metadata}}
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
+	if err != nil {
+		log.Printf("Error updating message reactions: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update reaction"})
+		return
+	}
+
+	var frontendReactions []map[string]any
+	for _, r := range reactionList {
+		reaction := r
+		users := reaction["users"].([]any)
+
+		userReacted := false
+		for _, u := range users {
+			if u.(string) == userID.Hex() {
+				userReacted = true
+				break
+			}
+		}
+
+		frontendReactions = append(frontendReactions, map[string]any{
+			"emoji":       reaction["emoji"],
+			"count":       reaction["count"],
+			"userReacted": userReacted,
+		})
+	}
+
+	wsMessage := models.WSMessage{
+		Action: "reaction_update",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId": messageID,
+			"reactions": frontendReactions,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"messageId": messageID,
+		"reactions": frontendReactions,
 	})
 }

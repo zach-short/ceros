@@ -9,19 +9,22 @@ import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
 import { ThreadView } from '../ui/thread-view';
 import { MotionPanel } from './motion-panel';
-import { Message } from '../ui/types';
+import { Message, User } from '../ui/types';
 import {
   useCommitteeChat,
   useCommitteeHistory,
+  useToggleMessageReaction,
 } from '@/hooks/api/use-committee-chat';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
 
 export default function CommitteeChat() {
   const params = useParams();
   const committeeId = params.id as string;
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [showMotionPanel, setShowMotionPanel] = useState(false);
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
@@ -52,6 +55,10 @@ export default function CommitteeChat() {
 
   const handleNewMessage = (message: Message) => {
     if (message.roomId === roomId) {
+      const transformedMessage = session?.user?.id
+        ? transformMessagesWithReactions([message], session.user.id)[0]
+        : message;
+
       setMessages((prev) => {
         const exists = prev.some(
           (m) =>
@@ -68,11 +75,24 @@ export default function CommitteeChat() {
             m.id.startsWith('temp-') &&
             m.content === message.content &&
             m.senderId === message.senderId
-              ? message
+              ? transformedMessage
               : m,
           );
         }
-        return [...prev, message];
+        return [...prev, transformedMessage];
+      });
+
+      setUsers((prevUsers) => {
+        const userExists = prevUsers.some((u) => u.id === message.senderId);
+        if (!userExists && message.senderId !== session?.user?.id) {
+          const placeholderUser: User = {
+            id: message.senderId,
+            name: 'Unknown User',
+            email: '',
+          };
+          return [...prevUsers, placeholderUser];
+        }
+        return prevUsers;
       });
     }
   };
@@ -116,10 +136,15 @@ export default function CommitteeChat() {
   ]);
 
   useEffect(() => {
-    if (historyData?.messages) {
-      setMessages(historyData.messages);
+    if (historyData?.messages && session?.user?.id) {
+      setMessages(
+        transformMessagesWithReactions(historyData.messages, session.user.id),
+      );
     }
-  }, [historyData]);
+    if (historyData?.users) {
+      setUsers(historyData.users);
+    }
+  }, [historyData, session?.user?.id]);
 
   useEffect(() => {
     if (roomId && isConnected) {
@@ -199,11 +224,32 @@ export default function CommitteeChat() {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('bg-yellow-100', 'transition-colors', 'duration-1000');
+      element.classList.add(
+        'bg-blue-600',
+        'transition-colors',
+        'duration-1000',
+      );
       setTimeout(() => {
-        element.classList.remove('bg-yellow-100');
+        element.classList.remove('bg-blue-600');
       }, 2000);
     }
+  };
+
+  const { mutate: toggleReaction } = useToggleMessageReaction({
+    onSuccess: (data) => {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (msg.id === data.messageId) {
+            return { ...msg, reactions: data.reactions };
+          }
+          return msg;
+        }),
+      );
+    },
+  });
+
+  const handleReaction = (messageId: string, emoji: string) => {
+    toggleReaction({ messageId, emoji });
   };
 
   const handleProposeMotion = (title: string, description: string) => {
@@ -230,7 +276,7 @@ export default function CommitteeChat() {
   }
 
   return (
-    <div className='flex h-[calc(100vh-4rem)] lg:h-screen'>
+    <div className='flex h-[calc(100vh-4rem)] sm:h-screen'>
       <div className='flex flex-col flex-1 max-w-4xl mx-auto'>
         <ChatHeader
           recipientName={`Committee`}
@@ -248,12 +294,15 @@ export default function CommitteeChat() {
             <MessagesList
               ref={messagesEndRef}
               messages={messages}
+              users={users}
               currentUserId={session.user.id}
               recipientName={`Committee ${committeeId}`}
               isLoading={historyLoading && messages.length === 0}
               onReply={handleReplyToMessage}
               onOpenThread={handleOpenThread}
+              onReaction={handleReaction}
               onScrollToMessage={handleScrollToMessage}
+              chatType='committee'
             />
 
             <MessageInput

@@ -1,10 +1,11 @@
 import { forwardRef } from 'react';
 import { MessageBubble } from './message-bubble';
 import { DefaultLoader } from '@/components/shared/layout/loader';
-import { Message } from './types';
+import { Message, User } from './types';
 
 interface MessagesListProps {
   messages: Message[];
+  users: User[];
   currentUserId: string;
   recipientName?: string;
   isLoading?: boolean;
@@ -13,6 +14,7 @@ interface MessagesListProps {
   onReaction?: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, newContent: string) => void;
   onScrollToMessage?: (messageId: string) => void;
+  chatType?: 'dm' | 'committee';
 }
 
 const getTimeGroupHeader = (timestamp: string): string => {
@@ -47,10 +49,24 @@ const shouldShowTimeHeader = (currentMessage: Message, previousMessage?: Message
   return diffHours >= 4;
 };
 
+const shouldGroupMessages = (currentMessage: Message, previousMessage?: Message): boolean => {
+  if (!previousMessage) return false;
+
+  if (currentMessage.senderId !== previousMessage.senderId) return false;
+
+  if (currentMessage.type === 'reply' || previousMessage.type === 'reply') return false;
+
+  const currentTime = new Date(currentMessage.timestamp);
+  const previousTime = new Date(previousMessage.timestamp);
+  const diffMinutes = (currentTime.getTime() - previousTime.getTime()) / (1000 * 60);
+
+  return diffMinutes <= 5;
+};
+
 export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
-  ({ messages, currentUserId, recipientName, isLoading, onReply, onOpenThread, onReaction, onEdit, onScrollToMessage }, messagesEndRef) => {
+  ({ messages, users, currentUserId, recipientName, isLoading, onReply, onOpenThread, onReaction, onEdit, onScrollToMessage, chatType = 'dm' }, messagesEndRef) => {
     return (
-      <div className='flex-1 overflow-y-auto p-4 flex flex-col min-h-0'>
+      <div className='flex-1 overflow-y-auto flex flex-col min-h-0'>
         {isLoading ? (
           <div className='flex items-center justify-center flex-1'>
             <DefaultLoader />
@@ -60,33 +76,21 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
             Start your conversation with {recipientName}
           </div>
         ) : (
-          <div className='flex flex-col space-y-3 flex-1'>
+          <div className='flex flex-col flex-1'>
             {messages.map((message, index) => {
-              const isOwn = message.senderId === currentUserId;
               const isReply = message.type === 'reply';
               const previousMessage = messages[index - 1];
               const showTimeHeader = shouldShowTimeHeader(message, previousMessage);
+              const isGrouped = shouldGroupMessages(message, previousMessage);
+              const isFirstInGroup = !isGrouped;
 
-              let replyDisplayType: 'direct-own' | 'distant-own' | 'direct-other' | 'distant-other' | null = null;
               let parentMessage: Message | undefined;
-
               if (isReply && message.parentMessageId) {
-                const isDirectlyBelow = previousMessage?.id === message.parentMessageId;
                 parentMessage = messages.find(m => m.id === message.parentMessageId);
-
-                if (isOwn && isDirectlyBelow) {
-                  replyDisplayType = 'direct-own';
-                } else if (isOwn && !isDirectlyBelow) {
-                  replyDisplayType = 'distant-own';
-                } else if (!isOwn && isDirectlyBelow) {
-                  replyDisplayType = 'direct-other';
-                } else if (!isOwn && !isDirectlyBelow) {
-                  replyDisplayType = 'distant-other';
-                }
               }
 
               return (
-                <div key={message.id}>
+                <div key={message.id} className={isFirstInGroup && index > 0 ? 'mt-3' : ''}>
                   {showTimeHeader && (
                     <div className='text-center text-xs text-gray-500 my-4'>
                       {getTimeGroupHeader(message.timestamp)}
@@ -94,14 +98,16 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                   )}
                   <MessageBubble
                     message={message}
-                    isOwn={isOwn}
+                    currentUserId={currentUserId}
+                    users={users}
                     onReply={onReply}
-                    onOpenThread={onOpenThread}
-                    onReaction={onReaction}
                     onEdit={onEdit}
-                    replyDisplayType={replyDisplayType}
+                    onReaction={onReaction}
                     parentMessage={parentMessage}
                     onScrollToParent={onScrollToMessage}
+                    chatType={chatType}
+                    showAvatar={true}
+                    isFirstInGroup={isFirstInGroup}
                   />
                 </div>
               );
