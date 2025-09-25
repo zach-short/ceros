@@ -13,7 +13,6 @@ interface ParentMessagePreviewProps {
 
 export function ParentMessagePreview({
   parentMessage,
-  isOwnReply,
   onClick,
   users = [],
   currentUserId,
@@ -24,11 +23,11 @@ export function ParentMessagePreview({
       : content;
   };
 
-  const sender = users.find(u => u.id === parentMessage.senderId);
+  const sender = users.find((u) => u.id === parentMessage.senderId);
   const isOwn = parentMessage.senderId === currentUserId;
 
   const privacyContext: UserPrivacyContext = {
-    user: sender || { id: parentMessage.senderId } as User,
+    user: sender || ({ id: parentMessage.senderId } as User),
     viewerUserId: currentUserId,
     isOwnProfile: isOwn,
   };
@@ -40,26 +39,27 @@ export function ParentMessagePreview({
 
   return (
     <div
-      className="flex items-center gap-1 text-xs cursor-pointer transition-opacity hover:opacity-80 text-muted-foreground"
+      className='flex items-center gap-1 text-xs cursor-pointer transition-opacity hover:opacity-80 text-muted-foreground'
       onClick={onClick}
     >
-      <Reply className="w-3 h-3 flex-shrink-0" />
+      <Reply className='w-3 h-3 flex-shrink-0' />
       {sender ? (
         <UserAvatar
           user={sender}
           viewerUserId={currentUserId}
           isOwnProfile={isOwn}
-          size="sm"
-          className="w-4 h-4"
+          size='sm'
+          className='w-4 h-4'
         />
       ) : (
-        <div className="w-4 h-4 rounded-full bg-gray-300 flex items-center justify-center">
-          <span className="text-xs text-gray-600">?</span>
+        <div className='w-4 h-4 rounded-full bg-gray-300 flex items-center justify-center'>
+          <span className='text-xs text-gray-600'>?</span>
         </div>
       )}
-      <span className="font-medium">{getUserDisplayName()}</span>
-      <span className="text-xs opacity-75">{truncateContent(parentMessage.content)}</span>
+      <span className='font-medium'>{getUserDisplayName()}</span>
+      <span className='text-xs opacity-75'>
+        {truncateContent(parentMessage.content)}
+      </span>
     </div>
   );
 }
-
