@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MenuIcon,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface NavItem {
   href: string;
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const session = useSession();
 
   const isActive = (href: string) => {
     if (href === '/chat') {
@@ -53,6 +55,10 @@ export function MobileBottomNav() {
     }
     return pathname === href || pathname.startsWith(href + '/');
   };
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <nav className='fixed bottom-0 left-0 right-0 bg-background border-t border-border lg:hidden z-50'>
