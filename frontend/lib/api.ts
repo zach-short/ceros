@@ -48,12 +48,7 @@ API.interceptors.request.use(
     if (!isPublicEndpoint) {
       try {
         const session = await getSession();
-        console.log('Full session object:', session);
         const token = session?.apiToken || session?.user?.apiToken;
-        console.log(
-          'Extracted token:',
-          token ? 'Token exists' : 'No token found',
-        );
 
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;

@@ -7,7 +7,6 @@ export function useStartDM(options?: {
 }) {
   return useMutation(chatApi.startDM, {
     onSuccess: (data: { roomId: string; room: Room }) => {
-      console.log('DM conversation started:', data);
       options?.onSuccess?.(data);
     },
     onError: (error) => {
@@ -49,6 +48,6 @@ export function useToggleMessageReaction(options?: {
         console.error('Failed to toggle message reaction:', error);
         options?.onError?.(error);
       },
-    }
+    },
   );
 }

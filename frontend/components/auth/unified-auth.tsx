@@ -38,7 +38,6 @@ function UnifiedAuthForm({
 
   const handleSocialAuth = async (provider: 'google' | 'github') => {
     setIsLoading(true);
-    console.log(`Starting ${provider} OAuth flow`);
 
     try {
       await signIn(provider, {

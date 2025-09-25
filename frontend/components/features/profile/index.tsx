@@ -30,8 +30,7 @@ export function Profile() {
   const [checkingUsername, setCheckingUsername] = useState(false);
 
   const { mutate: updateProfile, loading: updateLoading } = useUpdateProfile({
-    onSuccess: (data) => {
-      console.log('Profile update successful:', data);
+    onSuccess: () => {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       refetch();
@@ -73,7 +72,6 @@ export function Profile() {
   }
 
   const handleEdit = () => {
-    console.log('Current user data:', user);
     setFormData({
       name: user.name || '',
       givenName: user.givenName || '',
@@ -103,9 +101,6 @@ export function Profile() {
       return;
     }
 
-    console.log('Submitting form data:', formData);
-    console.log('Form data address:', formData.address);
-    console.log('Address input state:', addressInput);
     updateProfile(formData);
   };
 
@@ -235,12 +230,10 @@ export function Profile() {
                     <div className='absolute inset-0 bg-black/40 rounded-full' />
                     <div className='absolute -bottom-5 -right-5'>
                       <UploadImageButton
-                        onUploadError={(error) => {
-                          console.log(error);
+                        onUploadError={() => {
                           toast.error('Error uploading photo');
                         }}
                         onClientUploadComplete={(res) => {
-                          console.log(res);
                           setFormData({ ...formData, picture: res[0].url });
                         }}
                       />
@@ -324,7 +317,6 @@ export function Profile() {
                 value={addressInput}
                 onValueChange={setAddressInput}
                 onAddressSelect={(address) => {
-                  console.log('Address selected:', address);
                   const updatedFormData = {
                     ...formData,
                     address: {
@@ -334,7 +326,6 @@ export function Profile() {
                       zip: address.zip || '',
                     },
                   };
-                  console.log('Updated form data:', updatedFormData);
                   setFormData(updatedFormData);
                 }}
               />

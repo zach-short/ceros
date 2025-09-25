@@ -7,8 +7,6 @@ import { useSession } from 'next-auth/react';
 import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
-import { ThreadView } from '../ui/thread-view';
-import { MotionPanel } from './motion-panel';
 import { Message, User } from '../ui/types';
 import {
   useCommitteeChat,
@@ -26,8 +24,8 @@ export default function CommitteeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [showMotionPanel, setShowMotionPanel] = useState(false);
-  const [threadMessage, setThreadMessage] = useState<Message | null>(null);
+  /* const [showMotionPanel, setShowMotionPanel] = useState(false); */
+  /* const [threadMessage, setThreadMessage] = useState<Message | null>(null); */
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
 
@@ -101,14 +99,14 @@ export default function CommitteeChat() {
     isConnected,
     sendMessage,
     replyToMessage,
-    proposeMotion,
-    secondMotion,
-    voteOnMotion,
+    /* proposeMotion, */
+    /* secondMotion, */
+    /* voteOnMotion, */
     joinRoom,
   } = useWebSocket({
     onMessage: handleNewMessage,
-    onConnect: () => console.log('Connected to committee chat'),
-    onDisconnect: () => console.log('Disconnected from committee chat'),
+    onConnect: () => {},
+    onDisconnect: () => {},
   });
 
   useEffect(() => {
@@ -148,14 +146,12 @@ export default function CommitteeChat() {
 
   useEffect(() => {
     if (roomId && isConnected) {
-      console.log('Joining committee room:', roomId);
       joinRoom(roomId);
     }
   }, [roomId, isConnected, joinRoom]);
 
   useEffect(() => {
     if (historyData?.roomId && isConnected && !roomId) {
-      console.log('Setting roomId from history:', historyData.roomId);
       setRoomId(historyData.roomId);
     }
   }, [historyData?.roomId, isConnected, roomId]);
@@ -197,29 +193,6 @@ export default function CommitteeChat() {
     replyToMessage(roomId, content, parentMessageId);
   };
 
-  const handleOpenThread = (messageId: string) => {
-    const message = messages.find((m) => m.id === messageId);
-    if (message) {
-      setThreadMessage(message);
-    }
-  };
-
-  const handleCloseThread = () => {
-    setThreadMessage(null);
-  };
-
-  const handleSendReply = (content: string) => {
-    if (!threadMessage) return;
-    handleReplyToMessage(threadMessage.id, content);
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === threadMessage.id
-          ? { ...m, threadCount: (m.threadCount || 0) + 1 }
-          : m,
-      ),
-    );
-  };
-
   const handleScrollToMessage = (messageId: string) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
@@ -250,12 +223,6 @@ export default function CommitteeChat() {
 
   const handleReaction = (messageId: string, emoji: string) => {
     toggleReaction({ messageId, emoji });
-  };
-
-  const handleProposeMotion = (title: string, description: string) => {
-    if (!roomId || !isConnected || !committeeId) return;
-    proposeMotion(roomId, title, description, committeeId);
-    setShowMotionPanel(false);
   };
 
   if (!session) {
@@ -299,7 +266,7 @@ export default function CommitteeChat() {
               recipientName={`Committee ${committeeId}`}
               isLoading={historyLoading && messages.length === 0}
               onReply={handleReplyToMessage}
-              onOpenThread={handleOpenThread}
+              /* onOpenThread={handleOpenThread} */
               onReaction={handleReaction}
               onScrollToMessage={handleScrollToMessage}
               chatType='committee'
@@ -308,12 +275,49 @@ export default function CommitteeChat() {
             <MessageInput
               isConnected={isConnected}
               onSendMessage={handleSendMessage}
-              onProposeMotion={() => setShowMotionPanel(true)}
+              /* onProposeMotion={() => setShowMotionPanel(true)} */
               showMotionButton={true}
             />
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          {showMotionPanel && (
+/*
+ const handleProposeMotion = (title: string, description: string) => {
+    if (!roomId || !isConnected || !committeeId) return;
+    proposeMotion(roomId, title, description, committeeId);
+    setShowMotionPanel(false);
+  };
+
+  const handleCloseThread = () => {
+    setThreadMessage(null);
+  };
+
+  const handleSendReply = (content: string) => {
+    if (!threadMessage) return;
+    handleReplyToMessage(threadMessage.id, content);
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === threadMessage.id
+          ? { ...m, threadCount: (m.threadCount || 0) + 1 }
+          : m,
+      ),
+    );
+  };
+
+  const handleOpenThread = (messageId: string) => {
+    const message = messages.find((m) => m.id === messageId);
+    if (message) {
+      setThreadMessage(message);
+    }
+  };
+
+
+
+{showMotionPanel && (
             <>
               <div
                 className='fixed inset-0 bg-black/50 z-40 lg:hidden'
@@ -334,6 +338,7 @@ export default function CommitteeChat() {
           )}
         </div>
 
+
         {threadMessage && (
           <ThreadView
             parentMessage={threadMessage}
@@ -342,7 +347,4 @@ export default function CommitteeChat() {
             currentUserId={session.user.id}
           />
         )}
-      </div>
-    </div>
-  );
-}
+*/

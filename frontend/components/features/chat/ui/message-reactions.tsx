@@ -22,7 +22,10 @@ export function MessageReactions({ reactions, onReactionClick, className = '' }:
       {reactions.map(({ emoji, count, userReacted }) => (
         <button
           key={emoji}
-          onClick={() => onReactionClick(emoji)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReactionClick(emoji);
+          }}
           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors ${
             userReacted
               ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700'
