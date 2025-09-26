@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Message } from '@/models';
 import {
   ContextMenu,
@@ -13,6 +13,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Reply, Edit, Heart, Copy, Trash2 } from 'lucide-react';
+import { MORE_REACTIONS, QUICK_REACTIONS } from './emojis';
 
 interface MessageContextMenuProps {
   message: Message;
@@ -25,46 +26,6 @@ interface MessageContextMenuProps {
   chatType?: 'dm' | 'committee';
 }
 
-const QUICK_REACTIONS = ['❤️', '👍', '😂', '😢', '😮', '😡'];
-const MORE_REACTIONS = [
-  '😀',
-  '😃',
-  '😄',
-  '😁',
-  '😅',
-  '😂',
-  '🤣',
-  '😊',
-  '😇',
-  '🙂',
-  '🙃',
-  '😉',
-  '😍',
-  '🥰',
-  '😘',
-  '😗',
-  '😙',
-  '😚',
-  '😋',
-  '😛',
-  '😝',
-  '😜',
-  '🤪',
-  '🤨',
-  '🧐',
-  '🤓',
-  '😎',
-  '🤩',
-  '🥳',
-  '😏',
-  '😒',
-  '😞',
-  '😔',
-  '😟',
-  '😕',
-  '🙁',
-];
-
 export function MessageContextMenu({
   message,
   isOwn,
@@ -74,8 +35,23 @@ export function MessageContextMenu({
   onDelete,
   onReaction,
 }: MessageContextMenuProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
+  const canEdit = () => {
+    if (!isOwn || !onEdit) return false;
+    if (message.originalContent) return false;
+
+    const messageTime = new Date(message.timestamp);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - messageTime.getTime()) / (1000 * 60);
+
+    return diffMinutes <= 15;
+  };
+
   const handleReaction = (emoji: string) => {
     onReaction(message.id, emoji);
+    setIsSubMenuOpen(false);
+    setIsMenuOpen(false);
   };
 
   const handleReply = () => {
@@ -99,7 +75,7 @@ export function MessageContextMenu({
   };
 
   return (
-    <ContextMenu>
+    <ContextMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className='min-w-[200px]'>
         <div className='flex gap-1 p-2'>
@@ -122,17 +98,10 @@ export function MessageContextMenu({
           Reply
         </ContextMenuItem>
 
-        {isOwn && onEdit && (
+        {canEdit() && (
           <ContextMenuItem onClick={handleEdit}>
             <Edit className='w-4 h-4 mr-2' />
             Edit
-          </ContextMenuItem>
-        )}
-
-        {isOwn && onDelete && (
-          <ContextMenuItem onClick={handleDelete} className='text-red-600'>
-            <Trash2 className='w-4 h-4 mr-2' />
-            Delete
           </ContextMenuItem>
         )}
 
@@ -140,14 +109,20 @@ export function MessageContextMenu({
           <Copy className='w-4 h-4 mr-2' />
           Copy Text
         </ContextMenuItem>
+        {isOwn && onDelete && (
+          <ContextMenuItem onClick={handleDelete} className='text-red-600'>
+            <Trash2 className='w-4 h-4 mr-2' />
+            Delete
+          </ContextMenuItem>
+        )}
 
         <ContextMenuSub>
           <ContextMenuSubTrigger>
             <Heart className='w-4 h-4 mr-2' />
             More Reactions
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className='w-[240px]'>
-            <div className='grid grid-cols-8 gap-1 p-2'>
+          <ContextMenuSubContent className='w-[280px] max-h-[320px] md:max-h-[400px]'>
+            <div className='grid grid-cols-8 gap-1 p-2 overflow-y-auto max-h-[280px] md:max-h-[360px]'>
               {MORE_REACTIONS.map((emoji) => (
                 <ContextMenuItem
                   key={emoji}

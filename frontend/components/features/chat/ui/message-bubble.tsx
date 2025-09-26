@@ -66,11 +66,9 @@ const MessageHeader = ({
 const MessageContent = ({
   message,
   onReactionClick,
-  showEditIndicator = true,
 }: {
   message: Message;
   onReactionClick: (emoji: string) => void;
-  showEditIndicator?: boolean;
 }) => {
   return (
     <>
@@ -78,23 +76,22 @@ const MessageContent = ({
         {message.content}
       </p>
 
-      {message.reactions && message.reactions.length > 0 && (
-        <MessageReactions
-          reactions={message.reactions}
-          onReactionClick={onReactionClick}
-        />
-      )}
-
-      {showEditIndicator &&
-        message.isEdited &&
-        message.originalContent &&
-        message.editedAt && (
+      <div className='flex flex-row items-center gap-2 mt-1'>
+        {message.isEdited && message.originalContent && message.editedAt && (
           <MessageEditIndicator
             originalContent={message.originalContent}
             editedAt={message.editedAt}
-            className='mt-1'
+            className=''
           />
         )}
+
+        {message.reactions && message.reactions.length > 0 && (
+          <MessageReactions
+            reactions={message.reactions}
+            onReactionClick={onReactionClick}
+          />
+        )}
+      </div>
     </>
   );
 };
@@ -181,22 +178,11 @@ export function MessageBubble({
                 />
               )}
 
-              <div className='flex-1'>
+              <div className='flex flex-col'>
                 <MessageContent
                   message={message}
                   onReactionClick={handleReaction}
-                  showEditIndicator={false}
                 />
-
-                {message.isEdited &&
-                  message.originalContent &&
-                  message.editedAt && (
-                    <MessageEditIndicator
-                      originalContent={message.originalContent}
-                      editedAt={message.editedAt}
-                      className='mt-1'
-                    />
-                  )}
               </div>
             </div>
           </MessageContextMenu>

@@ -20,7 +20,6 @@ export function MessageReactions({
   if (!reactions || reactions.length === 0) {
     return null;
   }
-  console.log(reactions, 'reactions ');
 
   return (
     <div className={`flex flex-wrap gap-1 mt-1 ${className}`}>
