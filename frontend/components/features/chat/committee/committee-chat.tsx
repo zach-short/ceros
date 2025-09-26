@@ -257,7 +257,7 @@ export default function CommitteeChat() {
 
   const handleEditMessage = (messageId: string, newContent: string) => {
     editMessage({ messageId, content: newContent });
-    setEditState(null);
+    setEditState(undefined);
   };
 
   const handleDeleteMessage = (messageId: string) => {
@@ -271,7 +271,7 @@ export default function CommitteeChat() {
 
   const handleStartReply = (messageId: string, content: string) => {
     setReplyState({ messageId, content });
-    setEditState(null);
+    setEditState(undefined);
   };
 
   const handleCancelReply = () => {
@@ -279,7 +279,7 @@ export default function CommitteeChat() {
   };
 
   const handleCancelEdit = () => {
-    setEditState(null);
+    setEditState(undefined);
   };
 
   if (!session) {

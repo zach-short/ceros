@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import { Message } from '@/models';
 import {
   ContextMenu,
@@ -19,7 +19,7 @@ interface MessageContextMenuProps {
   message: Message;
   isOwn: boolean;
   children: ReactNode;
-  onReply: (messageId: string, content: string) => void;
+  onReply?: (messageId: string, content: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReaction: (messageId: string, emoji: string) => void;
@@ -35,8 +35,6 @@ export function MessageContextMenu({
   onDelete,
   onReaction,
 }: MessageContextMenuProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSubMenuOpen, setIsSubMenuOpen] = useState(false);
   const canEdit = () => {
     if (!isOwn || !onEdit) return false;
     if (message.originalContent) return false;
@@ -50,12 +48,10 @@ export function MessageContextMenu({
 
   const handleReaction = (emoji: string) => {
     onReaction(message.id, emoji);
-    setIsSubMenuOpen(false);
-    setIsMenuOpen(false);
   };
 
   const handleReply = () => {
-    onReply(message.id, message.content);
+    onReply?.(message.id, message.content);
   };
 
   const handleEdit = () => {
@@ -75,7 +71,7 @@ export function MessageContextMenu({
   };
 
   return (
-    <ContextMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+    <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className='min-w-[200px]'>
         <div className='flex gap-1 p-2'>
@@ -93,10 +89,12 @@ export function MessageContextMenu({
 
         <ContextMenuSeparator />
 
-        <ContextMenuItem onClick={handleReply}>
-          <Reply className='w-4 h-4 mr-2' />
-          Reply
-        </ContextMenuItem>
+        {onReply && (
+          <ContextMenuItem onClick={handleReply}>
+            <Reply className='w-4 h-4 mr-2' />
+            Reply
+          </ContextMenuItem>
+        )}
 
         {canEdit() && (
           <ContextMenuItem onClick={handleEdit}>
@@ -116,17 +114,12 @@ export function MessageContextMenu({
           </ContextMenuItem>
         )}
 
-        <ContextMenuSub open={isSubMenuOpen} onOpenChange={setIsSubMenuOpen}>
+        <ContextMenuSub>
           <ContextMenuSubTrigger>
             <Heart className='w-4 h-4 mr-2' />
             More Reactions
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent
-            className='w-[90vw] max-w-[280px] max-h-[50vh] md:max-h-[400px]'
-            side='left'
-            sideOffset={5}
-            align='start'
-          >
+          <ContextMenuSubContent className='w-[90vw] max-w-[280px] max-h-[50vh] md:max-h-[400px]'>
             <div className='grid grid-cols-6 sm:grid-cols-8 gap-1 p-2 overflow-y-auto max-h-[45vh] md:max-h-[360px]'>
               {MORE_REACTIONS.map((emoji) => (
                 <ContextMenuItem
