@@ -38,11 +38,11 @@ export function DMChat({
   const [replyState, setReplyState] = useState<{
     messageId: string;
     content: string;
-  } | null>(null);
+  } | undefined>(undefined);
   const [editState, setEditState] = useState<{
     messageId: string;
     content: string;
-  } | null>(null);
+  } | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
 
@@ -200,7 +200,7 @@ export function DMChat({
 
     if (replyState) {
       handleReply(replyState.messageId, content);
-      setReplyState(null);
+      setReplyState(undefined);
     } else {
       const tempMessage: Message = {
         id: `temp-${Date.now()}`,
@@ -313,7 +313,7 @@ export function DMChat({
 
   const handleEditMessage = (messageId: string, newContent: string) => {
     editMessage({ messageId, content: newContent });
-    setEditState(null);
+    setEditState(undefined);
   };
 
   const handleDeleteMessage = (messageId: string) => {
@@ -322,20 +322,20 @@ export function DMChat({
 
   const handleStartEdit = (messageId: string, content: string) => {
     setEditState({ messageId, content });
-    setReplyState(null);
+    setReplyState(undefined);
   };
 
   const handleStartReply = (messageId: string, content: string) => {
     setReplyState({ messageId, content });
-    setEditState(null);
+    setEditState(undefined);
   };
 
   const handleCancelReply = () => {
-    setReplyState(null);
+    setReplyState(undefined);
   };
 
   const handleCancelEdit = () => {
-    setEditState(null);
+    setEditState(undefined);
   };
 
   if (!session) {
