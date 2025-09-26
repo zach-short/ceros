@@ -56,4 +56,10 @@ export const committeeApi = {
 
   toggleMessageReaction: (messageId: string, emoji: string): Promise<any> =>
     apiRequest('post', `/messages/${messageId}/reaction`, { emoji }),
+
+  editMessage: (messageId: string, content: string): Promise<any> =>
+    apiRequest('put', `/messages/${messageId}`, { content }),
+
+  deleteMessage: (messageId: string): Promise<any> =>
+    apiRequest('delete', `/messages/${messageId}`),
 };

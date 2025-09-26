@@ -38,10 +38,21 @@ export interface GetDMHistoryResponse {
   messages: Message[];
 }
 
+export interface ConversationUser {
+  id: string;
+  name?: string;
+  givenName?: string;
+  familyName?: string;
+  picture?: string;
+}
+
 export interface ConversationSummary {
   roomId: string;
-  type: 'dm' | 'group';
+  type: 'dm' | 'group' | 'committee';
   participants: string[];
+  otherUser?: ConversationUser; // For DMs only
+  groupName?: string; // For groups/committees
+  groupImage?: string; // For groups/committees
   lastMessage?: Message;
   lastMessageAt: string;
   unreadCount: number;
@@ -66,5 +77,11 @@ export const chatApi = {
 
   toggleMessageReaction: (messageId: string, emoji: string): Promise<any> =>
     apiRequest('post', `/messages/${messageId}/reaction`, { emoji }),
+
+  editMessage: (messageId: string, content: string): Promise<any> =>
+    apiRequest('put', `/messages/${messageId}`, { content }),
+
+  deleteMessage: (messageId: string): Promise<any> =>
+    apiRequest('delete', `/messages/${messageId}`),
 };
 

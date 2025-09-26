@@ -3,41 +3,22 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 
-const dummyCommittees = [
-  {
-    id: '507f1f77bcf86cd799439011',
-    name: 'Budget Committee',
-    memberCount: 12,
-    lastActivity: '2 hours ago',
-    unreadCount: 3,
-  },
-  {
-    id: '507f1f77bcf86cd799439012',
-    name: 'Policy Review Committee',
-    memberCount: 8,
-    lastActivity: '1 day ago',
-    unreadCount: 0,
-  },
-  {
-    id: '507f1f77bcf86cd799439013',
-    name: 'Events Planning Committee',
-    memberCount: 15,
-    lastActivity: '3 days ago',
-    unreadCount: 1,
-  },
-];
+const dummyCommittees: any[] = [];
 
 interface CommitteeListProps {
   searchQuery?: string;
   showMemberCount?: boolean;
 }
 
-export function CommitteeList({ searchQuery = '', showMemberCount = true }: CommitteeListProps) {
+export function CommitteeList({
+  searchQuery = '',
+  showMemberCount = true,
+}: CommitteeListProps) {
   const router = useRouter();
 
   const filteredCommittees = searchQuery.trim()
     ? dummyCommittees.filter((committee) =>
-        committee.name.toLowerCase().includes(searchQuery.toLowerCase())
+        committee.name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : dummyCommittees;
 
@@ -53,7 +34,7 @@ export function CommitteeList({ searchQuery = '', showMemberCount = true }: Comm
             <AvatarFallback>
               {committee.name
                 .split(' ')
-                .map((n) => n[0])
+                .map((n: any) => n[0])
                 .join('')}
             </AvatarFallback>
           </Avatar>
@@ -78,3 +59,4 @@ export function CommitteeList({ searchQuery = '', showMemberCount = true }: Comm
     </div>
   );
 }
+

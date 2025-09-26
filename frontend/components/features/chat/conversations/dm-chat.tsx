@@ -7,6 +7,8 @@ import {
   useStartDM,
   useDMHistory,
   useToggleMessageReaction,
+  useEditMessage,
+  useDeleteMessage,
 } from '@/hooks/api/use-chat';
 import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
@@ -33,6 +35,14 @@ export function DMChat({
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
+  const [replyState, setReplyState] = useState<{
+    messageId: string;
+    content: string;
+  } | null>(null);
+  const [editState, setEditState] = useState<{
+    messageId: string;
+    content: string;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
 
@@ -58,7 +68,11 @@ export function DMChat({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleNewMessage = (message: Message) => {
+  const handleNewMessage = (data: any) => {
+    // Check if data contains both message and sender (new format)
+    const message = data.message || data; // Handle both old and new format
+    const sender = data.sender;
+
     if (
       message.roomId === roomId ||
       (recipientId &&
@@ -93,23 +107,39 @@ export function DMChat({
         return [...prev, transformedMessage];
       });
 
-      setUsers((prevUsers) => {
-        const userExists = prevUsers.some((u) => u.id === message.senderId);
-        if (!userExists && message.senderId !== session?.user?.id) {
-          const placeholderUser: User = {
-            id: message.senderId,
-            name: 'Unknown User',
-            email: '',
-          };
-          return [...prevUsers, placeholderUser];
-        }
-        return prevUsers;
-      });
+      // Add sender data to users if provided and not already exists
+      if (sender && message.senderId !== session?.user?.id) {
+        setUsers((prevUsers) => {
+          const userExists = prevUsers.some((u) => u.id === sender.id);
+          if (!userExists) {
+            const newUser: User = {
+              id: sender.id,
+              name: sender.name || 'Unknown User',
+              email: '',
+              picture: sender.picture,
+            };
+            return [...prevUsers, newUser];
+          }
+          return prevUsers;
+        });
+      }
     }
+  };
+
+  const handleReactionUpdate = (data: { messageId: string; reactions: any[] }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === data.messageId) {
+          return { ...msg, reactions: data.reactions };
+        }
+        return msg;
+      }),
+    );
   };
 
   const { isConnected, sendMessage, replyToMessage, joinRoom } = useWebSocket({
     onMessage: handleNewMessage,
+    onReactionUpdate: handleReactionUpdate,
     onConnect: () => {},
     onDisconnect: () => {},
   });
@@ -168,17 +198,22 @@ export function DMChat({
   const handleSendMessage = (content: string) => {
     if (!roomId || !isConnected || !session?.user?.id) return;
 
-    const tempMessage: Message = {
-      id: `temp-${Date.now()}`,
-      type: 'dm',
-      senderId: session.user.id,
-      content,
-      roomId: roomId,
-      timestamp: new Date().toISOString(),
-    };
+    if (replyState) {
+      handleReply(replyState.messageId, content);
+      setReplyState(null);
+    } else {
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`,
+        type: 'dm',
+        senderId: session.user.id,
+        content,
+        roomId: roomId,
+        timestamp: new Date().toISOString(),
+      };
 
-    setMessages((prev) => [...prev, tempMessage]);
-    sendMessage(roomId, content, 'dm');
+      setMessages((prev) => [...prev, tempMessage]);
+      sendMessage(roomId, content, 'dm');
+    }
   };
 
   const handleReply = (parentMessageId: string, content: string) => {
@@ -245,8 +280,62 @@ export function DMChat({
     },
   });
 
+  const { mutate: editMessage } = useEditMessage({
+    onSuccess: (data) => {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (msg.id === data.id) {
+            return {
+              ...msg,
+              content: data.content,
+              isEdited: true,
+              editedAt: data.editedAt,
+              originalContent: data.originalContent,
+            };
+          }
+          return msg;
+        }),
+      );
+    },
+  });
+
+  const { mutate: deleteMessage } = useDeleteMessage({
+    onSuccess: (data) => {
+      setMessages((prevMessages) =>
+        prevMessages.filter((msg) => msg.id !== data.messageId),
+      );
+    },
+  });
+
   const handleReaction = (messageId: string, emoji: string) => {
     toggleReaction({ messageId, emoji });
+  };
+
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    editMessage({ messageId, content: newContent });
+    setEditState(null);
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMessage(messageId);
+  };
+
+  const handleStartEdit = (messageId: string, content: string) => {
+    setEditState({ messageId, content });
+    setReplyState(null);
+  };
+
+  const handleStartReply = (messageId: string, content: string) => {
+    setReplyState({ messageId, content });
+    setEditState(null);
+  };
+
+  const handleCancelReply = () => {
+    setReplyState(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditState(null);
   };
 
   if (!session) {
@@ -267,43 +356,69 @@ export function DMChat({
   }
 
   return (
-    <div className='flex flex-col h-full max-w-3xl mx-auto border rounded-lg lg:mt-6'>
-      <ChatHeader
-        recipientName={recipientName}
-        recipientId={recipientId}
-        recipientPicture={recipientPicture}
-        isConnected={isConnected}
-        isLoading={historyLoading || startingDM}
-        chatType='dm'
-      />
-
-      <MessagesList
-        ref={messagesEndRef}
-        messages={messages}
-        users={users}
-        currentUserId={session.user.id}
-        recipientName={recipientName}
-        isLoading={historyLoading && messages.length === 0}
-        onReply={handleReply}
-        onOpenThread={handleOpenThread}
-        onReaction={handleReaction}
-        onScrollToMessage={handleScrollToMessage}
-        chatType='dm'
-      />
-
-      <MessageInput
-        isConnected={isConnected}
-        onSendMessage={handleSendMessage}
-      />
-
-      {threadMessage && (
-        <ThreadView
-          parentMessage={threadMessage}
-          onClose={handleCloseThread}
-          onSendReply={handleSendReply}
-          currentUserId={session.user.id}
+    <>
+      <div className='flex flex-col h-full max-w-3xl mx-auto border rounded-lg'>
+        <ChatHeader
+          recipientName={recipientName}
+          recipientId={recipientId}
+          recipientPicture={recipientPicture}
+          isConnected={isConnected}
+          isLoading={historyLoading || startingDM}
+          chatType='dm'
         />
-      )}
-    </div>
+
+        <div className='flex-1 pb-0 lg:pb-0'>
+          <MessagesList
+            ref={messagesEndRef}
+            messages={messages}
+            users={users}
+            currentUserId={session.user.id}
+            recipientName={recipientName}
+            isLoading={historyLoading && messages.length === 0}
+            onReply={handleStartReply}
+            onOpenThread={handleOpenThread}
+            onReaction={handleReaction}
+            onEdit={handleStartEdit}
+            onDelete={handleDeleteMessage}
+            onScrollToMessage={handleScrollToMessage}
+            chatType='dm'
+          />
+        </div>
+
+        <div className='lg:block hidden'>
+          <MessageInput
+            isConnected={isConnected}
+            onSendMessage={handleSendMessage}
+            replyState={replyState}
+            editState={editState}
+            onReplyCancel={handleCancelReply}
+            onEditCancel={handleCancelEdit}
+            onEditSave={handleEditMessage}
+          />
+        </div>
+
+        {threadMessage && (
+          <ThreadView
+            parentMessage={threadMessage}
+            onClose={handleCloseThread}
+            onSendReply={handleSendReply}
+            currentUserId={session.user.id}
+          />
+        )}
+      </div>
+
+      {/* Fixed mobile input */}
+      <div className='lg:hidden block'>
+        <MessageInput
+          isConnected={isConnected}
+          onSendMessage={handleSendMessage}
+          replyState={replyState}
+          editState={editState}
+          onReplyCancel={handleCancelReply}
+          onEditCancel={handleCancelEdit}
+          onEditSave={handleEditMessage}
+        />
+      </div>
+    </>
   );
 }

@@ -103,5 +103,7 @@ func SetupRoutes(r *gin.Engine) {
 	{
 		messages.GET("/:id/replies", handlers.GetMessageReplies)
 		messages.POST("/:id/reaction", handlers.ToggleMessageReaction)
+		messages.PUT("/:id", handlers.EditMessage)
+		messages.DELETE("/:id", handlers.DeleteMessage)
 	}
 }

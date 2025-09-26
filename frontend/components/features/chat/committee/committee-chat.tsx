@@ -12,6 +12,8 @@ import {
   useCommitteeChat,
   useCommitteeHistory,
   useToggleMessageReaction,
+  useEditMessage,
+  useDeleteMessage,
 } from '@/hooks/api/use-committee-chat';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
@@ -24,6 +26,8 @@ export default function CommitteeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [replyState, setReplyState] = useState<{messageId: string; content: string} | null>(null);
+  const [editState, setEditState] = useState<{messageId: string; content: string} | null>(null);
   /* const [showMotionPanel, setShowMotionPanel] = useState(false); */
   /* const [threadMessage, setThreadMessage] = useState<Message | null>(null); */
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -163,17 +167,22 @@ export default function CommitteeChat() {
   const handleSendMessage = (content: string) => {
     if (!roomId || !isConnected || !session?.user?.id) return;
 
-    const tempMessage: Message = {
-      id: `temp-${Date.now()}`,
-      type: 'group',
-      senderId: session.user.id,
-      content,
-      roomId: roomId,
-      timestamp: new Date().toISOString(),
-    };
+    if (replyState) {
+      handleReplyToMessage(replyState.messageId, content);
+      setReplyState(null);
+    } else {
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`,
+        type: 'group',
+        senderId: session.user.id,
+        content,
+        roomId: roomId,
+        timestamp: new Date().toISOString(),
+      };
 
-    setMessages((prev) => [...prev, tempMessage]);
-    sendMessage(roomId, content, 'group');
+      setMessages((prev) => [...prev, tempMessage]);
+      sendMessage(roomId, content, 'group');
+    }
   };
 
   const handleReplyToMessage = (parentMessageId: string, content: string) => {
@@ -221,8 +230,56 @@ export default function CommitteeChat() {
     },
   });
 
+  const { mutate: editMessage } = useEditMessage({
+    onSuccess: (data) => {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (msg.id === data.id) {
+            return { ...msg, content: data.content, isEdited: true, editedAt: data.editedAt, originalContent: data.originalContent };
+          }
+          return msg;
+        }),
+      );
+    },
+  });
+
+  const { mutate: deleteMessage } = useDeleteMessage({
+    onSuccess: (data) => {
+      setMessages((prevMessages) =>
+        prevMessages.filter((msg) => msg.id !== data.messageId)
+      );
+    },
+  });
+
   const handleReaction = (messageId: string, emoji: string) => {
     toggleReaction({ messageId, emoji });
+  };
+
+  const handleEditMessage = (messageId: string, newContent: string) => {
+    editMessage({ messageId, content: newContent });
+    setEditState(null);
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMessage(messageId);
+  };
+
+  const handleStartEdit = (messageId: string, content: string) => {
+    setEditState({ messageId, content });
+    setReplyState(null);
+  };
+
+  const handleStartReply = (messageId: string, content: string) => {
+    setReplyState({ messageId, content });
+    setEditState(null);
+  };
+
+  const handleCancelReply = () => {
+    setReplyState(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditState(null);
   };
 
   if (!session) {
@@ -243,45 +300,73 @@ export default function CommitteeChat() {
   }
 
   return (
-    <div className='flex h-[calc(100vh-4rem)] sm:h-screen'>
-      <div className='flex flex-col flex-1 max-w-4xl mx-auto'>
-        <ChatHeader
-          recipientName={`Committee`}
-          recipientId={committeeId}
-          isConnected={isConnected}
-          isLoading={historyLoading || startingChat}
-          onToggleMotions={() => {
-            window.location.href = `/committees/${committeeId}/motions`;
-          }}
-          chatType='committee'
-        />
+    <>
+      <div className='flex h-[calc(100vh-4rem)] sm:h-screen'>
+        <div className='flex flex-col flex-1 max-w-4xl mx-auto'>
+          <ChatHeader
+            recipientName={`Committee`}
+            recipientId={committeeId}
+            isConnected={isConnected}
+            isLoading={historyLoading || startingChat}
+            onToggleMotions={() => {
+              window.location.href = `/committees/${committeeId}/motions`;
+            }}
+            chatType='committee'
+          />
 
-        <div className='flex flex-1 overflow-hidden relative min-h-0'>
-          <div className='flex flex-col flex-1'>
-            <MessagesList
-              ref={messagesEndRef}
-              messages={messages}
-              users={users}
-              currentUserId={session.user.id}
-              recipientName={`Committee ${committeeId}`}
-              isLoading={historyLoading && messages.length === 0}
-              onReply={handleReplyToMessage}
-              /* onOpenThread={handleOpenThread} */
-              onReaction={handleReaction}
-              onScrollToMessage={handleScrollToMessage}
-              chatType='committee'
-            />
+          <div className='flex flex-1 relative min-h-0'>
+            <div className='flex flex-col flex-1'>
+              <div className='flex-1'>
+                <MessagesList
+                  ref={messagesEndRef}
+                  messages={messages}
+                  users={users}
+                  currentUserId={session.user.id}
+                  recipientName={`Committee ${committeeId}`}
+                  isLoading={historyLoading && messages.length === 0}
+                  onReply={handleStartReply}
+                  /* onOpenThread={handleOpenThread} */
+                  onReaction={handleReaction}
+                  onEdit={handleStartEdit}
+                  onDelete={handleDeleteMessage}
+                  onScrollToMessage={handleScrollToMessage}
+                  chatType='committee'
+                />
+              </div>
 
-            <MessageInput
-              isConnected={isConnected}
-              onSendMessage={handleSendMessage}
-              /* onProposeMotion={() => setShowMotionPanel(true)} */
-              showMotionButton={true}
-            />
+              <div className='lg:block hidden'>
+                <MessageInput
+                  isConnected={isConnected}
+                  onSendMessage={handleSendMessage}
+                  /* onProposeMotion={() => setShowMotionPanel(true)} */
+                  showMotionButton={true}
+                  replyState={replyState}
+                  editState={editState}
+                  onReplyCancel={handleCancelReply}
+                  onEditCancel={handleCancelEdit}
+                  onEditSave={handleEditMessage}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Fixed mobile input */}
+      <div className='lg:hidden block'>
+        <MessageInput
+          isConnected={isConnected}
+          onSendMessage={handleSendMessage}
+          /* onProposeMotion={() => setShowMotionPanel(true)} */
+          showMotionButton={true}
+          replyState={replyState}
+          editState={editState}
+          onReplyCancel={handleCancelReply}
+          onEditCancel={handleCancelEdit}
+          onEditSave={handleEditMessage}
+        />
+      </div>
+    </>
   );
 }
 

@@ -14,13 +14,7 @@ import {
   useRemoveFriend,
 } from '@/hooks/api/use-friends';
 import { Friendship } from '@/lib/api/friends';
-import {
-  UserCheck,
-  UserX,
-  Clock,
-  MessageSquare,
-  Trash2,
-} from 'lucide-react';
+import { UserCheck, UserX, Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
@@ -131,12 +125,12 @@ export default function Friends() {
     return (
       <div className=''>
         {friends.map((friendship: Friendship) => (
-          <Card
-            key={friendship.id}
-            className={`border-none bg-transparent py-1 sm:py-3`}
-          >
+          <Card key={friendship.id} className={`border-none shadow-none py-1`}>
             <CardContent className='flex items-center justify-between p-0'>
-              <Link href={`/profile/${friendship?.user?.id}`} className='flex-1'>
+              <Link
+                href={`/profile/${friendship?.user?.id}`}
+                className='flex-1'
+              >
                 <UserCard
                   user={friendship.user!}
                   friendship={friendship}
@@ -206,10 +200,7 @@ export default function Friends() {
     return (
       <div className=''>
         {pendingRequests.map((friendship: Friendship) => (
-          <Card
-            key={friendship.id}
-            className={`border-none bg-transparent py-1 sm:py-3`}
-          >
+          <Card key={friendship.id} className={`border-none shadow-none py-1`}>
             <CardContent className='flex items-center justify-between p-0'>
               <UserCard
                 user={friendship.user!}
@@ -258,10 +249,7 @@ export default function Friends() {
     return (
       <div className=''>
         {sentRequests.map((friendship: Friendship) => (
-          <Card
-            key={friendship.id}
-            className={`border-none bg-transparent py-1 sm:py-3`}
-          >
+          <Card key={friendship.id} className={`border-none shadow-none py-1`}>
             <CardContent className='flex items-center justify-between p-0'>
               <UserCard
                 user={friendship.user!}

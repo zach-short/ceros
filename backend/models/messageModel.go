@@ -29,6 +29,10 @@ type Message struct {
 	MotionID        *primitive.ObjectID `json:"motionId,omitempty" bson:"motionId,omitempty"`
 	VoteID          *primitive.ObjectID `json:"voteId,omitempty" bson:"voteId,omitempty"`
 
+	IsEdited        bool       `json:"isEdited,omitempty" bson:"isEdited,omitempty"`
+	OriginalContent *string    `json:"originalContent,omitempty" bson:"originalContent,omitempty"`
+	EditedAt        *time.Time `json:"editedAt,omitempty" bson:"editedAt,omitempty"`
+
 	Metadata map[string]any `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 

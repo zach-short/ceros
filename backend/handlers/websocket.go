@@ -164,10 +164,21 @@ func GetDMHistory(c *gin.Context) {
 	})
 }
 
+type ConversationUser struct {
+	ID         string `json:"id"`
+	Name       string `json:"name,omitempty"`
+	GivenName  string `json:"givenName,omitempty"`
+	FamilyName string `json:"familyName,omitempty"`
+	Picture    string `json:"picture,omitempty"`
+}
+
 type ConversationSummary struct {
 	RoomID        string               `json:"roomId"`
 	Type          models.RoomType      `json:"type"`
 	Participants  []primitive.ObjectID `json:"participants"`
+	OtherUser     *ConversationUser    `json:"otherUser,omitempty"`  // for dms only
+	GroupName     string               `json:"groupName,omitempty"`  // for groups/committees
+	GroupImage    string               `json:"groupImage,omitempty"` // for groups/committees
 	LastMessage   *models.Message      `json:"lastMessage,omitempty"`
 	LastMessageAt time.Time            `json:"lastMessageAt"`
 	UnreadCount   int                  `json:"unreadCount"`
@@ -264,6 +275,45 @@ func GetUserConversations(c *gin.Context) {
 			LastMessage:   &result.LastMessage,
 			LastMessageAt: result.LastMessageAt,
 			UnreadCount:   0,
+		}
+
+		if roomType == models.RoomTypeDM && len(participants) == 2 {
+			otherUserID := participants[0]
+			if otherUserID == userID {
+				otherUserID = participants[1]
+			}
+
+			userCollection := config.GetCollection("users")
+			var otherUser models.User
+			err := userCollection.FindOne(ctx, bson.M{"_id": otherUserID}).Decode(&otherUser)
+			if err == nil {
+				conversation.OtherUser = &ConversationUser{
+					ID:         otherUser.ID.Hex(),
+					Name:       otherUser.Name,
+					GivenName:  otherUser.GivenName,
+					FamilyName: otherUser.FamilyName,
+					Picture:    otherUser.Picture,
+				}
+			}
+		}
+
+		if roomType == models.RoomTypeCommittee {
+			parts := strings.Split(result.ID, "_")
+			if len(parts) >= 2 {
+				committeeIDStr := parts[1]
+				if committeeID, err := primitive.ObjectIDFromHex(committeeIDStr); err == nil {
+					committeeCollection := config.GetCollection("committees")
+					var committee struct {
+						Name  string `bson:"name"`
+						Image string `bson:"image"`
+					}
+					err := committeeCollection.FindOne(ctx, bson.M{"_id": committeeID}).Decode(&committee)
+					if err == nil {
+						conversation.GroupName = committee.Name
+						conversation.GroupImage = committee.Image
+					}
+				}
+			}
 		}
 
 		conversations = append(conversations, conversation)
@@ -442,6 +492,7 @@ func ToggleMessageReaction(c *gin.Context) {
 		return
 	}
 
+
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -544,11 +595,12 @@ func ToggleMessageReaction(c *gin.Context) {
 			}
 		}
 
-		frontendReactions = append(frontendReactions, map[string]any{
+		frontendReaction := map[string]any{
 			"emoji":       reaction["emoji"],
 			"count":       reaction["count"],
 			"userReacted": userReacted,
-		})
+		}
+		frontendReactions = append(frontendReactions, frontendReaction)
 	}
 
 	wsMessage := models.WSMessage{
@@ -566,5 +618,141 @@ func ToggleMessageReaction(c *gin.Context) {
 		"success":   true,
 		"messageId": messageID,
 		"reactions": frontendReactions,
+	})
+}
+
+func EditMessage(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	var req struct {
+		Content string `json:"content" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	if message.SenderID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Can only edit your own messages"})
+		return
+	}
+
+	originalContent := message.Content
+	now := time.Now()
+
+	update := bson.M{
+		"$set": bson.M{
+			"content":         req.Content,
+			"isEdited":        true,
+			"originalContent": originalContent,
+			"editedAt":        now,
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
+	if err != nil {
+		log.Printf("Error updating message: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update message"})
+		return
+	}
+
+	wsMessage := models.WSMessage{
+		Action: "message_edited",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId":       messageID,
+			"content":         req.Content,
+			"isEdited":        true,
+			"originalContent": originalContent,
+			"editedAt":        now,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":              messageID,
+		"content":         req.Content,
+		"isEdited":        true,
+		"originalContent": originalContent,
+		"editedAt":        now,
+	})
+}
+
+func DeleteMessage(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	if message.SenderID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Can only delete your own messages"})
+		return
+	}
+
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": messageOID})
+	if err != nil {
+		log.Printf("Error deleting message: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete message"})
+		return
+	}
+
+	wsMessage := models.WSMessage{
+		Action: "message_deleted",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId": messageID,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"messageId": messageID,
 	})
 }

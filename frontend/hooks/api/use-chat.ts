@@ -51,3 +51,37 @@ export function useToggleMessageReaction(options?: {
     },
   );
 }
+
+export function useEditMessage(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, content }: { messageId: string; content: string }) =>
+      chatApi.editMessage(messageId, content),
+    {
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to edit message:', error);
+        options?.onError?.(error);
+      },
+    },
+  );
+}
+
+export function useDeleteMessage(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation((messageId: string) => chatApi.deleteMessage(messageId), {
+    onSuccess: (data) => {
+      options?.onSuccess?.(data);
+    },
+    onError: (error) => {
+      console.error('Failed to delete message:', error);
+      options?.onError?.(error);
+    },
+  });
+}

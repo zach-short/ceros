@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { getSession } from 'next-auth/react';
+import { getSession, signOut } from 'next-auth/react';
+import { toast } from 'sonner';
 
 type ApiSuccessResponse<T = any> = {
   success: true;
@@ -76,6 +77,13 @@ API.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      try {
+        await signOut({ redirect: false });
+        toast.info('Your session has expired. Please sign in again.');
+      } catch (signOutError) {
+        console.error('Error signing out user:', signOutError);
+      }
     }
 
     return Promise.reject(error);
