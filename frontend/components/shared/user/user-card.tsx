@@ -28,13 +28,12 @@ export function UserCard({
   children,
   onClick,
 }: UserCardProps) {
-
   return (
     <div
       className={cn(
         'flex items-center space-x-3',
         onClick && 'cursor-pointer',
-        className
+        className,
       )}
       onClick={onClick}
     >
@@ -45,14 +44,14 @@ export function UserCard({
         isOwnProfile={isOwnProfile}
         size={avatarSize}
       />
-      <div className="flex-1 min-w-0">
+      <div className='flex flex-col'>
         <UserName
           user={user}
           viewerUserId={viewerUserId}
           friendship={friendship}
           isOwnProfile={isOwnProfile}
           showFullName={showFullName}
-          className="font-medium text-sm truncate"
+          className='font-medium text-sm truncate'
         />
         {showFullName && user.name && (
           <UserName
@@ -61,7 +60,7 @@ export function UserCard({
             friendship={friendship}
             isOwnProfile={isOwnProfile}
             showFullName={false}
-            className="text-xs text-muted-foreground truncate"
+            className='text-xs text-muted-foreground truncate'
           />
         )}
       </div>

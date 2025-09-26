@@ -12,10 +12,15 @@ interface MessageReactionsProps {
   className?: string;
 }
 
-export function MessageReactions({ reactions, onReactionClick, className = '' }: MessageReactionsProps) {
+export function MessageReactions({
+  reactions,
+  onReactionClick,
+  className = '',
+}: MessageReactionsProps) {
   if (!reactions || reactions.length === 0) {
     return null;
   }
+  console.log(reactions, 'reactions ');
 
   return (
     <div className={`flex flex-wrap gap-1 mt-1 ${className}`}>
@@ -33,9 +38,10 @@ export function MessageReactions({ reactions, onReactionClick, className = '' }:
           }`}
         >
           <span>{emoji}</span>
-          <span className="font-medium">{count}</span>
+          <span className='font-medium'>{count}</span>
         </button>
       ))}
     </div>
   );
 }
+

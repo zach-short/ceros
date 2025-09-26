@@ -58,9 +58,7 @@ function GroupChatsSection({ committeesCount }: { committeesCount: number }) {
       </button>
 
       <div className={groupChatsExpanded ? 'block' : 'hidden'}>
-        <div className='rounded-lg border divide-y'>
-          <CommitteeList />
-        </div>
+        <div className='rounded-lg border divide-y'></div>
       </div>
     </div>
   );
@@ -77,4 +75,3 @@ export function ChatSections({
     </div>
   );
 }
-

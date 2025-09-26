@@ -1,9 +1,6 @@
 'use client';
-
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useFetch } from '@/hooks/use-fetch';
-import { usersApi, PublicProfileUser } from '@/lib/api/users';
 import { ConversationSummary } from '@/lib/api/chat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -19,18 +16,8 @@ export function ConversationItem({
   const { data: session } = useSession();
   const router = useRouter();
 
-  const otherParticipantId = conversation.participants.find(
-    (id) => id !== session?.user?.id,
-  );
-
-  const { data: otherUser } = useFetch<PublicProfileUser>(
-    usersApi.getPublicProfile,
-    {
-      resourceParams: [otherParticipantId],
-      dependencies: [otherParticipantId],
-      enabled: !!otherParticipantId && conversation.type === 'dm',
-    },
-  );
+  // Use the otherUser data from the conversation response instead of making a separate API call
+  const otherUser = conversation.otherUser;
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -50,14 +37,18 @@ export function ConversationItem({
   };
 
   const handleClick = () => {
-    if (conversation.type === 'dm' && otherParticipantId) {
-      router.push(`/chat/${otherParticipantId}`);
+    if (conversation.type === 'dm' && otherUser) {
+      router.push(`/chat/${otherUser.id}`);
     }
   };
 
   const getDisplayName = () => {
+    if (conversation.type === 'committee') {
+      return conversation.groupName || 'Committee Chat';
+    }
+
     if (conversation.type === 'group') {
-      return 'Group Chat';
+      return conversation.groupName || 'Group Chat';
     }
 
     if (otherUser) {
@@ -104,7 +95,13 @@ export function ConversationItem({
     <div onClick={handleClick} className='p-4 cursor-pointer transition-colors'>
       <div className='flex items-center space-x-3'>
         <Avatar className={`h-12 w-12`}>
-          <AvatarImage src={otherUser?.picture as string | undefined} />
+          <AvatarImage
+            src={
+              conversation.type === 'dm'
+                ? otherUser?.picture
+                : conversation.groupImage
+            }
+          />
           <AvatarFallback>{getDisplayName().charAt(0)}</AvatarFallback>
         </Avatar>
         <div className='flex-1 min-w-0'>

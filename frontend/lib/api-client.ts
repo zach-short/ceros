@@ -1,6 +1,7 @@
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
 import useSWRMutation from 'swr/mutation';
+import { toast } from 'sonner';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -24,6 +25,16 @@ class ApiClient {
     const response = await fetch(url, config);
 
     if (!response.ok) {
+      // Handle 401 errors by signing out the user
+      if (response.status === 401) {
+        try {
+          await signOut({ redirect: false });
+          toast.info('Your session has expired. Please sign in again.');
+        } catch (signOutError) {
+          console.error('Error signing out user:', signOutError);
+        }
+      }
+
       const error = new Error(`API Error: ${response.status}`);
       (error as any).status = response.status;
       (error as any).data = await response.json().catch(() => ({}));
