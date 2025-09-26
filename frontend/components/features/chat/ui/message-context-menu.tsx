@@ -116,13 +116,18 @@ export function MessageContextMenu({
           </ContextMenuItem>
         )}
 
-        <ContextMenuSub>
+        <ContextMenuSub open={isSubMenuOpen} onOpenChange={setIsSubMenuOpen}>
           <ContextMenuSubTrigger>
             <Heart className='w-4 h-4 mr-2' />
             More Reactions
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className='w-[280px] max-h-[320px] md:max-h-[400px]'>
-            <div className='grid grid-cols-8 gap-1 p-2 overflow-y-auto max-h-[280px] md:max-h-[360px]'>
+          <ContextMenuSubContent
+            className='w-[90vw] max-w-[280px] max-h-[50vh] md:max-h-[400px]'
+            side='left'
+            sideOffset={5}
+            align='start'
+          >
+            <div className='grid grid-cols-6 sm:grid-cols-8 gap-1 p-2 overflow-y-auto max-h-[45vh] md:max-h-[360px]'>
               {MORE_REACTIONS.map((emoji) => (
                 <ContextMenuItem
                   key={emoji}
