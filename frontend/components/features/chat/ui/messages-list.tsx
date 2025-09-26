@@ -73,14 +73,18 @@ const shouldGroupMessages = (
     return false;
 
   // Check if there's a time header between these messages
-  const showTimeHeaderBetween = shouldShowTimeHeader(currentMessage, previousMessage);
+  const showTimeHeaderBetween = shouldShowTimeHeader(
+    currentMessage,
+    previousMessage,
+  );
   if (showTimeHeaderBetween) return false;
 
   // Group consecutive messages from the same sender
   // Only break if there's been an interruption by another sender or significant time gap
   const currentTime = new Date(currentMessage.timestamp);
   const previousTime = new Date(previousMessage.timestamp);
-  const diffHours = (currentTime.getTime() - previousTime.getTime()) / (1000 * 60 * 60);
+  const diffHours =
+    (currentTime.getTime() - previousTime.getTime()) / (1000 * 60 * 60);
 
   // Don't group if more than 2 hours apart
   if (diffHours > 2) return false;
@@ -126,7 +130,12 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                 message,
                 previousMessage,
               );
-              const isGrouped = shouldGroupMessages(message, messages, index, previousMessage);
+              const isGrouped = shouldGroupMessages(
+                message,
+                messages,
+                index,
+                previousMessage,
+              );
               const isFirstInGroup = !isGrouped;
 
               let parentMessage: Message | undefined;
