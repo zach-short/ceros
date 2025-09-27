@@ -72,7 +72,17 @@ export function MessageContextMenu({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuTrigger
+        asChild
+        className='select-none touch-manipulation'
+        style={{
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        {children}
+      </ContextMenuTrigger>
       <ContextMenuContent className='min-w-[200px]'>
         <div className='flex gap-1 p-2'>
           {QUICK_REACTIONS.map((emoji) => (
