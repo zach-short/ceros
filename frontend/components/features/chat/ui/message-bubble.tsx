@@ -169,7 +169,14 @@ export function MessageBubble({
             onReaction={handleContextMenuReaction}
             chatType={chatType}
           >
-            <div>
+            <div
+              className='select-none touch-manipulation'
+              style={{
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
               {isFirstInGroup && (
                 <MessageHeader
                   sender={sender}
