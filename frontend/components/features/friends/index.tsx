@@ -125,7 +125,10 @@ export default function Friends() {
     return (
       <div className=''>
         {friends.map((friendship: Friendship) => (
-          <Card key={friendship.id} className={`border-none shadow-none py-1`}>
+          <Card
+            key={friendship.id}
+            className={`border-none shadow-none py-1 bg-transparent`}
+          >
             <CardContent className='flex items-center justify-between p-0'>
               <Link
                 href={`/profile/${friendship?.user?.id}`}
@@ -200,7 +203,10 @@ export default function Friends() {
     return (
       <div className=''>
         {pendingRequests.map((friendship: Friendship) => (
-          <Card key={friendship.id} className={`border-none shadow-none py-1`}>
+          <Card
+            key={friendship.id}
+            className={`bg-transparent border-none shadow-none py-1`}
+          >
             <CardContent className='flex items-center justify-between p-0'>
               <UserCard
                 user={friendship.user!}
@@ -249,7 +255,10 @@ export default function Friends() {
     return (
       <div className=''>
         {sentRequests.map((friendship: Friendship) => (
-          <Card key={friendship.id} className={`border-none shadow-none py-1`}>
+          <Card
+            key={friendship.id}
+            className={`bg-transparent border-none shadow-none py-1`}
+          >
             <CardContent className='flex items-center justify-between p-0'>
               <UserCard
                 user={friendship.user!}
