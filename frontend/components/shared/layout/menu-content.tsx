@@ -59,10 +59,10 @@ function MenuItem({
       href={href}
       onClick={onClick}
     >
-      <div className="relative">
+      <div className='relative'>
         <Icon size={20} />
         {showBadge && (
-          <NotificationBadge className="absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1" />
+          <NotificationBadge className='absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1' />
         )}
       </div>
       {title}
@@ -79,7 +79,7 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
   return (
     <div className={`flex flex-col ${className}`}>
       <ProfileCard />
-      <div className='mt-4 flex flex-col overflow-y-auto flex-1'>
+      <div className='flex flex-col overflow-y-auto flex-1'>
         {menuItems.map((menuItem) => (
           <MenuItem
             title={menuItem.title}
@@ -91,9 +91,7 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
           />
         ))}
       </div>
-      <div className='mt-4'>
-        <SignoutButton />
-      </div>
+      <SignoutButton className={`mb-12`} />
     </div>
   );
 }
