@@ -1,4 +1,5 @@
 'use client';
+
 import { useSession } from 'next-auth/react';
 import { AdminOnly, AuthGate, MemberOnly } from '@/components/auth/auth-gate';
 

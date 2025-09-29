@@ -1,5 +1,5 @@
-import Landing from '@/components/features/landing';
+import { UnifiedAuth } from '@/components/auth/unified-auth';
 
 export default function LandingPage() {
-  return <Landing />;
+  return <UnifiedAuth />;
 }

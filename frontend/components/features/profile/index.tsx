@@ -16,7 +16,7 @@ import {
   useCheckUsername,
 } from '@/hooks/api/use-users';
 import { UpdateProfileRequest } from '@/lib/api/users';
-import { UploadImageButton } from '@/components/shared/button/upload';
+import { AvatarPicker } from '@/components/shared/button/avatar-picker';
 import { GooglePlacesAutocomplete } from '@/components/ui/google-places-autocomplete';
 
 export function Profile() {
@@ -228,16 +228,15 @@ export function Profile() {
                 {isEditing && (
                   <>
                     <div className='absolute inset-0 bg-black/40 rounded-full' />
-                    <div className='absolute -bottom-5 -right-5'>
-                      <UploadImageButton
-                        onUploadError={() => {
-                          toast.error('Error uploading photo');
-                        }}
-                        onClientUploadComplete={(res) => {
-                          setFormData({ ...formData, picture: res[0].url });
-                        }}
-                      />
-                    </div>
+                    <AvatarPicker
+                      currentAvatar={formData?.picture || user.picture}
+                      onSelect={(url) => {
+                        setFormData({ ...formData, picture: url });
+                      }}
+                      onUploadError={() => {
+                        toast.error('Error uploading photo');
+                      }}
+                    />
                   </>
                 )}
               </div>
