@@ -2,7 +2,11 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, Friendship } from '@/models';
-import { getDisplayPicture, getDisplayName, UserPrivacyContext } from '@/lib/user-privacy';
+import {
+  getDisplayPicture,
+  getDisplayName,
+  UserPrivacyContext,
+} from '@/lib/user-privacy';
 import { EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -50,10 +54,11 @@ export function UserAvatar({
           </AvatarFallback>
         </>
       ) : (
-        <AvatarFallback className="bg-muted">
-          <EyeOff className="h-4 w-4 text-muted-foreground" />
+        <AvatarFallback className='bg-muted'>
+          <EyeOff className='h-4 w-4 text-muted-foreground' />
         </AvatarFallback>
       )}
     </Avatar>
   );
 }
+
