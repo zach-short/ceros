@@ -16,7 +16,6 @@ export function ConversationItem({
   const { data: session } = useSession();
   const router = useRouter();
 
-  // Use the otherUser data from the conversation response instead of making a separate API call
   const otherUser = conversation.otherUser;
 
   const formatTime = (timestamp: string) => {

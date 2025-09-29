@@ -17,6 +17,7 @@ interface UserAvatarProps {
   isOwnProfile?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  clickable?: boolean;
 }
 
 const sizeClasses = {
@@ -33,6 +34,7 @@ export function UserAvatar({
   isOwnProfile,
   size = 'md',
   className,
+  clickable = true,
 }: UserAvatarProps) {
   const context: UserPrivacyContext = {
     user,
@@ -45,7 +47,12 @@ export function UserAvatar({
   const displayName = getDisplayName(user, context);
 
   return (
-    <Avatar className={cn(sizeClasses[size], className)}>
+    <Avatar
+      className={cn(sizeClasses[size], className)}
+      clickable={clickable}
+      imageSrc={displayPicture || undefined}
+      imageAlt={displayName}
+    >
       {displayPicture ? (
         <>
           <AvatarImage src={displayPicture} alt={displayName} />

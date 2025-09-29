@@ -65,32 +65,24 @@ const shouldGroupMessages = (
 ): boolean => {
   if (!previousMessage) return false;
 
-  // Don't group if different senders
   if (currentMessage.senderId !== previousMessage.senderId) return false;
 
-  // Don't group replies or with replies
   if (currentMessage.type === 'reply' || previousMessage.type === 'reply')
     return false;
 
-  // Check if there's a time header between these messages
   const showTimeHeaderBetween = shouldShowTimeHeader(
     currentMessage,
     previousMessage,
   );
   if (showTimeHeaderBetween) return false;
 
-  // Group consecutive messages from the same sender
-  // Only break if there's been an interruption by another sender or significant time gap
   const currentTime = new Date(currentMessage.timestamp);
   const previousTime = new Date(previousMessage.timestamp);
   const diffHours =
     (currentTime.getTime() - previousTime.getTime()) / (1000 * 60 * 60);
 
-  // Don't group if more than 2 hours apart
   if (diffHours > 2) return false;
 
-  // Check if there are any messages from other senders between the previous message
-  // and this one (though this is unlikely in a chronological list)
   return true;
 };
 
