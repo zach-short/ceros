@@ -39,6 +39,20 @@ export function useNotifications() {
   });
 }
 
+export function useUnreadNotificationCount() {
+  const { data, error, isLoading } = useNotifications();
+
+  const unreadCount =
+    data?.notifications?.filter((notification) => !notification.read).length ||
+    0;
+
+  return {
+    unreadCount,
+    error,
+    isLoading,
+  };
+}
+
 export function useMarkAllNotificationsRead() {
   return useApiMutation<{ message: string; count: number }, void>(
     '/users/me/notifications/mark-all-read',
@@ -122,4 +136,3 @@ export function useNotificationActions() {
     markAllRead,
   };
 }
-

@@ -168,14 +168,16 @@ export function PublicProfile({ userId }: PublicProfileProps) {
   const context: UserPrivacyContext = {
     user,
     viewerUserId: session.data?.user.id,
-    friendship: user.friendshipStatus ? {
-      id: user.friendshipStatus.friendshipId,
-      status: user.friendshipStatus.status,
-      requesterId: '',
-      addresseeId: '',
-      requestedAt: '',
-      user
-    } : undefined,
+    friendship: user.friendshipStatus
+      ? {
+          id: user.friendshipStatus.friendshipId,
+          status: user.friendshipStatus.status,
+          requesterId: '',
+          addresseeId: '',
+          requestedAt: '',
+          user,
+        }
+      : undefined,
     isOwnProfile,
   };
 
@@ -188,36 +190,59 @@ export function PublicProfile({ userId }: PublicProfileProps) {
 
   return (
     <div className='container mx-auto p-6 max-w-4xl'>
+      <div className='fixed bottom-20 right-1/2 transform translate-x-1/2 flex gap-2'>
+        {isOwnProfile ? (
+          <Link
+            className='rounded-lg border sm:py-4 px-4 py-2 bg-yellow-100 text-black sm:text-lg text-sm hover:bg-gray-50 hover:text-black'
+            href='/profile'
+          >
+            Edit Profile
+          </Link>
+        ) : isAuthenticated ? (
+          <Button
+            onClick={handleFriendAction}
+            disabled={friendButtonContent.disabled || friendActionLoading}
+            className={`${friendButtonContent.color} text-white`}
+            size='sm'
+          >
+            <friendButtonContent.icon size={16} className='mr-2' />
+            {friendActionLoading ? 'Loading...' : friendButtonContent.text}
+          </Button>
+        ) : null}
+      </div>
+
       <div className='space-y-6'>
-        <Card>
-          <CardContent className={`relative pt-6`}>
-            <div className='flex items-center space-x-6'>
+        <Card className={`p-0`}>
+          <CardContent className={`relative py-6`}>
+            <div className='flex items-center space-x-2'>
               <div className='relative'>
                 <UserAvatar
                   user={user}
                   viewerUserId={session.data?.user.id}
                   friendship={context.friendship}
                   isOwnProfile={isOwnProfile}
-                  size='xl'
+                  size='sm'
                 />
               </div>
               <div className='flex-1'>
-                <UserName
-                  user={user}
-                  viewerUserId={session.data?.user.id}
-                  friendship={context.friendship}
-                  isOwnProfile={isOwnProfile}
-                  showFullName={true}
-                  className='text-xl font-semibold'
-                />
-                <UserName
-                  user={user}
-                  viewerUserId={session.data?.user.id}
-                  friendship={context.friendship}
-                  isOwnProfile={isOwnProfile}
-                  showFullName={false}
-                  className='text-base font-semibold'
-                />
+                <div className={`flex flex-col`}>
+                  <UserName
+                    user={user}
+                    viewerUserId={session.data?.user.id}
+                    friendship={context.friendship}
+                    isOwnProfile={isOwnProfile}
+                    showFullName={true}
+                    className='text-base sm:text-xl font-semibold'
+                  />
+                  <UserName
+                    user={user}
+                    viewerUserId={session.data?.user.id}
+                    friendship={context.friendship}
+                    isOwnProfile={isOwnProfile}
+                    showFullName={false}
+                    className='text-xs sm:text-base font-semibold'
+                  />
+                </div>
 
                 {isAuthenticated &&
                   !isOwnProfile &&
@@ -248,29 +273,6 @@ export function PublicProfile({ userId }: PublicProfileProps) {
                 </div>
               )}
             </div>
-
-            <div className='absolute top-6 right-6 flex gap-2'>
-              {isOwnProfile ? (
-                <Link
-                  className='rounded-lg border px-4 py-2 text-sm hover:bg-gray-50 hover:text-black'
-                  href='/profile'
-                >
-                  Edit Profile
-                </Link>
-              ) : isAuthenticated ? (
-                <Button
-                  onClick={handleFriendAction}
-                  disabled={friendButtonContent.disabled || friendActionLoading}
-                  className={`${friendButtonContent.color} text-white`}
-                  size='sm'
-                >
-                  <friendButtonContent.icon size={16} className='mr-2' />
-                  {friendActionLoading
-                    ? 'Loading...'
-                    : friendButtonContent.text}
-                </Button>
-              ) : null}
-            </div>
           </CardContent>
         </Card>
 
@@ -281,7 +283,7 @@ export function PublicProfile({ userId }: PublicProfileProps) {
             !displayEmail &&
             !displayPhone &&
             !displayAddress)) && (
-          <Card>
+          <Card className={``}>
             <CardHeader>
               <CardTitle>Contact Information</CardTitle>
             </CardHeader>

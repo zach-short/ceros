@@ -23,30 +23,12 @@ interface MessageBubbleProps {
   isFirstInGroup?: boolean;
 }
 
-const formatTimestamp = (timestamp: string) => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
-
-  if (diffHours < 24) {
-    return date.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } else {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  }
-};
-
 const MessageHeader = ({
   sender,
   privacyContext,
-  timestamp,
 }: {
   sender: User | undefined;
   privacyContext: UserPrivacyContext;
-  timestamp: string;
 }) => {
   const getUserDisplayName = () => {
     if (!sender) return 'Unknown User';
@@ -54,11 +36,8 @@ const MessageHeader = ({
   };
 
   return (
-    <div className='flex items-baseline gap-2'>
-      <span className='font-semibold text-sm'>{getUserDisplayName()}</span>
-      <span className='text-xs text-muted-foreground'>
-        {formatTimestamp(timestamp)}
-      </span>
+    <div className='flex items-baseline'>
+      <span className='font-semibold text-xs'>{getUserDisplayName()}</span>
     </div>
   );
 };
@@ -72,7 +51,7 @@ const MessageContent = ({
 }) => {
   return (
     <>
-      <p className='text-sm whitespace-pre-wrap break-words overflow-auto'>
+      <p className='text-xs whitespace-pre-wrap break-words overflow-auto'>
         {message.content}
       </p>
 
@@ -181,7 +160,6 @@ export function MessageBubble({
                 <MessageHeader
                   sender={sender}
                   privacyContext={privacyContext}
-                  timestamp={message.timestamp}
                 />
               )}
 

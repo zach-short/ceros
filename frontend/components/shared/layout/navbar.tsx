@@ -7,6 +7,7 @@ import {
 import { MenuIcon } from 'lucide-react';
 import { useState } from 'react';
 import { MenuContent } from './menu-content';
+import { useSession } from 'next-auth/react';
 
 export function Navbar({
   buttonClassName,
@@ -16,6 +17,11 @@ export function Navbar({
   contentClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { data: session } = useSession();
+
+  if (!session) {
+    return;
+  }
 
   return (
     <Popover open={open} onOpenChange={() => setOpen(!open)}>
