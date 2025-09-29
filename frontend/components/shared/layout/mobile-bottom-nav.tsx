@@ -44,7 +44,7 @@ const navItems: NavItem[] = [
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const session = useSession();
+  const { data: session } = useSession();
 
   const isActive = (href: string) => {
     if (href === '/chat') {
@@ -57,7 +57,7 @@ export function MobileBottomNav() {
   };
 
   if (!session) {
-    return null;
+    return;
   }
 
   return (
