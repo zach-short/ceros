@@ -42,7 +42,9 @@ export function useNotifications() {
 export function useUnreadNotificationCount() {
   const { data, error, isLoading } = useNotifications();
 
-  const unreadCount = data?.notifications?.filter(notification => !notification.read).length || 0;
+  const unreadCount =
+    data?.notifications?.filter((notification) => !notification.read).length ||
+    0;
 
   return {
     unreadCount,
@@ -134,4 +136,3 @@ export function useNotificationActions() {
     markAllRead,
   };
 }
-

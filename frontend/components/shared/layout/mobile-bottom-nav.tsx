@@ -2,14 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import {
-  MessagesSquareIcon,
-  User,
-  Users,
-  LayoutDashboard,
-  MenuIcon,
-  Bell,
-} from 'lucide-react';
+import { MessagesSquareIcon, User, Users, MenuIcon, Bell } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { NotificationBadge } from '../notification-badge';
 
@@ -82,13 +75,13 @@ export function MobileBottomNav() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <div className="relative">
+              <div className='relative'>
                 <item.icon
                   size={20}
                   className={active ? 'text-primary' : 'text-muted-foreground'}
                 />
                 {item.showBadge && (
-                  <NotificationBadge className="absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1" />
+                  <NotificationBadge className='absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1' />
                 )}
               </div>
               <span className='text-xs font-medium'>{item.label}</span>
@@ -99,4 +92,3 @@ export function MobileBottomNav() {
     </nav>
   );
 }
-

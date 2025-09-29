@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, MessageSquare, Users } from 'lucide-react';
 import { ConversationsList } from '@/components/features/chat/conversations/conversations-list';
-import { CommitteeList } from '@/components/features/chat/committee/committee-list';
 
 interface ChatSectionsProps {
   conversationsCount: number;
