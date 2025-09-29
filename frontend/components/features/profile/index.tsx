@@ -218,7 +218,7 @@ export function Profile() {
           <CardContent>
             <div className='flex items-center space-x-2'>
               <div className='relative'>
-                <Avatar className='sm:h-16 sm:w-16 h-8 w-8'>
+                <Avatar className='w-16 h-16'>
                   <AvatarImage
                     src={formData?.picture || user.picture}
                     alt={user.name || 'Profile'}
