@@ -26,8 +26,12 @@ export default function CommitteeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [replyState, setReplyState] = useState<{messageId: string; content: string} | undefined>(undefined);
-  const [editState, setEditState] = useState<{messageId: string; content: string} | undefined>(undefined);
+  const [replyState, setReplyState] = useState<
+    { messageId: string; content: string } | undefined
+  >(undefined);
+  const [editState, setEditState] = useState<
+    { messageId: string; content: string } | undefined
+  >(undefined);
   /* const [showMotionPanel, setShowMotionPanel] = useState(false); */
   /* const [threadMessage, setThreadMessage] = useState<Message | null>(null); */
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -235,7 +239,13 @@ export default function CommitteeChat() {
       setMessages((prevMessages) =>
         prevMessages.map((msg) => {
           if (msg.id === data.id) {
-            return { ...msg, content: data.content, isEdited: true, editedAt: data.editedAt, originalContent: data.originalContent };
+            return {
+              ...msg,
+              content: data.content,
+              isEdited: true,
+              editedAt: data.editedAt,
+              originalContent: data.originalContent,
+            };
           }
           return msg;
         }),
@@ -246,7 +256,7 @@ export default function CommitteeChat() {
   const { mutate: deleteMessage } = useDeleteMessage({
     onSuccess: (data) => {
       setMessages((prevMessages) =>
-        prevMessages.filter((msg) => msg.id !== data.messageId)
+        prevMessages.filter((msg) => msg.id !== data.messageId),
       );
     },
   });
@@ -314,9 +324,9 @@ export default function CommitteeChat() {
             chatType='committee'
           />
 
-          <div className='flex flex-1 relative min-h-0'>
+          <div className='flex flex-1 relative min-h-0 overflow-hidden'>
             <div className='flex flex-col flex-1'>
-              <div className='flex-1'>
+              <div className='flex-1 min-h-0 overflow-hidden'>
                 <MessagesList
                   ref={messagesEndRef}
                   messages={messages}
@@ -334,7 +344,7 @@ export default function CommitteeChat() {
                 />
               </div>
 
-              <div className='lg:block hidden'>
+              <div className='lg:block hidden flex-shrink-0'>
                 <MessageInput
                   isConnected={isConnected}
                   onSendMessage={handleSendMessage}
@@ -352,8 +362,7 @@ export default function CommitteeChat() {
         </div>
       </div>
 
-      {/* Fixed mobile input */}
-      <div className='lg:hidden block'>
+      <div className='lg:hidden block fixed bottom-16 left-0 right-0 bg-background border-t'>
         <MessageInput
           isConnected={isConnected}
           onSendMessage={handleSendMessage}

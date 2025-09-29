@@ -78,7 +78,7 @@ export function AvatarPicker({
                   key={avatar}
                   onClick={() => handlePresetSelect(avatar)}
                   className={cn(
-                    'relative rounded-full h-20 w-20 transition-all hover:ring-2 hover:ring-primary',
+                    'relative rounded-full sm:h-20 sm:w-20 w-12 h-12 transition-all hover:ring-2 hover:ring-primary',
                     selectedPreset === avatar && 'ring-2 ring-primary',
                     currentAvatar === avatar && 'ring-2 ring-primary',
                   )}

@@ -112,7 +112,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
     messagesEndRef,
   ) => {
     return (
-      <div className='flex-1 overflow-y-auto flex flex-col min-h-0 pb-0 lg:pb-0'>
+      <div className='h-full overflow-y-auto flex flex-col'>
         {isLoading ? (
           <div className='flex items-center justify-center flex-1'>
             <DefaultLoader />
@@ -122,7 +122,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
             Start your conversation with {recipientName}
           </div>
         ) : (
-          <div className='flex flex-col flex-1 px-1 rounded-md pb-4 lg:pb-1'>
+          <div className='flex flex-col px-1 rounded-md pb-32 lg:pb-4'>
             {messages.map((message, index) => {
               const isReply = message.type === 'reply';
               const previousMessage = messages[index - 1];

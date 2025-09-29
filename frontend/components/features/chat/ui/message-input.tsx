@@ -76,6 +76,11 @@ export function MessageInput({
     }
 
     setNewMessage('');
+
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = '40px';
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -110,7 +115,9 @@ export function MessageInput({
   const isCompact = variant === 'compact';
 
   return (
-    <div className={`${isCompact ? '' : 'border-t'} lg:relative fixed bottom-16 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-background lg:bg-transparent z-40 lg:z-auto`}>
+    <div
+      className={`${isCompact ? '' : 'border-t'} lg:relative fixed bottom-16 left-0 right-0 lg:bottom-auto lg:left-auto lg:right-auto bg-background lg:bg-transparent z-40 lg:z-auto`}
+    >
       {/* Reply/Edit indicator */}
       {(replyState || editState) && !isCompact && (
         <div className='px-4 py-2 bg-muted/50 border-b flex items-center justify-between'>
@@ -150,7 +157,7 @@ export function MessageInput({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={getPlaceholderText()}
-              className={`resize-none min-h-[40px] max-h-[200px] ${
+              className={`resize-none !text-base min-h-[40px] max-h-[200px] ${
                 isMessageTooLong ? 'border-red-500 focus:ring-red-500' : ''
               }`}
               disabled={!isConnected}
@@ -158,6 +165,7 @@ export function MessageInput({
               style={{
                 height: 'auto',
                 minHeight: '40px',
+                fontSize: '16px',
               }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;

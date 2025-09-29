@@ -35,14 +35,20 @@ export function DMChat({
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
-  const [replyState, setReplyState] = useState<{
-    messageId: string;
-    content: string;
-  } | undefined>(undefined);
-  const [editState, setEditState] = useState<{
-    messageId: string;
-    content: string;
-  } | undefined>(undefined);
+  const [replyState, setReplyState] = useState<
+    | {
+        messageId: string;
+        content: string;
+      }
+    | undefined
+  >(undefined);
+  const [editState, setEditState] = useState<
+    | {
+        messageId: string;
+        content: string;
+      }
+    | undefined
+  >(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
 
@@ -126,7 +132,10 @@ export function DMChat({
     }
   };
 
-  const handleReactionUpdate = (data: { messageId: string; reactions: any[] }) => {
+  const handleReactionUpdate = (data: {
+    messageId: string;
+    reactions: any[];
+  }) => {
     setMessages((prevMessages) =>
       prevMessages.map((msg) => {
         if (msg.id === data.messageId) {
@@ -357,7 +366,7 @@ export function DMChat({
 
   return (
     <>
-      <div className='flex flex-col h-full max-w-3xl mx-auto border rounded-lg'>
+      <div className='flex flex-col h-[calc(100vh-4rem)] lg:h-screen max-w-4xl mx-auto border rounded-lg'>
         <ChatHeader
           recipientName={recipientName}
           recipientId={recipientId}
@@ -367,7 +376,7 @@ export function DMChat({
           chatType='dm'
         />
 
-        <div className='flex-1 pb-0 lg:pb-0'>
+        <div className='flex-1 min-h-0 overflow-hidden'>
           <MessagesList
             ref={messagesEndRef}
             messages={messages}
@@ -385,7 +394,7 @@ export function DMChat({
           />
         </div>
 
-        <div className='lg:block hidden'>
+        <div className='lg:block hidden flex-shrink-0'>
           <MessageInput
             isConnected={isConnected}
             onSendMessage={handleSendMessage}
@@ -407,8 +416,7 @@ export function DMChat({
         )}
       </div>
 
-      {/* Fixed mobile input */}
-      <div className='lg:hidden block'>
+      <div className='lg:hidden block fixed bottom-16 left-0 right-0 bg-background border-t'>
         <MessageInput
           isConnected={isConnected}
           onSendMessage={handleSendMessage}
