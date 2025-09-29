@@ -8,13 +8,16 @@ import {
   Users,
   LayoutDashboard,
   MenuIcon,
+  Bell,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { NotificationBadge } from '../notification-badge';
 
 interface NavItem {
   href: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   label: string;
+  showBadge?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -24,14 +27,15 @@ const navItems: NavItem[] = [
     label: 'Messages',
   },
   {
+    href: '/notifications',
+    icon: Bell,
+    label: 'Notifications',
+    showBadge: true,
+  },
+  {
     href: '/friends',
     icon: Users,
     label: 'Friends',
-  },
-  {
-    href: '/',
-    icon: LayoutDashboard,
-    label: 'Dashboard',
   },
   {
     href: '/profile',
@@ -52,6 +56,9 @@ export function MobileBottomNav() {
   const isActive = (href: string) => {
     if (href === '/chat') {
       return pathname === '/chat' || pathname.startsWith('/committees/');
+    }
+    if (href === '/notifications') {
+      return pathname === '/notifications';
     }
     return pathname === href || pathname.startsWith(href + '/');
   };
@@ -75,10 +82,15 @@ export function MobileBottomNav() {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <item.icon
-                size={20}
-                className={active ? 'text-primary' : 'text-muted-foreground'}
-              />
+              <div className="relative">
+                <item.icon
+                  size={20}
+                  className={active ? 'text-primary' : 'text-muted-foreground'}
+                />
+                {item.showBadge && (
+                  <NotificationBadge className="absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1" />
+                )}
+              </div>
               <span className='text-xs font-medium'>{item.label}</span>
             </Link>
           );

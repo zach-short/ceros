@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { MessagesSquareIcon, User, Users, Bell, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SignoutButton } from '../button/signout';
+import { NotificationBadge } from '../notification-badge';
 
 const menuItems = [
   { title: 'Messages', href: '/chat', icon: MessagesSquareIcon },
   {
     title: 'Notifications',
-    href: '/profile/settings/notifications',
+    href: '/notifications',
     icon: Bell,
+    showBadge: true,
   },
   { title: 'Friends', href: '/friends', icon: Users },
   { title: 'Profile', href: '/profile', icon: User },
@@ -43,19 +45,26 @@ function MenuItem({
   title,
   icon: Icon,
   onClick,
+  showBadge = false,
 }: {
   href: string;
   title: string;
   icon: React.ComponentType<{ size?: number }>;
   onClick?: () => void;
+  showBadge?: boolean;
 }) {
   return (
     <Link
-      className={`mt-2 flex items-center gap-3`}
+      className={`mt-2 flex items-center gap-3 relative`}
       href={href}
       onClick={onClick}
     >
-      <Icon size={20} />
+      <div className="relative">
+        <Icon size={20} />
+        {showBadge && (
+          <NotificationBadge className="absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1" />
+        )}
+      </div>
       {title}
     </Link>
   );
@@ -78,6 +87,7 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
             href={menuItem.href}
             icon={menuItem.icon}
             onClick={onItemClick}
+            showBadge={menuItem.showBadge}
           />
         ))}
       </div>
