@@ -75,8 +75,7 @@ export function DMChat({
   };
 
   const handleNewMessage = (data: any) => {
-    // Check if data contains both message and sender (new format)
-    const message = data.message || data; // Handle both old and new format
+    const message = data.message || data;
     const sender = data.sender;
 
     if (
@@ -113,7 +112,6 @@ export function DMChat({
         return [...prev, transformedMessage];
       });
 
-      // Add sender data to users if provided and not already exists
       if (sender && message.senderId !== session?.user?.id) {
         setUsers((prevUsers) => {
           const userExists = prevUsers.some((u) => u.id === sender.id);

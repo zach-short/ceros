@@ -221,7 +221,7 @@ export function PublicProfile({ userId }: PublicProfileProps) {
                   viewerUserId={session.data?.user.id}
                   friendship={context.friendship}
                   isOwnProfile={isOwnProfile}
-                  size='sm'
+                  size='xl'
                 />
               </div>
               <div className='flex-1'>

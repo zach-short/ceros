@@ -2,7 +2,11 @@
 
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User, Friendship } from '@/models';
-import { getDisplayPicture, getDisplayName, UserPrivacyContext } from '@/lib/user-privacy';
+import {
+  getDisplayPicture,
+  getDisplayName,
+  UserPrivacyContext,
+} from '@/lib/user-privacy';
 import { EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +17,7 @@ interface UserAvatarProps {
   isOwnProfile?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+  clickable?: boolean;
 }
 
 const sizeClasses = {
@@ -29,6 +34,7 @@ export function UserAvatar({
   isOwnProfile,
   size = 'md',
   className,
+  clickable = true,
 }: UserAvatarProps) {
   const context: UserPrivacyContext = {
     user,
@@ -41,7 +47,12 @@ export function UserAvatar({
   const displayName = getDisplayName(user, context);
 
   return (
-    <Avatar className={cn(sizeClasses[size], className)}>
+    <Avatar
+      className={cn(sizeClasses[size], className)}
+      clickable={clickable}
+      imageSrc={displayPicture || undefined}
+      imageAlt={displayName}
+    >
       {displayPicture ? (
         <>
           <AvatarImage src={displayPicture} alt={displayName} />
@@ -50,10 +61,11 @@ export function UserAvatar({
           </AvatarFallback>
         </>
       ) : (
-        <AvatarFallback className="bg-muted">
-          <EyeOff className="h-4 w-4 text-muted-foreground" />
+        <AvatarFallback className='bg-muted'>
+          <EyeOff className='h-4 w-4 text-muted-foreground' />
         </AvatarFallback>
       )}
     </Avatar>
   );
 }
+
