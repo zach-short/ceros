@@ -1,5 +1,6 @@
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { OnlineStatusIndicator } from '@/components/shared/user/online-status-indicator';
 
 interface ChatHeaderProps {
   recipientName: string;
@@ -9,6 +10,7 @@ interface ChatHeaderProps {
   isLoading?: boolean;
   onToggleMotions?: () => void;
   chatType?: 'dm' | 'committee';
+  isOnline?: boolean;
 }
 
 export function ChatHeader({
@@ -19,6 +21,7 @@ export function ChatHeader({
   isLoading,
   onToggleMotions,
   chatType = 'dm',
+  isOnline,
 }: ChatHeaderProps) {
   const isCommittee = chatType === 'committee';
   const profileLink = isCommittee
@@ -40,6 +43,9 @@ export function ChatHeader({
           <div className='flex items-center gap-2 text-xs opacity-75'>
             {!isLoading && !isConnected && (
               <span className='text-red-500'>🔴 Disconnected</span>
+            )}
+            {!isCommittee && isOnline !== undefined && (
+              <OnlineStatusIndicator isOnline={isOnline} size='sm' showText />
             )}
             {isCommittee && (
               <>

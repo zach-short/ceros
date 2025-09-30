@@ -3,6 +3,7 @@
 import { User, Friendship } from '@/models';
 import { UserAvatar } from './user-avatar';
 import { UserName } from './user-name';
+import { OnlineStatusIndicator } from './online-status-indicator';
 import { cn } from '@/lib/utils';
 
 interface UserCardProps {
@@ -11,6 +12,7 @@ interface UserCardProps {
   friendship?: Friendship;
   isOwnProfile?: boolean;
   showFullName?: boolean;
+  showOnlineStatus?: boolean;
   avatarSize?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   children?: React.ReactNode;
@@ -23,6 +25,7 @@ export function UserCard({
   friendship,
   isOwnProfile,
   showFullName = true,
+  showOnlineStatus = false,
   avatarSize = 'md',
   className,
   children,
@@ -45,14 +48,19 @@ export function UserCard({
         size={avatarSize}
       />
       <div className='flex flex-col'>
-        <UserName
-          user={user}
-          viewerUserId={viewerUserId}
-          friendship={friendship}
-          isOwnProfile={isOwnProfile}
-          showFullName={showFullName}
-          className='font-medium text-sm truncate'
-        />
+        <div className='flex items-center gap-2'>
+          <UserName
+            user={user}
+            viewerUserId={viewerUserId}
+            friendship={friendship}
+            isOwnProfile={isOwnProfile}
+            showFullName={showFullName}
+            className='font-medium text-sm truncate'
+          />
+          {showOnlineStatus && user.isOnline !== undefined && (
+            <OnlineStatusIndicator isOnline={user.isOnline} size='sm' />
+          )}
+        </div>
         {showFullName && user.name && (
           <UserName
             user={user}

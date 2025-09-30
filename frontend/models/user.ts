@@ -11,6 +11,8 @@ export interface User {
   settings?: UserSettings;
   isCurrentUser?: boolean;
   friendshipStatus?: FriendshipStatus | null;
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 export interface Address {

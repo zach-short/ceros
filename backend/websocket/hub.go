@@ -1,11 +1,16 @@
 package websocket
 
 import (
+	"context"
 	"encoding/json"
 	"log"
+	"os"
 	"sync"
+	"time"
 
+	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -44,6 +49,7 @@ func (h *Hub) Run() {
 			h.clients[client] = true
 			h.mutex.Unlock()
 			log.Printf("Client connected: %s", client.userID.Hex())
+			h.updateUserOnlineStatus(client.userID, true)
 
 		case client := <-h.Unregister:
 			h.mutex.Lock()
@@ -57,6 +63,7 @@ func (h *Hub) Run() {
 			}
 			h.mutex.Unlock()
 			log.Printf("Client disconnected: %s", client.userID.Hex())
+			h.updateUserOnlineStatus(client.userID, false)
 
 		case message := <-h.broadcast:
 			h.mutex.RLock()
@@ -173,4 +180,48 @@ func (h *Hub) GetClientsInRoom(roomID string) []*Client {
 		clients = append(clients, client)
 	}
 	return clients
+}
+
+func (h *Hub) updateUserOnlineStatus(userID primitive.ObjectID, isOnline bool) {
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.M{
+		"$set": bson.M{
+			"isOnline": isOnline,
+			"lastSeen": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}
+
+	_, err := collection.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	if err != nil {
+		log.Printf("Error updating user online status: %v", err)
+		return
+	}
+
+	statusMessage := models.WSMessage{
+		Action: "user_status_changed",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"userId":   userID.Hex(),
+			"isOnline": isOnline,
+			"lastSeen": time.Now(),
+		},
+	}
+
+	data, err := json.Marshal(statusMessage)
+	if err != nil {
+		log.Printf("Error marshaling status message: %v", err)
+		return
+	}
+
+	h.mutex.RLock()
+	for client := range h.clients {
+		select {
+		case client.send <- data:
+		default:
+		}
+	}
+	h.mutex.RUnlock()
 }

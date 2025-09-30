@@ -27,6 +27,7 @@ interface UseWebSocketOptions {
   onReadReceiptUpdate?: (data: { messageIds: string[]; readBy: string; readAt: string; roomId: string }) => void;
   onMessageDelivered?: (data: { messageId: string; deliveredAt: string; roomId: string }) => void;
   onPinToggled?: (data: { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string }) => void;
+  onUserStatusChanged?: (data: { userId: string; isOnline: boolean; lastSeen: string }) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -38,6 +39,7 @@ export function useWebSocket({
   onReadReceiptUpdate,
   onMessageDelivered,
   onPinToggled,
+  onUserStatusChanged,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -118,6 +120,10 @@ export function useWebSocket({
           onPinToggled?.(
             wsMessage.payload as { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string },
           );
+        } else if (wsMessage.action === 'user_status_changed') {
+          onUserStatusChanged?.(
+            wsMessage.payload as { userId: string; isOnline: boolean; lastSeen: string },
+          );
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -132,6 +138,7 @@ export function useWebSocket({
     onReadReceiptUpdate,
     onMessageDelivered,
     onPinToggled,
+    onUserStatusChanged,
     onConnect,
     onDisconnect,
   ]);

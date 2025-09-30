@@ -36,6 +36,7 @@ export function DMChat({
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
+  const [isRecipientOnline, setIsRecipientOnline] = useState<boolean | undefined>(undefined);
   const [replyState, setReplyState] = useState<
     | {
         messageId: string;
@@ -229,6 +230,16 @@ export function DMChat({
     );
   };
 
+  const handleUserStatusChanged = (data: {
+    userId: string;
+    isOnline: boolean;
+    lastSeen: string;
+  }) => {
+    if (data.userId === recipientId) {
+      setIsRecipientOnline(data.isOnline);
+    }
+  };
+
   const {
     isConnected,
     sendMessage,
@@ -243,6 +254,7 @@ export function DMChat({
     onReadReceiptUpdate: handleReadReceiptUpdate,
     onMessageDelivered: handleMessageDelivered,
     onPinToggled: handlePinToggled,
+    onUserStatusChanged: handleUserStatusChanged,
     onConnect: () => {},
     onDisconnect: () => {},
   });
@@ -496,6 +508,7 @@ export function DMChat({
           isConnected={isConnected}
           isLoading={historyLoading || startingDM}
           chatType='dm'
+          isOnline={isRecipientOnline}
         />
 
         <div className='flex-1 min-h-0 overflow-hidden'>
