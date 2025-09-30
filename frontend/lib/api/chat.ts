@@ -12,6 +12,9 @@ export interface Message {
   motionId?: string;
   voteId?: string;
   metadata?: Record<string, any>;
+  readBy?: string[];
+  readAt?: string;
+  deliveredAt?: string;
 }
 
 export interface Room {
@@ -83,5 +86,17 @@ export const chatApi = {
 
   deleteMessage: (messageId: string): Promise<any> =>
     apiRequest('delete', `/messages/${messageId}`),
+
+  markMessagesAsRead: (messageIds: string[], roomId: string): Promise<any> =>
+    apiRequest('post', '/messages/mark-read', { messageIds, roomId }),
+
+  markMessageAsDelivered: (messageId: string): Promise<any> =>
+    apiRequest('post', `/messages/${messageId}/delivered`),
+
+  toggleMessagePin: (messageId: string): Promise<any> =>
+    apiRequest('post', `/messages/${messageId}/pin`),
+
+  getPinnedMessages: (roomId: string): Promise<any> =>
+    apiRequest('get', `/messages/pinned?roomId=${roomId}`),
 };
 

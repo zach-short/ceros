@@ -24,6 +24,9 @@ interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
   onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
   onTypingUpdate?: (data: { userId: string; roomId: string; isTyping: boolean; name?: string }) => void;
+  onReadReceiptUpdate?: (data: { messageIds: string[]; readBy: string; readAt: string; roomId: string }) => void;
+  onMessageDelivered?: (data: { messageId: string; deliveredAt: string; roomId: string }) => void;
+  onPinToggled?: (data: { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string }) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -32,6 +35,9 @@ export function useWebSocket({
   onMessage,
   onReactionUpdate,
   onTypingUpdate,
+  onReadReceiptUpdate,
+  onMessageDelivered,
+  onPinToggled,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -100,6 +106,18 @@ export function useWebSocket({
           onTypingUpdate?.(
             wsMessage.payload as { userId: string; roomId: string; isTyping: boolean; name?: string },
           );
+        } else if (wsMessage.action === 'messages_read') {
+          onReadReceiptUpdate?.(
+            wsMessage.payload as { messageIds: string[]; readBy: string; readAt: string; roomId: string },
+          );
+        } else if (wsMessage.action === 'message_delivered') {
+          onMessageDelivered?.(
+            wsMessage.payload as { messageId: string; deliveredAt: string; roomId: string },
+          );
+        } else if (wsMessage.action === 'message_pin_toggled') {
+          onPinToggled?.(
+            wsMessage.payload as { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string },
+          );
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -111,6 +129,9 @@ export function useWebSocket({
     onMessage,
     onReactionUpdate,
     onTypingUpdate,
+    onReadReceiptUpdate,
+    onMessageDelivered,
+    onPinToggled,
     onConnect,
     onDisconnect,
   ]);

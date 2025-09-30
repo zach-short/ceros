@@ -107,5 +107,7 @@ func SetupRoutes(r *gin.Engine) {
 		messages.DELETE("/:id", handlers.DeleteMessage)
 		messages.POST("/mark-read", handlers.MarkMessagesAsRead)
 		messages.POST("/:id/delivered", handlers.MarkMessageAsDelivered)
+		messages.POST("/:id/pin", handlers.ToggleMessagePin)
+		messages.GET("/pinned", handlers.GetPinnedMessages)
 	}
 }

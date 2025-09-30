@@ -37,6 +37,10 @@ type Message struct {
 	ReadAt      *time.Time           `json:"readAt,omitempty" bson:"readAt,omitempty"`
 	DeliveredAt *time.Time           `json:"deliveredAt,omitempty" bson:"deliveredAt,omitempty"`
 
+	IsPinned bool               `json:"isPinned,omitempty" bson:"isPinned,omitempty"`
+	PinnedBy primitive.ObjectID `json:"pinnedBy,omitempty" bson:"pinnedBy,omitempty"`
+	PinnedAt *time.Time         `json:"pinnedAt,omitempty" bson:"pinnedAt,omitempty"`
+
 	Metadata map[string]any `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 

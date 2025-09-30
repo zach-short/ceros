@@ -18,6 +18,7 @@ import { Message, User } from '../ui/types';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
+import { chatApi } from '@/lib/api/chat';
 
 interface DMChatProps {
   recipientId: string;
@@ -165,6 +166,69 @@ export function DMChat({
     });
   };
 
+  const handleReadReceiptUpdate = (data: {
+    messageIds: string[];
+    readBy: string;
+    readAt: string;
+    roomId: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (data.messageIds.includes(msg.id)) {
+          return {
+            ...msg,
+            readBy: [...(msg.readBy || []), data.readBy],
+            readAt: data.readAt,
+          };
+        }
+        return msg;
+      }),
+    );
+  };
+
+  const handleMessageDelivered = (data: {
+    messageId: string;
+    deliveredAt: string;
+    roomId: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === data.messageId) {
+          return { ...msg, deliveredAt: data.deliveredAt };
+        }
+        return msg;
+      }),
+    );
+  };
+
+  const handlePinToggled = (data: {
+    messageId: string;
+    isPinned: boolean;
+    pinnedBy: string;
+    pinnedAt: string;
+    roomId: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === data.messageId) {
+          return {
+            ...msg,
+            isPinned: data.isPinned,
+            pinnedBy: data.pinnedBy,
+            pinnedAt: data.pinnedAt,
+          };
+        }
+        return msg;
+      }),
+    );
+  };
+
   const {
     isConnected,
     sendMessage,
@@ -176,6 +240,9 @@ export function DMChat({
     onMessage: handleNewMessage,
     onReactionUpdate: handleReactionUpdate,
     onTypingUpdate: handleTypingUpdate,
+    onReadReceiptUpdate: handleReadReceiptUpdate,
+    onMessageDelivered: handleMessageDelivered,
+    onPinToggled: handlePinToggled,
     onConnect: () => {},
     onDisconnect: () => {},
   });
@@ -230,6 +297,24 @@ export function DMChat({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Mark messages as read when they're visible
+  useEffect(() => {
+    if (!roomId || !session?.user?.id || messages.length === 0) return;
+
+    const unreadMessages = messages.filter(
+      (msg) =>
+        msg.senderId !== session.user.id &&
+        (!msg.readBy || !msg.readBy.includes(session.user.id)),
+    );
+
+    if (unreadMessages.length > 0) {
+      const messageIds = unreadMessages.map((msg) => msg.id);
+      chatApi.markMessagesAsRead(messageIds, roomId).catch((error) => {
+        console.error('Failed to mark messages as read:', error);
+      });
+    }
+  }, [messages, roomId, session?.user?.id]);
 
   const handleSendMessage = (content: string) => {
     if (!roomId || !isConnected || !session?.user?.id) return;
@@ -333,6 +418,14 @@ export function DMChat({
     deleteMessage(messageId);
   };
 
+  const handlePinMessage = async (messageId: string) => {
+    try {
+      await chatApi.toggleMessagePin(messageId);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
+  };
+
   const handleStartEdit = (messageId: string, content: string) => {
     setEditState({ messageId, content });
     setReplyState(undefined);
@@ -412,11 +505,13 @@ export function DMChat({
             users={users}
             currentUserId={session.user.id}
             recipientName={recipientName}
+            recipientId={recipientId}
             isLoading={historyLoading && messages.length === 0}
             onReply={handleStartReply}
             onReaction={handleReaction}
             onEdit={handleStartEdit}
             onDelete={handleDeleteMessage}
+            onPin={handlePinMessage}
             onScrollToMessage={handleScrollToMessage}
             chatType='dm'
           />

@@ -8,11 +8,13 @@ interface MessagesListProps {
   users: User[];
   currentUserId: string;
   recipientName?: string;
+  recipientId?: string;
   isLoading?: boolean;
   onReply?: (messageId: string, content: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
+  onPin?: (messageId: string) => void;
   onScrollToMessage?: (messageId: string) => void;
   chatType?: 'dm' | 'committee';
 }
@@ -92,11 +94,13 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
       users,
       currentUserId,
       recipientName,
+      recipientId,
       isLoading,
       onReply,
       onReaction,
       onEdit,
       onDelete,
+      onPin,
       onScrollToMessage,
       chatType = 'dm',
     },
@@ -154,11 +158,13 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onReaction={onReaction}
+                    onPin={onPin}
                     parentMessage={parentMessage}
                     onScrollToParent={onScrollToMessage}
                     chatType={chatType}
                     showAvatar={true}
                     isFirstInGroup={isFirstInGroup}
+                    recipientId={recipientId}
                   />
                 </div>
               );
