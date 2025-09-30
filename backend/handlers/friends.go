@@ -11,6 +11,7 @@ import (
 	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
 	"github.com/zach-short/final-web-programming/utils"
+	ws "github.com/zach-short/final-web-programming/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -91,7 +92,8 @@ func RequestFriend(c *gin.Context) {
 	if err != nil {
 		log.Printf("Error fetching requester for notification: %v", err)
 	} else {
-		notificationService := &NotificationService{}
+		hub := c.MustGet("hub")
+		notificationService := &NotificationService{Hub: hub.(*ws.Hub)}
 		err = notificationService.CreateFriendRequestNotification(friendship, requester.Name)
 		if err != nil {
 			log.Printf("Error creating friend request notification: %v", err)
@@ -151,7 +153,8 @@ func AddFriend(c *gin.Context) {
 		if err != nil {
 			log.Printf("Error fetching accepter for notification: %v", err)
 		} else {
-			notificationService := &NotificationService{}
+			hub := c.MustGet("hub")
+			notificationService := &NotificationService{Hub: hub.(*ws.Hub)}
 			err = notificationService.CreateFriendRequestAcceptedNotification(updatedFriendship, accepter.Name)
 			if err != nil {
 				log.Printf("Error creating friend request accepted notification: %v", err)

@@ -225,3 +225,23 @@ func (h *Hub) updateUserOnlineStatus(userID primitive.ObjectID, isOnline bool) {
 	}
 	h.mutex.RUnlock()
 }
+
+func (h *Hub) BroadcastToUsers(userIDs []primitive.ObjectID, data []byte) {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+
+	userIDMap := make(map[primitive.ObjectID]bool)
+	for _, id := range userIDs {
+		userIDMap[id] = true
+	}
+
+	for client := range h.clients {
+		if userIDMap[client.userID] {
+			select {
+			case client.send <- data:
+			default:
+				log.Printf("Failed to send to client %s", client.userID.Hex())
+			}
+		}
+	}
+}

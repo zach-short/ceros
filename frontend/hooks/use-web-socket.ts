@@ -20,6 +20,24 @@ interface WSMessage {
   payload: any;
 }
 
+interface Notification {
+  id: string;
+  type: string;
+  relatedId?: string;
+  title: string;
+  message: string;
+  urgency: string;
+  href?: string;
+  createdBy: string;
+  recipients: string[];
+  createdAt: string;
+  expiresAt?: string;
+  read: boolean;
+  readAt?: string;
+  dismissed: boolean;
+  dismissedAt?: string;
+}
+
 interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
   onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
@@ -28,6 +46,7 @@ interface UseWebSocketOptions {
   onMessageDelivered?: (data: { messageId: string; deliveredAt: string; roomId: string }) => void;
   onPinToggled?: (data: { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string }) => void;
   onUserStatusChanged?: (data: { userId: string; isOnline: boolean; lastSeen: string }) => void;
+  onNotification?: (notification: Notification) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -40,6 +59,7 @@ export function useWebSocket({
   onMessageDelivered,
   onPinToggled,
   onUserStatusChanged,
+  onNotification,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -124,6 +144,8 @@ export function useWebSocket({
           onUserStatusChanged?.(
             wsMessage.payload as { userId: string; isOnline: boolean; lastSeen: string },
           );
+        } else if (wsMessage.action === 'new_notification') {
+          onNotification?.(wsMessage.payload as Notification);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -139,6 +161,7 @@ export function useWebSocket({
     onMessageDelivered,
     onPinToggled,
     onUserStatusChanged,
+    onNotification,
     onConnect,
     onDisconnect,
   ]);
