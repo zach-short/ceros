@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -84,6 +85,19 @@ func RequestFriend(c *gin.Context) {
 		return
 	}
 
+	var requester models.User
+	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+	err = userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&requester)
+	if err != nil {
+		log.Printf("Error fetching requester for notification: %v", err)
+	} else {
+		notificationService := &NotificationService{}
+		err = notificationService.CreateFriendRequestNotification(friendship, requester.Name)
+		if err != nil {
+			log.Printf("Error creating friend request notification: %v", err)
+		}
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"message": "friend request sent", "friendship": friendship})
 }
 
@@ -120,10 +134,29 @@ func AddFriend(c *gin.Context) {
 	}
 
 	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
+	var updatedFriendship models.Friendship
 	result := friendCollection.FindOneAndUpdate(ctx, query, update)
 	if result.Err() != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pending friend request not found"})
 		return
+	}
+
+	err = friendCollection.FindOne(ctx, bson.M{"_id": friendshipID}).Decode(&updatedFriendship)
+	if err != nil {
+		log.Printf("Error fetching updated friendship: %v", err)
+	} else {
+		var accepter models.User
+		userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+		err = userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&accepter)
+		if err != nil {
+			log.Printf("Error fetching accepter for notification: %v", err)
+		} else {
+			notificationService := &NotificationService{}
+			err = notificationService.CreateFriendRequestAcceptedNotification(updatedFriendship, accepter.Name)
+			if err != nil {
+				log.Printf("Error creating friend request accepted notification: %v", err)
+			}
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "friend request accepted"})

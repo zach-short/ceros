@@ -8,7 +8,7 @@ import (
 
 type Notification struct {
 	ID         primitive.ObjectID   `bson:"_id" json:"id"`
-	Type       string               `bson:"type" json:"type"`                                 // "motion", "vote", "announcement", "system"
+	Type       string               `bson:"type" json:"type"`                                 // "motion", "vote", "announcement", "system", "friend_request", "friend_request_accepted"
 	RelatedID  *primitive.ObjectID  `bson:"related_id,omitempty" json:"related_id,omitempty"` // reference to motion/vote/etc
 	Title      string               `bson:"title" json:"title"`
 	Message    string               `bson:"message" json:"message"`

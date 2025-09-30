@@ -129,6 +129,36 @@ func (h *Hub) BroadcastToRoom(roomID string, message models.WSMessage) {
 	h.mutex.RUnlock()
 }
 
+func (h *Hub) BroadcastToRoomExcept(roomID string, message models.WSMessage, excludeClient *Client) {
+	h.mutex.RLock()
+	room, exists := h.rooms[roomID]
+	h.mutex.RUnlock()
+
+	if !exists {
+		return
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling message: %v", err)
+		return
+	}
+
+	h.mutex.RLock()
+	for client := range room {
+		if client == excludeClient {
+			continue
+		}
+		select {
+		case client.send <- data:
+		default:
+			close(client.send)
+			delete(h.clients, client)
+		}
+	}
+	h.mutex.RUnlock()
+}
+
 func (h *Hub) GetClientsInRoom(roomID string) []*Client {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()

@@ -33,9 +33,12 @@ type Message struct {
 	OriginalContent *string    `json:"originalContent,omitempty" bson:"originalContent,omitempty"`
 	EditedAt        *time.Time `json:"editedAt,omitempty" bson:"editedAt,omitempty"`
 
+	ReadBy      []primitive.ObjectID `json:"readBy,omitempty" bson:"readBy,omitempty"`
+	ReadAt      *time.Time           `json:"readAt,omitempty" bson:"readAt,omitempty"`
+	DeliveredAt *time.Time           `json:"deliveredAt,omitempty" bson:"deliveredAt,omitempty"`
+
 	Metadata map[string]any `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
-
 
 type WSMessage struct {
 	Action  string      `json:"action"`

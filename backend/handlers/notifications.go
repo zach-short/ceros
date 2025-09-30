@@ -404,3 +404,108 @@ func (ns *NotificationService) CreateVoteNotification(motionID primitive.ObjectI
 	return err
 }
 
+func (ns *NotificationService) CreateFriendRequestNotification(friendship models.Friendship, requesterName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var recipient models.User
+	err := config.GetCollection("users").FindOne(ctx, bson.M{"_id": friendship.AddresseeID}).Decode(&recipient)
+	if err != nil {
+		log.Printf("Error fetching recipient user: %v", err)
+		return err
+	}
+
+	settings := recipient.Settings
+	if settings == (models.UserSettings{}) {
+		settings = models.GetDefaultUserSettings()
+	}
+
+	if !settings.Notifications.FriendRequestNotifications {
+		return nil
+	}
+
+	notification := models.Notification{
+		ID:         primitive.NewObjectID(),
+		Type:       "friend_request",
+		RelatedID:  &friendship.ID,
+		Title:      "New Friend Request",
+		Message:    requesterName + " sent you a friend request",
+		Urgency:    "medium",
+		CreatedBy:  friendship.RequesterID,
+		Recipients: []primitive.ObjectID{friendship.AddresseeID},
+		CreatedAt:  time.Now(),
+	}
+
+	href := "/friends"
+	notification.Href = &href
+
+	_, err = config.GetCollection("notifications").InsertOne(ctx, notification)
+	if err != nil {
+		return err
+	}
+
+	userNotification := models.UserNotification{
+		ID:             primitive.NewObjectID(),
+		UserID:         friendship.AddresseeID,
+		NotificationID: notification.ID,
+		Read:           false,
+		Dismissed:      false,
+		CreatedAt:      time.Now(),
+	}
+
+	_, err = config.GetCollection("user_notifications").InsertOne(ctx, userNotification)
+	return err
+}
+
+func (ns *NotificationService) CreateFriendRequestAcceptedNotification(friendship models.Friendship, accepterName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var requester models.User
+	err := config.GetCollection("users").FindOne(ctx, bson.M{"_id": friendship.RequesterID}).Decode(&requester)
+	if err != nil {
+		log.Printf("Error fetching requester user: %v", err)
+		return err
+	}
+
+	settings := requester.Settings
+	if settings == (models.UserSettings{}) {
+		settings = models.GetDefaultUserSettings()
+	}
+
+	if !settings.Notifications.FriendRequestNotifications {
+		return nil
+	}
+
+	notification := models.Notification{
+		ID:         primitive.NewObjectID(),
+		Type:       "friend_request_accepted",
+		RelatedID:  &friendship.ID,
+		Title:      "Friend Request Accepted",
+		Message:    accepterName + " accepted your friend request",
+		Urgency:    "low",
+		CreatedBy:  friendship.AddresseeID,
+		Recipients: []primitive.ObjectID{friendship.RequesterID},
+		CreatedAt:  time.Now(),
+	}
+
+	href := "/friends"
+	notification.Href = &href
+
+	_, err = config.GetCollection("notifications").InsertOne(ctx, notification)
+	if err != nil {
+		return err
+	}
+
+	userNotification := models.UserNotification{
+		ID:             primitive.NewObjectID(),
+		UserID:         friendship.RequesterID,
+		NotificationID: notification.ID,
+		Read:           false,
+		Dismissed:      false,
+		CreatedAt:      time.Now(),
+	}
+
+	_, err = config.GetCollection("user_notifications").InsertOne(ctx, userNotification)
+	return err
+}
