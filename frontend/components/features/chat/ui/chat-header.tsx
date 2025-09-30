@@ -1,6 +1,8 @@
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { OnlineStatusIndicator } from '@/components/shared/user/online-status-indicator';
+import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ChatHeaderProps {
   recipientName: string;
@@ -9,6 +11,7 @@ interface ChatHeaderProps {
   isConnected: boolean;
   isLoading?: boolean;
   onToggleMotions?: () => void;
+  onOpenSearch?: () => void;
   chatType?: 'dm' | 'committee';
   isOnline?: boolean;
 }
@@ -20,6 +23,7 @@ export function ChatHeader({
   isConnected,
   isLoading,
   onToggleMotions,
+  onOpenSearch,
   chatType = 'dm',
   isOnline,
 }: ChatHeaderProps) {
@@ -57,26 +61,38 @@ export function ChatHeader({
           </div>
         </div>
       </Link>
-      {isCommittee && (
-        <div className='flex gap-2'>
-          <button
-            onClick={() => {
-              window.location.href = `/committees/${recipientId}/members`;
-            }}
-            className='px-3 py-1 text-sm rounded border hover:bg-accent'
+      <div className='flex gap-2'>
+        {onOpenSearch && (
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={onOpenSearch}
+            className='h-9 w-9'
           >
-            Members
-          </button>
-          {onToggleMotions && (
+            <Search className='h-4 w-4' />
+          </Button>
+        )}
+        {isCommittee && (
+          <>
             <button
-              onClick={onToggleMotions}
+              onClick={() => {
+                window.location.href = `/committees/${recipientId}/members`;
+              }}
               className='px-3 py-1 text-sm rounded border hover:bg-accent'
             >
-              Motions
+              Members
             </button>
-          )}
-        </div>
-      )}
+            {onToggleMotions && (
+              <button
+                onClick={onToggleMotions}
+                className='px-3 py-1 text-sm rounded border hover:bg-accent'
+              >
+                Motions
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
 import { TypingIndicator } from '../ui/typing-indicator';
+import { MessageSearchSheet } from '../ui/message-search-sheet';
 import { Message, User } from '../ui/types';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
@@ -37,6 +38,7 @@ export function DMChat({
   const [roomId, setRoomId] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
   const [isRecipientOnline, setIsRecipientOnline] = useState<boolean | undefined>(undefined);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     | {
         messageId: string;
@@ -509,6 +511,7 @@ export function DMChat({
           isLoading={historyLoading || startingDM}
           chatType='dm'
           isOnline={isRecipientOnline}
+          onOpenSearch={() => setSearchOpen(true)}
         />
 
         <div className='flex-1 min-h-0 overflow-hidden'>
@@ -560,6 +563,13 @@ export function DMChat({
           onStopTyping={handleStopTyping}
         />
       </div>
+
+      <MessageSearchSheet
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        messages={messages}
+        onSelectMessage={handleScrollToMessage}
+      />
     </>
   );
 }

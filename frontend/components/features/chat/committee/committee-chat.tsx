@@ -8,6 +8,7 @@ import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
 import { TypingIndicator } from '../ui/typing-indicator';
+import { MessageSearchSheet } from '../ui/message-search-sheet';
 import { Message, User } from '../ui/types';
 import {
   useCommitteeChat,
@@ -28,6 +29,7 @@ export default function CommitteeChat() {
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     { messageId: string; content: string } | undefined
   >(undefined);
@@ -372,6 +374,7 @@ export default function CommitteeChat() {
             onToggleMotions={() => {
               window.location.href = `/committees/${committeeId}/motions`;
             }}
+            onOpenSearch={() => setSearchOpen(true)}
             chatType='committee'
           />
 
@@ -432,6 +435,13 @@ export default function CommitteeChat() {
           onStopTyping={handleStopTyping}
         />
       </div>
+
+      <MessageSearchSheet
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        messages={messages}
+        onSelectMessage={handleScrollToMessage}
+      />
     </>
   );
 }
