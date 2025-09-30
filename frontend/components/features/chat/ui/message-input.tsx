@@ -24,6 +24,8 @@ interface MessageInputProps {
   onReplyCancel?: () => void;
   onEditCancel?: () => void;
   onEditSave?: (messageId: string, content: string) => void;
+  onTyping?: () => void;
+  onStopTyping?: () => void;
 }
 
 const MAX_MESSAGE_LENGTH = 4000;
@@ -40,6 +42,8 @@ export function MessageInput({
   onReplyCancel,
   onEditCancel,
   onEditSave,
+  onTyping,
+  onStopTyping,
 }: MessageInputProps) {
   const [newMessage, setNewMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -68,6 +72,8 @@ export function MessageInput({
     e.preventDefault();
 
     if (!newMessage.trim() || !isConnected || isMessageTooLong) return;
+
+    onStopTyping?.();
 
     if (editState && onEditSave) {
       onEditSave(editState.messageId, newMessage.trim());
@@ -154,7 +160,14 @@ export function MessageInput({
             <Textarea
               ref={textareaRef}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                if (e.target.value.length > 0) {
+                  onTyping?.();
+                } else {
+                  onStopTyping?.();
+                }
+              }}
               onKeyDown={handleKeyDown}
               placeholder={getPlaceholderText()}
               className={`resize-none !text-base min-h-[40px] max-h-[200px] ${
@@ -172,6 +185,7 @@ export function MessageInput({
                 target.style.height = 'auto';
                 target.style.height = Math.min(target.scrollHeight, 200) + 'px';
               }}
+              onBlur={() => onStopTyping?.()}
             />
           </div>
 

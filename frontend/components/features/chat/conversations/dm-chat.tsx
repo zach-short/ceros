@@ -13,7 +13,7 @@ import {
 import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
-import { ThreadView } from '../ui/thread-view';
+import { TypingIndicator } from '../ui/typing-indicator';
 import { Message, User } from '../ui/types';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
@@ -34,7 +34,7 @@ export function DMChat({
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [threadMessage, setThreadMessage] = useState<Message | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
   const [replyState, setReplyState] = useState<
     | {
         messageId: string;
@@ -51,6 +51,7 @@ export function DMChat({
   >(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     mutate: startDM,
@@ -144,9 +145,37 @@ export function DMChat({
     );
   };
 
-  const { isConnected, sendMessage, replyToMessage, joinRoom } = useWebSocket({
+  const handleTypingUpdate = (data: {
+    userId: string;
+    roomId: string;
+    isTyping: boolean;
+    name?: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setTypingUsers((prev) => {
+      if (data.isTyping) {
+        if (!prev.some((u) => u.userId === data.userId) && data.name) {
+          return [...prev, { userId: data.userId, name: data.name }];
+        }
+      } else {
+        return prev.filter((u) => u.userId !== data.userId);
+      }
+      return prev;
+    });
+  };
+
+  const {
+    isConnected,
+    sendMessage,
+    replyToMessage,
+    joinRoom,
+    sendTypingStart,
+    sendTypingStop,
+  } = useWebSocket({
     onMessage: handleNewMessage,
     onReactionUpdate: handleReactionUpdate,
+    onTypingUpdate: handleTypingUpdate,
     onConnect: () => {},
     onDisconnect: () => {},
   });
@@ -240,29 +269,6 @@ export function DMChat({
     replyToMessage(roomId, content, parentMessageId);
   };
 
-  const handleOpenThread = (messageId: string) => {
-    const message = messages.find((m) => m.id === messageId);
-    if (message) {
-      setThreadMessage(message);
-    }
-  };
-
-  const handleCloseThread = () => {
-    setThreadMessage(null);
-  };
-
-  const handleSendReply = (content: string) => {
-    if (!threadMessage) return;
-    handleReply(threadMessage.id, content);
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === threadMessage.id
-          ? { ...m, threadCount: (m.threadCount || 0) + 1 }
-          : m,
-      ),
-    );
-  };
-
   const handleScrollToMessage = (messageId: string) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
@@ -345,6 +351,31 @@ export function DMChat({
     setEditState(undefined);
   };
 
+  const handleTyping = () => {
+    if (!roomId || !isConnected) return;
+
+    sendTypingStart(roomId);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingStop(roomId);
+    }, 3000);
+  };
+
+  const handleStopTyping = () => {
+    if (!roomId || !isConnected) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+
+    sendTypingStop(roomId);
+  };
+
   if (!session) {
     return (
       <CenteredDiv>
@@ -383,7 +414,6 @@ export function DMChat({
             recipientName={recipientName}
             isLoading={historyLoading && messages.length === 0}
             onReply={handleStartReply}
-            onOpenThread={handleOpenThread}
             onReaction={handleReaction}
             onEdit={handleStartEdit}
             onDelete={handleDeleteMessage}
@@ -391,6 +421,8 @@ export function DMChat({
             chatType='dm'
           />
         </div>
+
+        <TypingIndicator typingUsers={typingUsers} chatType='dm' />
 
         <div className='lg:block hidden flex-shrink-0'>
           <MessageInput
@@ -401,17 +433,10 @@ export function DMChat({
             onReplyCancel={handleCancelReply}
             onEditCancel={handleCancelEdit}
             onEditSave={handleEditMessage}
+            onTyping={handleTyping}
+            onStopTyping={handleStopTyping}
           />
         </div>
-
-        {threadMessage && (
-          <ThreadView
-            parentMessage={threadMessage}
-            onClose={handleCloseThread}
-            onSendReply={handleSendReply}
-            currentUserId={session.user.id}
-          />
-        )}
       </div>
 
       <div className='lg:hidden block fixed bottom-16 left-0 right-0 bg-background border-t'>
@@ -423,6 +448,8 @@ export function DMChat({
           onReplyCancel={handleCancelReply}
           onEditCancel={handleCancelEdit}
           onEditSave={handleEditMessage}
+          onTyping={handleTyping}
+          onStopTyping={handleStopTyping}
         />
       </div>
     </>

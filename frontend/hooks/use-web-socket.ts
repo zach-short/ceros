@@ -23,6 +23,7 @@ interface WSMessage {
 interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
   onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
+  onTypingUpdate?: (data: { userId: string; roomId: string; isTyping: boolean; name?: string }) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -30,6 +31,7 @@ interface UseWebSocketOptions {
 export function useWebSocket({
   onMessage,
   onReactionUpdate,
+  onTypingUpdate,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -94,6 +96,10 @@ export function useWebSocket({
           onReactionUpdate?.(
             wsMessage.payload as { messageId: string; reactions: any[] },
           );
+        } else if (wsMessage.action === 'user_typing') {
+          onTypingUpdate?.(
+            wsMessage.payload as { userId: string; roomId: string; isTyping: boolean; name?: string },
+          );
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -104,6 +110,7 @@ export function useWebSocket({
     session?.apiToken,
     onMessage,
     onReactionUpdate,
+    onTypingUpdate,
     onConnect,
     onDisconnect,
   ]);
@@ -235,6 +242,28 @@ export function useWebSocket({
     }
   }, []);
 
+  const sendTypingStart = useCallback((roomId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      const message: WSMessage = {
+        action: 'typing_start',
+        type: 'system',
+        payload: { roomId },
+      };
+      ws.current.send(JSON.stringify(message));
+    }
+  }, []);
+
+  const sendTypingStop = useCallback((roomId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      const message: WSMessage = {
+        action: 'typing_stop',
+        type: 'system',
+        payload: { roomId },
+      };
+      ws.current.send(JSON.stringify(message));
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -262,6 +291,8 @@ export function useWebSocket({
     voteOnMotion,
     joinRoom,
     leaveRoom,
+    sendTypingStart,
+    sendTypingStop,
     connect,
     disconnect,
   };

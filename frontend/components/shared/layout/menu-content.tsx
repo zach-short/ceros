@@ -55,7 +55,7 @@ function MenuItem({
 }) {
   return (
     <Link
-      className={`mt-2 flex items-center gap-3 relative`}
+      className={`py-1 flex items-center gap-3 relative`}
       href={href}
       onClick={onClick}
     >
@@ -79,7 +79,7 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
   return (
     <div className={`flex flex-col ${className}`}>
       <ProfileCard />
-      <div className='flex flex-col overflow-y-auto flex-1'>
+      <div className='flex flex-col overflow-y-auto mt-4 flex-1'>
         {menuItems.map((menuItem) => (
           <MenuItem
             title={menuItem.title}

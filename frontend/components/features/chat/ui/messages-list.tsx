@@ -10,7 +10,6 @@ interface MessagesListProps {
   recipientName?: string;
   isLoading?: boolean;
   onReply?: (messageId: string, content: string) => void;
-  onOpenThread?: (messageId: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
