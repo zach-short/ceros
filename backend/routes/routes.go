@@ -102,5 +102,10 @@ func SetupRoutes(r *gin.Engine) {
 	messages.Use(middleware.AuthMiddleware())
 	{
 		messages.GET("/:id/replies", handlers.GetMessageReplies)
+		messages.POST("/:id/reaction", handlers.ToggleMessageReaction)
+		messages.PUT("/:id", handlers.EditMessage)
+		messages.DELETE("/:id", handlers.DeleteMessage)
+		messages.POST("/:id/pin", handlers.ToggleMessagePin)
+		messages.GET("/pinned", handlers.GetPinnedMessages)
 	}
 }

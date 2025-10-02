@@ -29,6 +29,14 @@ type Message struct {
 	MotionID        *primitive.ObjectID `json:"motionId,omitempty" bson:"motionId,omitempty"`
 	VoteID          *primitive.ObjectID `json:"voteId,omitempty" bson:"voteId,omitempty"`
 
+	IsEdited        bool       `json:"isEdited,omitempty" bson:"isEdited,omitempty"`
+	OriginalContent *string    `json:"originalContent,omitempty" bson:"originalContent,omitempty"`
+	EditedAt        *time.Time `json:"editedAt,omitempty" bson:"editedAt,omitempty"`
+
+	IsPinned bool               `json:"isPinned,omitempty" bson:"isPinned,omitempty"`
+	PinnedBy primitive.ObjectID `json:"pinnedBy,omitempty" bson:"pinnedBy,omitempty"`
+	PinnedAt *time.Time         `json:"pinnedAt,omitempty" bson:"pinnedAt,omitempty"`
+
 	Metadata map[string]any `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 

@@ -20,14 +20,42 @@ interface WSMessage {
   payload: any;
 }
 
+interface Notification {
+  id: string;
+  type: string;
+  relatedId?: string;
+  title: string;
+  message: string;
+  urgency: string;
+  href?: string;
+  createdBy: string;
+  recipients: string[];
+  createdAt: string;
+  expiresAt?: string;
+  read: boolean;
+  readAt?: string;
+  dismissed: boolean;
+  dismissedAt?: string;
+}
+
 interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
+  onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
+  onTypingUpdate?: (data: { userId: string; roomId: string; isTyping: boolean; name?: string }) => void;
+  onPinToggled?: (data: { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string }) => void;
+  onUserStatusChanged?: (data: { userId: string; isOnline: boolean; lastSeen: string }) => void;
+  onNotification?: (notification: Notification) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
 
 export function useWebSocket({
   onMessage,
+  onReactionUpdate,
+  onTypingUpdate,
+  onPinToggled,
+  onUserStatusChanged,
+  onNotification,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -49,7 +77,6 @@ export function useWebSocket({
     )
       return;
 
-    console.log('Attempting WebSocket connection...');
     isConnecting.current = true;
     connectionAttempted.current = true;
 
@@ -84,14 +111,46 @@ export function useWebSocket({
       try {
         const wsMessage: WSMessage = JSON.parse(event.data);
 
-        if (wsMessage.action === 'new_message' || wsMessage.action === 'new_reply') {
+        if (
+          wsMessage.action === 'new_message' ||
+          wsMessage.action === 'new_reply'
+        ) {
           onMessage?.(wsMessage.payload as Message);
+        } else if (wsMessage.action === 'reaction_update') {
+          onReactionUpdate?.(
+            wsMessage.payload as { messageId: string; reactions: any[] },
+          );
+        } else if (wsMessage.action === 'user_typing') {
+          onTypingUpdate?.(
+            wsMessage.payload as { userId: string; roomId: string; isTyping: boolean; name?: string },
+          );
+        } else if (wsMessage.action === 'message_pin_toggled') {
+          onPinToggled?.(
+            wsMessage.payload as { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string },
+          );
+        } else if (wsMessage.action === 'user_status_changed') {
+          onUserStatusChanged?.(
+            wsMessage.payload as { userId: string; isOnline: boolean; lastSeen: string },
+          );
+        } else if (wsMessage.action === 'new_notification') {
+          onNotification?.(wsMessage.payload as Notification);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     };
-  }, [mounted, session?.apiToken, onMessage, onConnect, onDisconnect]);
+  }, [
+    mounted,
+    session?.apiToken,
+    onMessage,
+    onReactionUpdate,
+    onTypingUpdate,
+    onPinToggled,
+    onUserStatusChanged,
+    onNotification,
+    onConnect,
+    onDisconnect,
+  ]);
 
   const disconnect = useCallback(() => {
     if (ws.current) {
@@ -104,7 +163,11 @@ export function useWebSocket({
   }, []);
 
   const sendMessage = useCallback(
-    (roomId: string, content: string, type: 'dm' | 'group' | 'motion' = 'group') => {
+    (
+      roomId: string,
+      content: string,
+      type: 'dm' | 'group' | 'motion' = 'group',
+    ) => {
       if (ws.current?.readyState === WebSocket.OPEN) {
         const message: WSMessage = {
           action: 'send_message',
@@ -139,7 +202,12 @@ export function useWebSocket({
   );
 
   const proposeMotion = useCallback(
-    (roomId: string, title: string, description: string, committeeId: string) => {
+    (
+      roomId: string,
+      title: string,
+      description: string,
+      committeeId: string,
+    ) => {
       if (ws.current?.readyState === WebSocket.OPEN) {
         const message: WSMessage = {
           action: 'propose_motion',
@@ -157,22 +225,19 @@ export function useWebSocket({
     [],
   );
 
-  const secondMotion = useCallback(
-    (roomId: string, motionId: string) => {
-      if (ws.current?.readyState === WebSocket.OPEN) {
-        const message: WSMessage = {
-          action: 'second_motion',
-          type: 'motion',
-          payload: {
-            roomId,
-            motionId,
-          },
-        };
-        ws.current.send(JSON.stringify(message));
-      }
-    },
-    [],
-  );
+  const secondMotion = useCallback((roomId: string, motionId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      const message: WSMessage = {
+        action: 'second_motion',
+        type: 'motion',
+        payload: {
+          roomId,
+          motionId,
+        },
+      };
+      ws.current.send(JSON.stringify(message));
+    }
+  }, []);
 
   const voteOnMotion = useCallback(
     (roomId: string, motionId: string, vote: 'aye' | 'nay' | 'abstain') => {
@@ -214,6 +279,28 @@ export function useWebSocket({
     }
   }, []);
 
+  const sendTypingStart = useCallback((roomId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      const message: WSMessage = {
+        action: 'typing_start',
+        type: 'system',
+        payload: { roomId },
+      };
+      ws.current.send(JSON.stringify(message));
+    }
+  }, []);
+
+  const sendTypingStop = useCallback((roomId: string) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      const message: WSMessage = {
+        action: 'typing_stop',
+        type: 'system',
+        payload: { roomId },
+      };
+      ws.current.send(JSON.stringify(message));
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -241,6 +328,8 @@ export function useWebSocket({
     voteOnMotion,
     joinRoom,
     leaveRoom,
+    sendTypingStart,
+    sendTypingStop,
     connect,
     disconnect,
   };

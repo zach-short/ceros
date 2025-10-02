@@ -16,7 +16,7 @@ import {
   useCheckUsername,
 } from '@/hooks/api/use-users';
 import { UpdateProfileRequest } from '@/lib/api/users';
-import { UploadImageButton } from '@/components/shared/button/upload';
+import { AvatarPicker } from '@/components/shared/button/avatar-picker';
 import { GooglePlacesAutocomplete } from '@/components/ui/google-places-autocomplete';
 
 export function Profile() {
@@ -30,8 +30,7 @@ export function Profile() {
   const [checkingUsername, setCheckingUsername] = useState(false);
 
   const { mutate: updateProfile, loading: updateLoading } = useUpdateProfile({
-    onSuccess: (data) => {
-      console.log('Profile update successful:', data);
+    onSuccess: () => {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       refetch();
@@ -73,7 +72,6 @@ export function Profile() {
   }
 
   const handleEdit = () => {
-    console.log('Current user data:', user);
     setFormData({
       name: user.name || '',
       givenName: user.givenName || '',
@@ -85,7 +83,7 @@ export function Profile() {
     setAddressInput(
       user.address?.street
         ? `${user.address.street}${user.address.city ? `, ${user.address.city}` : ''}${user.address.state ? `, ${user.address.state}` : ''}${user.address.zip ? ` ${user.address.zip}` : ''}`
-        : ''
+        : '',
     );
     setIsEditing(true);
   };
@@ -103,9 +101,6 @@ export function Profile() {
       return;
     }
 
-    console.log('Submitting form data:', formData);
-    console.log('Form data address:', formData.address);
-    console.log('Address input state:', addressInput);
     updateProfile(formData);
   };
 
@@ -221,9 +216,9 @@ export function Profile() {
             <CardTitle>Profile Picture</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='flex items-center space-x-6'>
+            <div className='flex items-center space-x-2'>
               <div className='relative'>
-                <Avatar className='h-24 w-24'>
+                <Avatar className='w-16 h-16'>
                   <AvatarImage
                     src={formData?.picture || user.picture}
                     alt={user.name || 'Profile'}
@@ -233,26 +228,23 @@ export function Profile() {
                 {isEditing && (
                   <>
                     <div className='absolute inset-0 bg-black/40 rounded-full' />
-                    <div className='absolute -bottom-5 -right-5'>
-                      <UploadImageButton
-                        onUploadError={(error) => {
-                          console.log(error);
-                          toast.error('Error uploading photo');
-                        }}
-                        onClientUploadComplete={(res) => {
-                          console.log(res);
-                          setFormData({ ...formData, picture: res[0].url });
-                        }}
-                      />
-                    </div>
+                    <AvatarPicker
+                      currentAvatar={formData?.picture || user.picture}
+                      onSelect={(url) => {
+                        setFormData({ ...formData, picture: url });
+                      }}
+                      onUploadError={() => {
+                        toast.error('Error uploading photo');
+                      }}
+                    />
                   </>
                 )}
               </div>
               <div>
-                <h3 className='text-lg font-semibold'>
+                <h3 className='text-sm sm:text-lg font-semibold'>
                   {user.name || 'Unknown User'}
                 </h3>
-                <p className='text-sm text-muted-foreground'>{user.email}</p>
+                <p className='text-xs text-muted-foreground'>{user.email}</p>
               </div>
             </div>
           </CardContent>
@@ -324,7 +316,6 @@ export function Profile() {
                 value={addressInput}
                 onValueChange={setAddressInput}
                 onAddressSelect={(address) => {
-                  console.log('Address selected:', address);
                   const updatedFormData = {
                     ...formData,
                     address: {
@@ -334,7 +325,6 @@ export function Profile() {
                       zip: address.zip || '',
                     },
                   };
-                  console.log('Updated form data:', updatedFormData);
                   setFormData(updatedFormData);
                 }}
               />

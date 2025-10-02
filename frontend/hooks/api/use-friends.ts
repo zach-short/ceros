@@ -26,8 +26,7 @@ export function useRequestFriend(options?: {
   onError?: (error: any) => void;
 }) {
   return useMutation(friendsApi.requestFriend, {
-    onSuccess: (data) => {
-      console.log('Friend request sent:', data);
+    onSuccess: () => {
       options?.onSuccess?.();
     },
     onError: (error) => {
@@ -42,8 +41,7 @@ export function useAcceptFriend(options?: {
   onError?: (error: any) => void;
 }) {
   return useMutation(friendsApi.acceptFriend, {
-    onSuccess: (data) => {
-      console.log('Friend request accepted:', data);
+    onSuccess: () => {
       options?.onSuccess?.();
     },
     onError: (error) => {
@@ -58,8 +56,7 @@ export function useRejectFriend(options?: {
   onError?: (error: any) => void;
 }) {
   return useMutation(friendsApi.rejectFriend, {
-    onSuccess: (data) => {
-      console.log('Friend request rejected:', data);
+    onSuccess: () => {
       options?.onSuccess?.();
     },
     onError: (error) => {
@@ -74,8 +71,7 @@ export function useRemoveFriend(options?: {
   onError?: (error: any) => void;
 }) {
   return useMutation(friendsApi.removeFriend, {
-    onSuccess: (data) => {
-      console.log('Friend removed:', data);
+    onSuccess: () => {
       options?.onSuccess?.();
     },
     onError: (error) => {
@@ -90,8 +86,7 @@ export function useBlockUser(options?: {
   onError?: (error: any) => void;
 }) {
   return useMutation(friendsApi.blockUser, {
-    onSuccess: (data) => {
-      console.log('User blocked:', data);
+    onSuccess: () => {
       options?.onSuccess?.();
     },
     onError: (error) => {
@@ -106,8 +101,7 @@ export function useUnblockUser(options?: {
   onError?: (error: any) => void;
 }) {
   return useMutation(friendsApi.unblockUser, {
-    onSuccess: (data) => {
-      console.log('User unblocked:', data);
+    onSuccess: () => {
       options?.onSuccess?.();
     },
     onError: (error) => {
@@ -116,4 +110,3 @@ export function useUnblockUser(options?: {
     },
   });
 }
-

@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, ReactNode } from 'react';
 import { CenteredDiv } from '../shared/layout/centered-div';
 import { DefaultLoader } from '../shared/layout/loader';
-
-export type UserRole = 'admin' | 'member' | 'observer';
+import { UserRole } from '@/models';
 
 interface AuthGateProps {
   children: ReactNode;

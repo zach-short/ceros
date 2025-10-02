@@ -8,7 +8,6 @@ import {
   Users,
   FileText,
   Vote,
-  UserCircle,
   Bell,
 } from 'lucide-react';
 

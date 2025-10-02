@@ -12,7 +12,6 @@ export function useCommitteeChat(options?: {
 }) {
   return useMutation(committeeApi.startChat, {
     onSuccess: (data: StartCommitteeChatResponse) => {
-      console.log('Committee chat started:', data);
       options?.onSuccess?.(data);
     },
     onError: (error) => {
@@ -26,26 +25,74 @@ export function useCommitteeHistory(
   committeeId: string,
   enabled: boolean = true,
 ) {
-  return useFetch<GetCommitteeHistoryResponse>(
-    committeeApi.getHistory,
+  return useFetch<GetCommitteeHistoryResponse>(committeeApi.getHistory, {
+    resourceParams: [committeeId],
+    dependencies: [committeeId],
+    enabled: !!committeeId && enabled,
+  });
+}
+
+export function useMessageReplies(messageId: string, enabled: boolean = true) {
+  return useFetch<GetMessageRepliesResponse>(committeeApi.getMessageReplies, {
+    resourceParams: [messageId],
+    dependencies: [messageId],
+    enabled: !!messageId && enabled,
+  });
+}
+
+export function useToggleMessageReaction(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      committeeApi.toggleMessageReaction(messageId, emoji),
     {
-      resourceParams: [committeeId],
-      dependencies: [committeeId],
-      enabled: !!committeeId && enabled,
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to toggle message reaction:', error);
+        options?.onError?.(error);
+      },
     },
   );
 }
 
-export function useMessageReplies(
-  messageId: string,
-  enabled: boolean = true,
-) {
-  return useFetch<GetMessageRepliesResponse>(
-    committeeApi.getMessageReplies,
+export function useEditMessage(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, content }: { messageId: string; content: string }) =>
+      committeeApi.editMessage(messageId, content),
     {
-      resourceParams: [messageId],
-      dependencies: [messageId],
-      enabled: !!messageId && enabled,
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to edit message:', error);
+        options?.onError?.(error);
+      },
     },
   );
 }
+
+export function useDeleteMessage(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    (messageId: string) => committeeApi.deleteMessage(messageId),
+    {
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to delete message:', error);
+        options?.onError?.(error);
+      },
+    },
+  );
+}
+

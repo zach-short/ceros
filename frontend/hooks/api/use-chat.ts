@@ -7,7 +7,6 @@ export function useStartDM(options?: {
 }) {
   return useMutation(chatApi.startDM, {
     onSuccess: (data: { roomId: string; room: Room }) => {
-      console.log('DM conversation started:', data);
       options?.onSuccess?.(data);
     },
     onError: (error) => {
@@ -18,7 +17,7 @@ export function useStartDM(options?: {
 }
 
 export function useDMHistory(recipientId: string | undefined, enabled = true) {
-  return useFetch<{ roomId: string; messages: Message[] }>(
+  return useFetch<{ roomId: string; messages: Message[]; users: any[]; hasMore?: boolean }>(
     chatApi.getDMHistory,
     {
       resourceParams: [recipientId],
@@ -32,4 +31,57 @@ export function useConversations() {
   return useFetch<{ conversations: ConversationSummary[] }>(
     chatApi.getConversations,
   );
+}
+
+export function useToggleMessageReaction(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, emoji }: { messageId: string; emoji: string }) =>
+      chatApi.toggleMessageReaction(messageId, emoji),
+    {
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to toggle message reaction:', error);
+        options?.onError?.(error);
+      },
+    },
+  );
+}
+
+export function useEditMessage(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(
+    ({ messageId, content }: { messageId: string; content: string }) =>
+      chatApi.editMessage(messageId, content),
+    {
+      onSuccess: (data) => {
+        options?.onSuccess?.(data);
+      },
+      onError: (error) => {
+        console.error('Failed to edit message:', error);
+        options?.onError?.(error);
+      },
+    },
+  );
+}
+
+export function useDeleteMessage(options?: {
+  onSuccess?: (data: any) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation((messageId: string) => chatApi.deleteMessage(messageId), {
+    onSuccess: (data) => {
+      options?.onSuccess?.(data);
+    },
+    onError: (error) => {
+      console.error('Failed to delete message:', error);
+      options?.onError?.(error);
+    },
+  });
 }

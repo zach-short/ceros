@@ -1,6 +1,7 @@
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import useSWR, { SWRConfiguration, SWRResponse } from 'swr';
 import useSWRMutation from 'swr/mutation';
+import { toast } from 'sonner';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -24,6 +25,16 @@ class ApiClient {
     const response = await fetch(url, config);
 
     if (!response.ok) {
+      // Handle 401 errors by signing out the user
+      if (response.status === 401) {
+        try {
+          await signOut({ redirect: false });
+          toast.info('Your session has expired. Please sign in again.');
+        } catch (signOutError) {
+          console.error('Error signing out user:', signOutError);
+        }
+      }
+
       const error = new Error(`API Error: ${response.status}`);
       (error as any).status = response.status;
       (error as any).data = await response.json().catch(() => ({}));
@@ -90,16 +101,19 @@ export function useApiQuery<T>(
 
   const fetcher = async (url: string): Promise<T> => {
     const token =
-      (session as any)?.apiToken || (session as any)?.user?.apiToken || (session as any)?.accessToken;
+      (session as any)?.apiToken ||
+      (session as any)?.user?.apiToken ||
+      (session as any)?.accessToken;
     if (!token) {
-      console.log('Session object:', session);
       throw new Error('No authentication token available');
     }
     return apiClient.get<T>(url, token);
   };
 
   const token =
-    (session as any)?.apiToken || (session as any)?.user?.apiToken || (session as any)?.accessToken;
+    (session as any)?.apiToken ||
+    (session as any)?.user?.apiToken ||
+    (session as any)?.accessToken;
 
   return useSWR(token && endpoint ? endpoint : null, fetcher, {
     revalidateOnFocus: false,
@@ -124,9 +138,10 @@ export function useApiMutation<TData = any, TVariables = any>(
     { arg }: { arg: TVariables },
   ): Promise<TData> => {
     const token =
-      (session as any)?.apiToken || (session as any)?.user?.apiToken || (session as any)?.accessToken;
+      (session as any)?.apiToken ||
+      (session as any)?.user?.apiToken ||
+      (session as any)?.accessToken;
     if (!token) {
-      console.log('Session object in mutation:', session);
       throw new Error('No authentication token available');
     }
 
@@ -144,19 +159,14 @@ export function useApiMutation<TData = any, TVariables = any>(
     }
   };
 
-  const mutation = (useSWRMutation as any)(
-    endpoint,
-    mutationFetcher,
-    {
-      onSuccess: options?.onSuccess,
-      onError: options?.onError,
-      ...options?.config,
-    },
-  );
+  const mutation = (useSWRMutation as any)(endpoint, mutationFetcher, {
+    onSuccess: options?.onSuccess,
+    onError: options?.onError,
+    ...options?.config,
+  });
 
   return {
     ...mutation,
     mutate: mutation.trigger,
   };
 }
-

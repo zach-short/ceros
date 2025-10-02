@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,8 +115,26 @@ func GetDMHistory(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	limit := int64(50)
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+			limit = parsedLimit
+		}
+	}
+
+	var before *time.Time
+	if beforeStr := c.Query("before"); beforeStr != "" {
+		if parsedBefore, err := time.Parse(time.RFC3339, beforeStr); err == nil {
+			before = &parsedBefore
+		}
+	}
+
 	filter := bson.M{"roomId": roomID}
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(100)
+	if before != nil {
+		filter["timestamp"] = bson.M{"$lt": *before}
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(limit)
 
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -132,16 +151,60 @@ func GetDMHistory(c *gin.Context) {
 		return
 	}
 
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
+	}
+
+	senderIDs := make(map[primitive.ObjectID]bool)
+	for _, msg := range messages {
+		senderIDs[msg.SenderID] = true
+	}
+
+	var uniqueSenderIDs []primitive.ObjectID
+	for senderID := range senderIDs {
+		uniqueSenderIDs = append(uniqueSenderIDs, senderID)
+	}
+
+	var users []models.User
+	if len(uniqueSenderIDs) > 0 {
+		usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+		userFilter := bson.M{"_id": bson.M{"$in": uniqueSenderIDs}}
+		userCursor, err := usersCollection.Find(ctx, userFilter)
+		if err != nil {
+			log.Printf("Error fetching users: %v", err)
+		} else {
+			defer userCursor.Close(ctx)
+			if err = userCursor.All(ctx, &users); err != nil {
+				log.Printf("Error decoding users: %v", err)
+			}
+		}
+	}
+
+	hasMore := int64(len(messages)) == limit
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":   roomID,
 		"messages": messages,
+		"users":    users,
+		"hasMore":  hasMore,
 	})
+}
+
+type ConversationUser struct {
+	ID         string `json:"id"`
+	Name       string `json:"name,omitempty"`
+	GivenName  string `json:"givenName,omitempty"`
+	FamilyName string `json:"familyName,omitempty"`
+	Picture    string `json:"picture,omitempty"`
 }
 
 type ConversationSummary struct {
 	RoomID        string               `json:"roomId"`
 	Type          models.RoomType      `json:"type"`
 	Participants  []primitive.ObjectID `json:"participants"`
+	OtherUser     *ConversationUser    `json:"otherUser,omitempty"`  // for dms only
+	GroupName     string               `json:"groupName,omitempty"`  // for groups/committees
+	GroupImage    string               `json:"groupImage,omitempty"` // for groups/committees
 	LastMessage   *models.Message      `json:"lastMessage,omitempty"`
 	LastMessageAt time.Time            `json:"lastMessageAt"`
 	UnreadCount   int                  `json:"unreadCount"`
@@ -240,6 +303,45 @@ func GetUserConversations(c *gin.Context) {
 			UnreadCount:   0,
 		}
 
+		if roomType == models.RoomTypeDM && len(participants) == 2 {
+			otherUserID := participants[0]
+			if otherUserID == userID {
+				otherUserID = participants[1]
+			}
+
+			userCollection := config.GetCollection("users")
+			var otherUser models.User
+			err := userCollection.FindOne(ctx, bson.M{"_id": otherUserID}).Decode(&otherUser)
+			if err == nil {
+				conversation.OtherUser = &ConversationUser{
+					ID:         otherUser.ID.Hex(),
+					Name:       otherUser.Name,
+					GivenName:  otherUser.GivenName,
+					FamilyName: otherUser.FamilyName,
+					Picture:    otherUser.Picture,
+				}
+			}
+		}
+
+		if roomType == models.RoomTypeCommittee {
+			parts := strings.Split(result.ID, "_")
+			if len(parts) >= 2 {
+				committeeIDStr := parts[1]
+				if committeeID, err := primitive.ObjectIDFromHex(committeeIDStr); err == nil {
+					committeeCollection := config.GetCollection("committees")
+					var committee struct {
+						Name  string `bson:"name"`
+						Image string `bson:"image"`
+					}
+					err := committeeCollection.FindOne(ctx, bson.M{"_id": committeeID}).Decode(&committee)
+					if err == nil {
+						conversation.GroupName = committee.Name
+						conversation.GroupImage = committee.Image
+					}
+				}
+			}
+		}
+
 		conversations = append(conversations, conversation)
 	}
 
@@ -325,9 +427,35 @@ func GetCommitteeHistory(c *gin.Context) {
 		return
 	}
 
+	senderIDs := make(map[primitive.ObjectID]bool)
+	for _, msg := range messages {
+		senderIDs[msg.SenderID] = true
+	}
+
+	var uniqueSenderIDs []primitive.ObjectID
+	for senderID := range senderIDs {
+		uniqueSenderIDs = append(uniqueSenderIDs, senderID)
+	}
+
+	var users []models.User
+	if len(uniqueSenderIDs) > 0 {
+		usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+		userFilter := bson.M{"_id": bson.M{"$in": uniqueSenderIDs}}
+		userCursor, err := usersCollection.Find(ctx, userFilter)
+		if err != nil {
+			log.Printf("Error fetching users: %v", err)
+		} else {
+			defer userCursor.Close(ctx)
+			if err = userCursor.All(ctx, &users); err != nil {
+				log.Printf("Error decoding users: %v", err)
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":   roomID,
 		"messages": messages,
+		"users":    users,
 	})
 }
 
@@ -363,5 +491,411 @@ func GetMessageReplies(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"replies": replies,
+	})
+}
+
+func ToggleMessageReaction(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	var req struct {
+		Emoji string `json:"emoji" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	if message.Metadata == nil {
+		message.Metadata = make(map[string]any)
+	}
+
+	reactions, ok := message.Metadata["reactions"].([]any)
+	if !ok {
+		reactions = []any{}
+	}
+
+	var reactionList []map[string]any
+	for _, r := range reactions {
+		if reaction, ok := r.(map[string]any); ok {
+			reactionList = append(reactionList, reaction)
+		}
+	}
+
+	var existingReactionIndex = -1
+	var userReactionIndex = -1
+
+	for i, reaction := range reactionList {
+		if emoji, ok := reaction["emoji"].(string); ok && emoji == req.Emoji {
+			existingReactionIndex = i
+			if users, ok := reaction["users"].([]any); ok {
+				for j, userId := range users {
+					if userIdStr, ok := userId.(string); ok && userIdStr == userID.Hex() {
+						userReactionIndex = j
+						break
+					}
+				}
+			}
+			break
+		}
+	}
+
+	if existingReactionIndex >= 0 {
+		reaction := reactionList[existingReactionIndex]
+		users := reaction["users"].([]any)
+
+		if userReactionIndex >= 0 {
+			users = append(users[:userReactionIndex], users[userReactionIndex+1:]...)
+			reaction["users"] = users
+			reaction["count"] = len(users)
+
+			if len(users) == 0 {
+				reactionList = append(reactionList[:existingReactionIndex], reactionList[existingReactionIndex+1:]...)
+			} else {
+				reactionList[existingReactionIndex] = reaction
+			}
+		} else {
+			users = append(users, userID.Hex())
+			reaction["users"] = users
+			reaction["count"] = len(users)
+			reactionList[existingReactionIndex] = reaction
+		}
+	} else {
+		newReaction := map[string]any{
+			"emoji": req.Emoji,
+			"count": 1,
+			"users": []any{userID.Hex()},
+		}
+		reactionList = append(reactionList, newReaction)
+	}
+
+	var updatedReactions []any
+	for _, r := range reactionList {
+		updatedReactions = append(updatedReactions, r)
+	}
+
+	message.Metadata["reactions"] = updatedReactions
+
+	update := bson.M{"$set": bson.M{"metadata": message.Metadata}}
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
+	if err != nil {
+		log.Printf("Error updating message reactions: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update reaction"})
+		return
+	}
+
+	var frontendReactions []map[string]any
+	for _, r := range reactionList {
+		reaction := r
+		users := reaction["users"].([]any)
+
+		userReacted := false
+		for _, u := range users {
+			if u.(string) == userID.Hex() {
+				userReacted = true
+				break
+			}
+		}
+
+		frontendReaction := map[string]any{
+			"emoji":       reaction["emoji"],
+			"count":       reaction["count"],
+			"userReacted": userReacted,
+		}
+		frontendReactions = append(frontendReactions, frontendReaction)
+	}
+
+	wsMessage := models.WSMessage{
+		Action: "reaction_update",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId": messageID,
+			"reactions": frontendReactions,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"messageId": messageID,
+		"reactions": frontendReactions,
+	})
+}
+
+func EditMessage(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	var req struct {
+		Content string `json:"content" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	if message.SenderID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Can only edit your own messages"})
+		return
+	}
+
+	originalContent := message.Content
+	now := time.Now()
+
+	update := bson.M{
+		"$set": bson.M{
+			"content":         req.Content,
+			"isEdited":        true,
+			"originalContent": originalContent,
+			"editedAt":        now,
+		},
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
+	if err != nil {
+		log.Printf("Error updating message: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update message"})
+		return
+	}
+
+	wsMessage := models.WSMessage{
+		Action: "message_edited",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId":       messageID,
+			"content":         req.Content,
+			"isEdited":        true,
+			"originalContent": originalContent,
+			"editedAt":        now,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":              messageID,
+		"content":         req.Content,
+		"isEdited":        true,
+		"originalContent": originalContent,
+		"editedAt":        now,
+	})
+}
+
+func DeleteMessage(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	if message.SenderID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Can only delete your own messages"})
+		return
+	}
+
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": messageOID})
+	if err != nil {
+		log.Printf("Error deleting message: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete message"})
+		return
+	}
+
+	wsMessage := models.WSMessage{
+		Action: "message_deleted",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId": messageID,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"messageId": messageID,
+	})
+}
+
+func ToggleMessagePin(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	now := time.Now()
+	var update bson.M
+
+	if message.IsPinned {
+		// Unpin the message
+		update = bson.M{
+			"$set": bson.M{
+				"isPinned": false,
+				"pinnedBy": primitive.NilObjectID,
+				"pinnedAt": nil,
+			},
+		}
+	} else {
+		// Pin the message
+		update = bson.M{
+			"$set": bson.M{
+				"isPinned": true,
+				"pinnedBy": userID,
+				"pinnedAt": now,
+			},
+		}
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
+	if err != nil {
+		log.Printf("Error toggling message pin: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle pin"})
+		return
+	}
+
+	isPinned := !message.IsPinned
+
+	wsMessage := models.WSMessage{
+		Action: "message_pin_toggled",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId": messageID,
+			"isPinned":  isPinned,
+			"pinnedBy":  userID.Hex(),
+			"pinnedAt":  now,
+			"roomId":    message.RoomID,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"messageId": messageID,
+		"isPinned":  isPinned,
+		"pinnedBy":  userID.Hex(),
+		"pinnedAt":  now,
+	})
+}
+
+func GetPinnedMessages(c *gin.Context) {
+	roomID := c.Query("roomId")
+	if roomID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Room ID required"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"roomId":   roomID,
+		"isPinned": true,
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "pinnedAt", Value: -1}}).SetLimit(50)
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		log.Printf("Error fetching pinned messages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch pinned messages"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var pinnedMessages []models.Message
+	if err = cursor.All(ctx, &pinnedMessages); err != nil {
+		log.Printf("Error decoding pinned messages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode pinned messages"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"pinnedMessages": pinnedMessages,
 	})
 }

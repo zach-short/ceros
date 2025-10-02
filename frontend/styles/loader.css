@@ -1,17 +1,7 @@
 .loader {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 6rem;
-  margin-top: 3rem;
-  margin-bottom: 3rem;
-}
-.loader:before,
-.loader:after {
-  content: '';
-  position: absolute;
+  border: 24px solid;
+  border-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.25)
+    rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   animation: pulsOut 1.8s ease-in-out infinite;
   filter: drop-shadow(0 0 1rem rgba(45, 9, 9, 0.75));
@@ -28,26 +18,21 @@
   box-shadow: 0 0 0 0 #be1a1a;
 }
 
-@keyframes pulsIn {
+@keyframes animloader {
   0% {
-    box-shadow: inset 0 0 0 1rem #fff;
-    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.25)
+      rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.75);
   }
-  50%,
-  100% {
-    box-shadow: inset 0 0 0 0 #fff;
-    opacity: 0;
+  33% {
+    border-color: rgba(255, 255, 255, 0.75) rgba(255, 255, 255, 0.15)
+      rgba(255, 255, 255, 0.25) rgba(255, 255, 255, 0.35);
   }
-}
-
-@keyframes pulsOut {
-  0%,
-  50% {
-    box-shadow: 0 0 0 0 #fff;
-    opacity: 0;
+  66% {
+    border-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.75)
+      rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.25);
   }
   100% {
-    box-shadow: 0 0 0 1rem #fff;
-    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.25) rgba(255, 255, 255, 0.35)
+      rgba(255, 255, 255, 0.75) rgba(255, 255, 255, 0.15);
   }
 }
