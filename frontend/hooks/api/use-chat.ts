@@ -17,7 +17,7 @@ export function useStartDM(options?: {
 }
 
 export function useDMHistory(recipientId: string | undefined, enabled = true) {
-  return useFetch<{ roomId: string; messages: Message[]; users: any[] }>(
+  return useFetch<{ roomId: string; messages: Message[]; users: any[]; hasMore?: boolean }>(
     chatApi.getDMHistory,
     {
       resourceParams: [recipientId],

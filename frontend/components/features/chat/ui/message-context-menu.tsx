@@ -12,7 +12,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
-import { Reply, Edit, Heart, Copy, Trash2, ArrowLeft } from 'lucide-react';
+import { Reply, Edit, Heart, Copy, Trash2, ArrowLeft, Pin, PinOff } from 'lucide-react';
 import { MORE_REACTIONS, QUICK_REACTIONS } from './emojis';
 
 interface MessageContextMenuProps {
@@ -23,6 +23,7 @@ interface MessageContextMenuProps {
   onEdit?: (messageId: string, content: string) => void;
   onDelete?: (messageId: string) => void;
   onReaction: (messageId: string, emoji: string) => void;
+  onPin?: (messageId: string) => void;
   chatType?: 'dm' | 'committee';
 }
 
@@ -34,6 +35,7 @@ export function MessageContextMenu({
   onEdit,
   onDelete,
   onReaction,
+  onPin,
 }: MessageContextMenuProps) {
   const [showMobileReactions, setShowMobileReactions] = useState(false);
 
@@ -71,6 +73,10 @@ export function MessageContextMenu({
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content).then(() => {});
+  };
+
+  const handlePin = () => {
+    onPin?.(message.id);
   };
 
   const handleMoreReactions = () => {
@@ -156,6 +162,23 @@ export function MessageContextMenu({
               <Copy className='w-4 h-4 mr-2' />
               Copy Text
             </ContextMenuItem>
+
+            {onPin && (
+              <ContextMenuItem onClick={handlePin}>
+                {message.isPinned ? (
+                  <>
+                    <PinOff className='w-4 h-4 mr-2' />
+                    Unpin Message
+                  </>
+                ) : (
+                  <>
+                    <Pin className='w-4 h-4 mr-2' />
+                    Pin Message
+                  </>
+                )}
+              </ContextMenuItem>
+            )}
+
             {isOwn && onDelete && (
               <ContextMenuItem onClick={handleDelete} className='text-red-600'>
                 <Trash2 className='w-4 h-4 mr-2' />

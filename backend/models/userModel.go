@@ -48,6 +48,8 @@ type User struct {
 	PhoneNumber  string             `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
 	Address      Address            `bson:"address,omitempty" json:"address,omitempty"`
 	Settings     UserSettings       `bson:"settings,omitempty" json:"settings,omitempty"`
+	IsOnline     bool               `bson:"isOnline" json:"isOnline"`
+	LastSeen     primitive.DateTime `bson:"lastSeen,omitempty" json:"lastSeen,omitempty"`
 }
 
 func GetDefaultUserSettings() UserSettings {

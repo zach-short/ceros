@@ -20,4 +20,7 @@ export interface Message {
   isEdited?: boolean;
   editedAt?: string;
   originalContent?: string;
+  isPinned?: boolean;
+  pinnedBy?: string;
+  pinnedAt?: string;
 }

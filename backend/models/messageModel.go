@@ -33,9 +33,12 @@ type Message struct {
 	OriginalContent *string    `json:"originalContent,omitempty" bson:"originalContent,omitempty"`
 	EditedAt        *time.Time `json:"editedAt,omitempty" bson:"editedAt,omitempty"`
 
+	IsPinned bool               `json:"isPinned,omitempty" bson:"isPinned,omitempty"`
+	PinnedBy primitive.ObjectID `json:"pinnedBy,omitempty" bson:"pinnedBy,omitempty"`
+	PinnedAt *time.Time         `json:"pinnedAt,omitempty" bson:"pinnedAt,omitempty"`
+
 	Metadata map[string]any `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
-
 
 type WSMessage struct {
 	Action  string      `json:"action"`

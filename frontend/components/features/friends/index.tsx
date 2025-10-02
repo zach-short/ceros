@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddFriendsInput } from '@/components/features/friends/add-friends-input';
@@ -13,6 +13,7 @@ import {
   useRejectFriend,
   useRemoveFriend,
 } from '@/hooks/api/use-friends';
+import { useWebSocket } from '@/hooks/use-web-socket';
 import { Friendship } from '@/lib/api/friends';
 import { UserCheck, UserX, Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -27,6 +28,7 @@ type PendingTabType = 'incoming' | 'outgoing';
 export default function Friends() {
   const [activeTab, setActiveTab] = useState<TabType>('active');
   const [pendingTab, setPendingTab] = useState<PendingTabType>('incoming');
+  const [userStatuses, setUserStatuses] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
   const {
@@ -84,6 +86,21 @@ export default function Friends() {
   const pendingRequests = pendingData?.pendingRequests || [];
   const sentRequests = sentData?.sentRequests || [];
 
+  const handleUserStatusChanged = (data: {
+    userId: string;
+    isOnline: boolean;
+    lastSeen: string;
+  }) => {
+    setUserStatuses((prev) => ({
+      ...prev,
+      [data.userId]: data.isOnline,
+    }));
+  };
+
+  useWebSocket({
+    onUserStatusChanged: handleUserStatusChanged,
+  });
+
   const renderTabButton = (tab: TabType, label: string, count?: number) => (
     <Button
       key={tab}
@@ -124,36 +141,43 @@ export default function Friends() {
 
     return (
       <div className=''>
-        {friends.map((friendship: Friendship) => (
-          <Card
-            key={friendship.id}
-            className={`border-none shadow-none py-1 bg-transparent`}
-          >
-            <CardContent className='flex items-center justify-between p-0'>
-              <Link
-                href={`/profile/${friendship?.user?.id}`}
-                className='flex-1'
-              >
-                <UserCard
-                  user={friendship.user!}
-                  friendship={friendship}
-                  showFullName={true}
-                />
-              </Link>
+        {friends.map((friendship: Friendship) => {
+          const userWithStatus = {
+            ...friendship.user!,
+            isOnline: userStatuses[friendship.user?.id || ''],
+          };
+          return (
+            <Card
+              key={friendship.id}
+              className={`border-none shadow-none py-1 bg-transparent`}
+            >
+              <CardContent className='flex items-center justify-between p-0'>
+                <Link
+                  href={`/profile/${friendship?.user?.id}`}
+                  className='flex-1'
+                >
+                  <UserCard
+                    user={userWithStatus}
+                    friendship={friendship}
+                    showFullName={true}
+                    showOnlineStatus={true}
+                  />
+                </Link>
 
-              <div className={`flex flex-row gap-4 items-center`}>
-                <MessageSquare
-                  onClick={() => router.push(`/chat/${friendship.user?.id}`)}
-                  className='h-4 w-4 text-blue-600 hover:cursor-pointer'
-                />
-                <Trash2
-                  onClick={() => removeFriend(friendship.id)}
-                  className='h-4 w-4 text-red-500 hover:cursor-pointer'
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className={`flex flex-row gap-4 items-center`}>
+                  <MessageSquare
+                    onClick={() => router.push(`/chat/${friendship.user?.id}`)}
+                    className='h-4 w-4 text-blue-600 hover:cursor-pointer'
+                  />
+                  <Trash2
+                    onClick={() => removeFriend(friendship.id)}
+                    className='h-4 w-4 text-red-500 hover:cursor-pointer'
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   };

@@ -146,6 +146,12 @@ func (c *Client) handleMessage(wsMsg models.WSMessage) {
 	case "vote_motion":
 		c.handleVoteMotion(wsMsg)
 
+	case "typing_start":
+		c.handleTypingStart(wsMsg)
+
+	case "typing_stop":
+		c.handleTypingStop(wsMsg)
+
 	default:
 		log.Printf("Unknown action: %s", wsMsg.Action)
 	}
@@ -434,6 +440,76 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 	}
 
 	c.hub.BroadcastToRoom(roomID, broadcastMsg)
+}
+
+func (c *Client) handleTypingStart(wsMsg models.WSMessage) {
+	payload, ok := wsMsg.Payload.(map[string]any)
+	if !ok {
+		log.Printf("Invalid typing start payload")
+		return
+	}
+
+	roomID, ok := payload["roomId"].(string)
+	if !ok {
+		log.Printf("Invalid room ID for typing")
+		return
+	}
+
+	usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+	var user struct {
+		ID      primitive.ObjectID `bson:"_id" json:"id"`
+		Name    string             `bson:"name" json:"name"`
+		Picture string             `bson:"picture" json:"picture"`
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	projection := bson.M{"_id": 1, "name": 1, "picture": 1}
+	err := usersCollection.FindOne(ctx, bson.M{"_id": c.userID}, options.FindOne().SetProjection(projection)).Decode(&user)
+	if err != nil {
+		log.Printf("Failed to fetch user data for typing indicator: %v", err)
+		return
+	}
+
+	broadcastMsg := models.WSMessage{
+		Action: "user_typing",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"userId":   c.userID.Hex(),
+			"roomId":   roomID,
+			"isTyping": true,
+			"name":     user.Name,
+		},
+	}
+
+	c.hub.BroadcastToRoomExcept(roomID, broadcastMsg, c)
+}
+
+func (c *Client) handleTypingStop(wsMsg models.WSMessage) {
+	payload, ok := wsMsg.Payload.(map[string]any)
+	if !ok {
+		log.Printf("Invalid typing stop payload")
+		return
+	}
+
+	roomID, ok := payload["roomId"].(string)
+	if !ok {
+		log.Printf("Invalid room ID for typing stop")
+		return
+	}
+
+	broadcastMsg := models.WSMessage{
+		Action: "user_typing",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"userId":   c.userID.Hex(),
+			"roomId":   roomID,
+			"isTyping": false,
+		},
+	}
+
+	c.hub.BroadcastToRoomExcept(roomID, broadcastMsg, c)
 }
 
 func UpgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {

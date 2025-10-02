@@ -16,6 +16,7 @@ interface MessageBubbleProps {
   onEdit?: (messageId: string, content: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
   onDelete?: (messageId: string) => void;
+  onPin?: (messageId: string) => void;
   parentMessage?: Message;
   onScrollToParent?: (messageId: string) => void;
   chatType?: 'dm' | 'committee';
@@ -83,6 +84,7 @@ export function MessageBubble({
   onEdit,
   onReaction,
   onDelete,
+  onPin,
   parentMessage,
   onScrollToParent,
   chatType = 'dm',
@@ -146,6 +148,7 @@ export function MessageBubble({
             onEdit={onEdit}
             onDelete={onDelete}
             onReaction={handleContextMenuReaction}
+            onPin={onPin}
             chatType={chatType}
           >
             <div

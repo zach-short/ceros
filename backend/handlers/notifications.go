@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
+	ws "github.com/zach-short/final-web-programming/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -310,13 +312,47 @@ func CreateNotification(c *gin.Context) {
 		}
 	}
 
+	if hub := c.MustGet("hub"); hub != nil {
+		BroadcastNotificationToUsers(hub, notification)
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message":      "notification created successfully",
 		"notification": notification,
 	})
 }
 
-type NotificationService struct{}
+type NotificationService struct {
+	Hub *ws.Hub
+}
+
+func BroadcastNotificationToUsers(hubInterface interface{}, notification models.Notification) {
+	hub, ok := hubInterface.(*ws.Hub)
+	if !ok {
+		log.Printf("Invalid hub type")
+		return
+	}
+
+	notifWithStatus := models.NotificationWithStatus{
+		Notification: notification,
+		Read:         false,
+		Dismissed:    false,
+	}
+
+	message := models.WSMessage{
+		Action:  "new_notification",
+		Type:    models.TypeSystem,
+		Payload: notifWithStatus,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling notification: %v", err)
+		return
+	}
+
+	hub.BroadcastToUsers(notification.Recipients, data)
+}
 
 func (ns *NotificationService) CreateMotionNotification(motion models.Motion, committeeMembers []primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -356,6 +392,10 @@ func (ns *NotificationService) CreateMotionNotification(motion models.Motion, co
 
 	if len(userNotifications) > 0 {
 		_, err = config.GetCollection("user_notifications").InsertMany(ctx, userNotifications)
+	}
+
+	if ns.Hub != nil {
+		BroadcastNotificationToUsers(ns.Hub, notification)
 	}
 
 	return err
@@ -401,6 +441,125 @@ func (ns *NotificationService) CreateVoteNotification(motionID primitive.ObjectI
 		_, err = config.GetCollection("user_notifications").InsertMany(ctx, userNotifications)
 	}
 
+	if ns.Hub != nil {
+		BroadcastNotificationToUsers(ns.Hub, notification)
+	}
+
 	return err
 }
 
+func (ns *NotificationService) CreateFriendRequestNotification(friendship models.Friendship, requesterName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var recipient models.User
+	err := config.GetCollection("users").FindOne(ctx, bson.M{"_id": friendship.AddresseeID}).Decode(&recipient)
+	if err != nil {
+		log.Printf("Error fetching recipient user: %v", err)
+		return err
+	}
+
+	settings := recipient.Settings
+	if settings == (models.UserSettings{}) {
+		settings = models.GetDefaultUserSettings()
+	}
+
+	if !settings.Notifications.FriendRequestNotifications {
+		return nil
+	}
+
+	notification := models.Notification{
+		ID:         primitive.NewObjectID(),
+		Type:       "friend_request",
+		RelatedID:  &friendship.ID,
+		Title:      "New Friend Request",
+		Message:    requesterName + " sent you a friend request",
+		Urgency:    "medium",
+		CreatedBy:  friendship.RequesterID,
+		Recipients: []primitive.ObjectID{friendship.AddresseeID},
+		CreatedAt:  time.Now(),
+	}
+
+	href := "/friends"
+	notification.Href = &href
+
+	_, err = config.GetCollection("notifications").InsertOne(ctx, notification)
+	if err != nil {
+		return err
+	}
+
+	userNotification := models.UserNotification{
+		ID:             primitive.NewObjectID(),
+		UserID:         friendship.AddresseeID,
+		NotificationID: notification.ID,
+		Read:           false,
+		Dismissed:      false,
+		CreatedAt:      time.Now(),
+	}
+
+	_, err = config.GetCollection("user_notifications").InsertOne(ctx, userNotification)
+
+	if ns.Hub != nil {
+		BroadcastNotificationToUsers(ns.Hub, notification)
+	}
+
+	return err
+}
+
+func (ns *NotificationService) CreateFriendRequestAcceptedNotification(friendship models.Friendship, accepterName string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var requester models.User
+	err := config.GetCollection("users").FindOne(ctx, bson.M{"_id": friendship.RequesterID}).Decode(&requester)
+	if err != nil {
+		log.Printf("Error fetching requester user: %v", err)
+		return err
+	}
+
+	settings := requester.Settings
+	if settings == (models.UserSettings{}) {
+		settings = models.GetDefaultUserSettings()
+	}
+
+	if !settings.Notifications.FriendRequestNotifications {
+		return nil
+	}
+
+	notification := models.Notification{
+		ID:         primitive.NewObjectID(),
+		Type:       "friend_request_accepted",
+		RelatedID:  &friendship.ID,
+		Title:      "Friend Request Accepted",
+		Message:    accepterName + " accepted your friend request",
+		Urgency:    "low",
+		CreatedBy:  friendship.AddresseeID,
+		Recipients: []primitive.ObjectID{friendship.RequesterID},
+		CreatedAt:  time.Now(),
+	}
+
+	href := "/friends"
+	notification.Href = &href
+
+	_, err = config.GetCollection("notifications").InsertOne(ctx, notification)
+	if err != nil {
+		return err
+	}
+
+	userNotification := models.UserNotification{
+		ID:             primitive.NewObjectID(),
+		UserID:         friendship.RequesterID,
+		NotificationID: notification.ID,
+		Read:           false,
+		Dismissed:      false,
+		CreatedAt:      time.Now(),
+	}
+
+	_, err = config.GetCollection("user_notifications").InsertOne(ctx, userNotification)
+
+	if ns.Hub != nil {
+		BroadcastNotificationToUsers(ns.Hub, notification)
+	}
+
+	return err
+}

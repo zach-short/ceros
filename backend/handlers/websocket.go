@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,8 +115,26 @@ func GetDMHistory(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	limit := int64(50)
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+			limit = parsedLimit
+		}
+	}
+
+	var before *time.Time
+	if beforeStr := c.Query("before"); beforeStr != "" {
+		if parsedBefore, err := time.Parse(time.RFC3339, beforeStr); err == nil {
+			before = &parsedBefore
+		}
+	}
+
 	filter := bson.M{"roomId": roomID}
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(100)
+	if before != nil {
+		filter["timestamp"] = bson.M{"$lt": *before}
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(limit)
 
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -130,6 +149,10 @@ func GetDMHistory(c *gin.Context) {
 		log.Printf("Error decoding messages: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode messages"})
 		return
+	}
+
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
 	}
 
 	senderIDs := make(map[primitive.ObjectID]bool)
@@ -157,10 +180,13 @@ func GetDMHistory(c *gin.Context) {
 		}
 	}
 
+	hasMore := int64(len(messages)) == limit
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":   roomID,
 		"messages": messages,
 		"users":    users,
+		"hasMore":  hasMore,
 	})
 }
 
@@ -492,7 +518,6 @@ func ToggleMessageReaction(c *gin.Context) {
 		return
 	}
 
-
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -754,5 +779,123 @@ func DeleteMessage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":   true,
 		"messageId": messageID,
+	})
+}
+
+func ToggleMessagePin(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	messageID := c.Param("id")
+	messageOID, err := primitive.ObjectIDFromHex(messageID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var message models.Message
+	err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Message not found"})
+		return
+	}
+
+	now := time.Now()
+	var update bson.M
+
+	if message.IsPinned {
+		// Unpin the message
+		update = bson.M{
+			"$set": bson.M{
+				"isPinned": false,
+				"pinnedBy": primitive.NilObjectID,
+				"pinnedAt": nil,
+			},
+		}
+	} else {
+		// Pin the message
+		update = bson.M{
+			"$set": bson.M{
+				"isPinned": true,
+				"pinnedBy": userID,
+				"pinnedAt": now,
+			},
+		}
+	}
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
+	if err != nil {
+		log.Printf("Error toggling message pin: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle pin"})
+		return
+	}
+
+	isPinned := !message.IsPinned
+
+	wsMessage := models.WSMessage{
+		Action: "message_pin_toggled",
+		Type:   models.TypeSystem,
+		Payload: map[string]any{
+			"messageId": messageID,
+			"isPinned":  isPinned,
+			"pinnedBy":  userID.Hex(),
+			"pinnedAt":  now,
+			"roomId":    message.RoomID,
+		},
+	}
+
+	wsHub.BroadcastToRoom(message.RoomID, wsMessage)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"messageId": messageID,
+		"isPinned":  isPinned,
+		"pinnedBy":  userID.Hex(),
+		"pinnedAt":  now,
+	})
+}
+
+func GetPinnedMessages(c *gin.Context) {
+	roomID := c.Query("roomId")
+	if roomID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Room ID required"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"roomId":   roomID,
+		"isPinned": true,
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "pinnedAt", Value: -1}}).SetLimit(50)
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		log.Printf("Error fetching pinned messages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch pinned messages"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var pinnedMessages []models.Message
+	if err = cursor.All(ctx, &pinnedMessages); err != nil {
+		log.Printf("Error decoding pinned messages: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode pinned messages"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"pinnedMessages": pinnedMessages,
 	})
 }

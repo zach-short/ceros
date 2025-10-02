@@ -7,6 +7,8 @@ import { useSession } from 'next-auth/react';
 import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
+import { TypingIndicator } from '../ui/typing-indicator';
+import { MessageSearchSheet } from '../ui/message-search-sheet';
 import { Message, User } from '../ui/types';
 import {
   useCommitteeChat,
@@ -26,6 +28,8 @@ export default function CommitteeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     { messageId: string; content: string } | undefined
   >(undefined);
@@ -36,6 +40,7 @@ export default function CommitteeChat() {
   /* const [threadMessage, setThreadMessage] = useState<Message | null>(null); */
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     mutate: startCommitteeChat,
@@ -103,16 +108,39 @@ export default function CommitteeChat() {
     }
   };
 
+  const handleTypingUpdate = (data: {
+    userId: string;
+    roomId: string;
+    isTyping: boolean;
+    name?: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setTypingUsers((prev) => {
+      if (data.isTyping) {
+        if (!prev.some((u) => u.userId === data.userId) && data.name) {
+          return [...prev, { userId: data.userId, name: data.name }];
+        }
+      } else {
+        return prev.filter((u) => u.userId !== data.userId);
+      }
+      return prev;
+    });
+  };
+
   const {
     isConnected,
     sendMessage,
     replyToMessage,
+    sendTypingStart,
+    sendTypingStop,
     /* proposeMotion, */
     /* secondMotion, */
     /* voteOnMotion, */
     joinRoom,
   } = useWebSocket({
     onMessage: handleNewMessage,
+    onTypingUpdate: handleTypingUpdate,
     onConnect: () => {},
     onDisconnect: () => {},
   });
@@ -292,6 +320,31 @@ export default function CommitteeChat() {
     setEditState(undefined);
   };
 
+  const handleTyping = () => {
+    if (!roomId || !isConnected) return;
+
+    sendTypingStart(roomId);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingStop(roomId);
+    }, 3000);
+  };
+
+  const handleStopTyping = () => {
+    if (!roomId || !isConnected) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+
+    sendTypingStop(roomId);
+  };
+
   if (!session) {
     return (
       <CenteredDiv>
@@ -321,6 +374,7 @@ export default function CommitteeChat() {
             onToggleMotions={() => {
               window.location.href = `/committees/${committeeId}/motions`;
             }}
+            onOpenSearch={() => setSearchOpen(true)}
             chatType='committee'
           />
 
@@ -344,6 +398,8 @@ export default function CommitteeChat() {
                 />
               </div>
 
+              <TypingIndicator typingUsers={typingUsers} chatType='committee' />
+
               <div className='lg:block hidden flex-shrink-0'>
                 <MessageInput
                   isConnected={isConnected}
@@ -355,6 +411,9 @@ export default function CommitteeChat() {
                   onReplyCancel={handleCancelReply}
                   onEditCancel={handleCancelEdit}
                   onEditSave={handleEditMessage}
+                  onTyping={handleTyping}
+                  onStopTyping={handleStopTyping}
+                  participants={users}
                 />
               </div>
             </div>
@@ -373,8 +432,18 @@ export default function CommitteeChat() {
           onReplyCancel={handleCancelReply}
           onEditCancel={handleCancelEdit}
           onEditSave={handleEditMessage}
+          onTyping={handleTyping}
+          onStopTyping={handleStopTyping}
+          participants={users}
         />
       </div>
+
+      <MessageSearchSheet
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        messages={messages}
+        onSelectMessage={handleScrollToMessage}
+      />
     </>
   );
 }
