@@ -13,6 +13,7 @@ import { Friendship, User } from '@/lib/api/friends';
 import { useFriends } from '@/hooks/api/use-friends';
 import { toast } from 'sonner';
 import  Fuse  from "fuse.js"
+import { Checkbox } from '@radix-ui/react-checkbox';
 
 type AddMemberInputProps = {
   /** Optional: parent can hook into this. If omitted, component still works. */
@@ -25,53 +26,7 @@ export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
 
   // Load all friendships once
   const { data, error, loading } = useFriends();
-  const [friends, setFriends] = useState<Friendship[]>([]);
-  useEffect(() => {
-    if (data) setFriends(data.friendships || []);
-    if (error) setFriends([]);
-  }, [data, error]);
-
-  // Derive friend users (accepted only; tweak if you want all)
-  const allFriendUsers: User[] = useMemo(
-    () =>
-      (friends || [])
-        .filter((f) => f.status === 'accepted' && f.user)
-        .map((f) => f.user!) as User[],
-    [friends]
-  );
-
-  // Debounce search
-  const [debounced, setDebounced] = useState('');
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), 200);
-    return () => clearTimeout(id);
-  }, [value]);
-
-  const fuse = useMemo(() => {
-    return new Fuse(allFriendUsers, {
-      keys: ["name", "givenName", "familyName", "email"],
-      threshold: 0.3, // tweak for fuzziness
-    });
-  }, [allFriendUsers]);
-
-  const filteredUsers: User[] = useMemo(() => {
-    const q = debounced.trim();
-    if (!q) return allFriendUsers;
-    return fuse.search(q).map(res => res.item);
-  }, [debounced, fuse, allFriendUsers]);
-
-  // Single action: add to committee on click
-  const handleAdd = (user: User) => {
-    // Call parent callback if provided
-    onAddMember?.(user);
-
-    // Always give UX feedback locally
-    toast.success(`${user.name || user.email} added to committee`);
-
-    // optional UX: clear input and close suggestions
-    setValue('');
-    setShowSuggestions(false);
-  };
+  console.log(data, error);
 
   return (
     <div className="relative max-w-80">
@@ -88,14 +43,15 @@ export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
       />
       <SearchIcon className="absolute top-2 right-3" size={20} />
 
-      {showSuggestions && (
-        <Suggestions
+        
+      {/* {showSuggestions && (
+         <Suggestions
           users={loading ? [] : filteredUsers}
           isLoading={loading}
           onSelect={handleAdd}
           setValue={setValue}
         />
-      )}
+      )} */}
     </div>
   );
 }
@@ -129,6 +85,7 @@ function Suggestions({
           onClick={() => onSelect(user)}
         >
           <div className="flex flex-col items-start">
+            <Checkbox id="isSelectedIntoCommittee" />
             <p className="font-medium">
               {user.name || 'Unnamed User'}
               {'isCurrentUser' in user && (user as any).isCurrentUser && ' (You)'}
