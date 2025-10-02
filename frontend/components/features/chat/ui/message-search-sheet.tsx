@@ -28,7 +28,7 @@ export function MessageSearchSheet({
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredMessages = messages.filter((msg) =>
-    msg.content.toLowerCase().includes(searchQuery.toLowerCase())
+    msg.content.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleSelectMessage = (messageId: string) => {
@@ -43,7 +43,7 @@ export function MessageSearchSheet({
           <SheetTitle>Search Messages</SheetTitle>
         </SheetHeader>
 
-        <div className='mt-4 space-y-4'>
+        <div className='mt-4 space-y-4 px-4'>
           <div className='relative'>
             <Search className='absolute left-3 top-3 h-4 w-4 text-muted-foreground' />
             <Input
@@ -88,3 +88,4 @@ export function MessageSearchSheet({
     </Sheet>
   );
 }
+

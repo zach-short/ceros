@@ -164,7 +164,6 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                     chatType={chatType}
                     showAvatar={true}
                     isFirstInGroup={isFirstInGroup}
-                    recipientId={recipientId}
                   />
                 </div>
               );

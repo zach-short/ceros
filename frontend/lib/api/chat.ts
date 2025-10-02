@@ -39,6 +39,7 @@ export interface StartDMResponse {
 export interface GetDMHistoryResponse {
   roomId: string;
   messages: Message[];
+  hasMore: boolean;
 }
 
 export interface ConversationUser {
@@ -59,6 +60,9 @@ export interface ConversationSummary {
   lastMessage?: Message;
   lastMessageAt: string;
   unreadCount: number;
+  isArchived?: boolean;
+  isMuted?: boolean;
+  isPinned?: boolean;
 }
 
 export interface GetConversationsResponse {
@@ -69,8 +73,13 @@ export const chatApi = {
   startDM: (data: StartDMRequest): Promise<any> =>
     apiRequest('post', '/chat/dm/start', data),
 
-  getDMHistory: (recipientId: string): Promise<any> =>
-    apiRequest('get', `/chat/dm/${recipientId}/history`),
+  getDMHistory: (recipientId: string, before?: string, limit?: number): Promise<any> => {
+    const params = new URLSearchParams();
+    if (before) params.append('before', before);
+    if (limit) params.append('limit', limit.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return apiRequest('get', `/chat/dm/${recipientId}/history${query}`);
+  },
 
   getConversations: (): Promise<any> =>
     apiRequest('get', '/chat/conversations'),
@@ -86,12 +95,6 @@ export const chatApi = {
 
   deleteMessage: (messageId: string): Promise<any> =>
     apiRequest('delete', `/messages/${messageId}`),
-
-  markMessagesAsRead: (messageIds: string[], roomId: string): Promise<any> =>
-    apiRequest('post', '/messages/mark-read', { messageIds, roomId }),
-
-  markMessageAsDelivered: (messageId: string): Promise<any> =>
-    apiRequest('post', `/messages/${messageId}/delivered`),
 
   toggleMessagePin: (messageId: string): Promise<any> =>
     apiRequest('post', `/messages/${messageId}/pin`),

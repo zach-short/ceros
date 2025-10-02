@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,8 +115,26 @@ func GetDMHistory(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	limit := int64(50)
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.ParseInt(limitStr, 10, 64); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+			limit = parsedLimit
+		}
+	}
+
+	var before *time.Time
+	if beforeStr := c.Query("before"); beforeStr != "" {
+		if parsedBefore, err := time.Parse(time.RFC3339, beforeStr); err == nil {
+			before = &parsedBefore
+		}
+	}
+
 	filter := bson.M{"roomId": roomID}
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(100)
+	if before != nil {
+		filter["timestamp"] = bson.M{"$lt": *before}
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetLimit(limit)
 
 	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
@@ -130,6 +149,10 @@ func GetDMHistory(c *gin.Context) {
 		log.Printf("Error decoding messages: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode messages"})
 		return
+	}
+
+	for i, j := 0, len(messages)-1; i < j; i, j = i+1, j-1 {
+		messages[i], messages[j] = messages[j], messages[i]
 	}
 
 	senderIDs := make(map[primitive.ObjectID]bool)
@@ -157,10 +180,13 @@ func GetDMHistory(c *gin.Context) {
 		}
 	}
 
+	hasMore := int64(len(messages)) == limit
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":   roomID,
 		"messages": messages,
 		"users":    users,
+		"hasMore":  hasMore,
 	})
 }
 
@@ -753,132 +779,6 @@ func DeleteMessage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":   true,
 		"messageId": messageID,
-	})
-}
-
-func MarkMessagesAsRead(c *gin.Context) {
-	userIDStr := c.MustGet("userID").(string)
-	userID, err := primitive.ObjectIDFromHex(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	var req struct {
-		MessageIDs []string `json:"messageIds" binding:"required"`
-		RoomID     string   `json:"roomId" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var messageOIDs []primitive.ObjectID
-	for _, idStr := range req.MessageIDs {
-		oid, err := primitive.ObjectIDFromHex(idStr)
-		if err != nil {
-			log.Printf("Invalid message ID: %s", idStr)
-			continue
-		}
-		messageOIDs = append(messageOIDs, oid)
-	}
-
-	if len(messageOIDs) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No valid message IDs provided"})
-		return
-	}
-
-	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	now := time.Now()
-
-	filter := bson.M{
-		"_id":      bson.M{"$in": messageOIDs},
-		"senderId": bson.M{"$ne": userID},
-		"readBy":   bson.M{"$ne": userID},
-	}
-
-	update := bson.M{
-		"$addToSet": bson.M{"readBy": userID},
-		"$set":      bson.M{"readAt": now},
-	}
-
-	result, err := collection.UpdateMany(ctx, filter, update)
-	if err != nil {
-		log.Printf("Error marking messages as read: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark messages as read"})
-		return
-	}
-
-	if result.ModifiedCount > 0 {
-		wsMessage := models.WSMessage{
-			Action: "messages_read",
-			Type:   models.TypeSystem,
-			Payload: map[string]any{
-				"messageIds": req.MessageIDs,
-				"readBy":     userID.Hex(),
-				"readAt":     now,
-				"roomId":     req.RoomID,
-			},
-		}
-		wsHub.BroadcastToRoom(req.RoomID, wsMessage)
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"updatedCount": result.ModifiedCount,
-		"messageIds":   req.MessageIDs,
-	})
-}
-
-func MarkMessageAsDelivered(c *gin.Context) {
-	messageID := c.Param("id")
-	messageOID, err := primitive.ObjectIDFromHex(messageID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid message ID"})
-		return
-	}
-
-	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	now := time.Now()
-	update := bson.M{
-		"$set": bson.M{"deliveredAt": now},
-	}
-
-	result, err := collection.UpdateOne(ctx, bson.M{"_id": messageOID}, update)
-	if err != nil {
-		log.Printf("Error marking message as delivered: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark message as delivered"})
-		return
-	}
-
-	if result.ModifiedCount > 0 {
-		var message models.Message
-		err = collection.FindOne(ctx, bson.M{"_id": messageOID}).Decode(&message)
-		if err == nil {
-			wsMessage := models.WSMessage{
-				Action: "message_delivered",
-				Type:   models.TypeSystem,
-				Payload: map[string]any{
-					"messageId":   messageID,
-					"deliveredAt": now,
-					"roomId":      message.RoomID,
-				},
-			}
-			wsHub.BroadcastToRoom(message.RoomID, wsMessage)
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success":     true,
-		"messageId":   messageID,
-		"deliveredAt": now,
 	})
 }
 

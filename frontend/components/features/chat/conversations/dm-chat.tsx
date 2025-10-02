@@ -11,7 +11,6 @@ import {
   useDeleteMessage,
 } from '@/hooks/api/use-chat';
 import { ChatHeader } from '../ui/chat-header';
-import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
 import { TypingIndicator } from '../ui/typing-indicator';
 import { MessageSearchSheet } from '../ui/message-search-sheet';
@@ -20,6 +19,7 @@ import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
 import { chatApi } from '@/lib/api/chat';
+import { MessagesList } from '../ui/messages-list';
 
 interface DMChatProps {
   recipientId: string;
@@ -32,12 +32,18 @@ export function DMChat({
   recipientName,
   recipientPicture,
 }: DMChatProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
-  const [isRecipientOnline, setIsRecipientOnline] = useState<boolean | undefined>(undefined);
+  const [typingUsers, setTypingUsers] = useState<
+    Array<{ userId: string; name: string }>
+  >([]);
+
+  const [isRecipientOnline, setIsRecipientOnline] = useState<
+    boolean | undefined
+  >(undefined);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     | {
@@ -46,6 +52,7 @@ export function DMChat({
       }
     | undefined
   >(undefined);
+
   const [editState, setEditState] = useState<
     | {
         messageId: string;
@@ -53,6 +60,7 @@ export function DMChat({
       }
     | undefined
   >(undefined);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -169,45 +177,6 @@ export function DMChat({
     });
   };
 
-  const handleReadReceiptUpdate = (data: {
-    messageIds: string[];
-    readBy: string;
-    readAt: string;
-    roomId: string;
-  }) => {
-    if (data.roomId !== roomId) return;
-
-    setMessages((prev) =>
-      prev.map((msg) => {
-        if (data.messageIds.includes(msg.id)) {
-          return {
-            ...msg,
-            readBy: [...(msg.readBy || []), data.readBy],
-            readAt: data.readAt,
-          };
-        }
-        return msg;
-      }),
-    );
-  };
-
-  const handleMessageDelivered = (data: {
-    messageId: string;
-    deliveredAt: string;
-    roomId: string;
-  }) => {
-    if (data.roomId !== roomId) return;
-
-    setMessages((prev) =>
-      prev.map((msg) => {
-        if (msg.id === data.messageId) {
-          return { ...msg, deliveredAt: data.deliveredAt };
-        }
-        return msg;
-      }),
-    );
-  };
-
   const handlePinToggled = (data: {
     messageId: string;
     isPinned: boolean;
@@ -253,8 +222,6 @@ export function DMChat({
     onMessage: handleNewMessage,
     onReactionUpdate: handleReactionUpdate,
     onTypingUpdate: handleTypingUpdate,
-    onReadReceiptUpdate: handleReadReceiptUpdate,
-    onMessageDelivered: handleMessageDelivered,
     onPinToggled: handlePinToggled,
     onUserStatusChanged: handleUserStatusChanged,
     onConnect: () => {},
@@ -312,24 +279,6 @@ export function DMChat({
     scrollToBottom();
   }, [messages]);
 
-  // Mark messages as read when they're visible
-  useEffect(() => {
-    if (!roomId || !session?.user?.id || messages.length === 0) return;
-
-    const unreadMessages = messages.filter(
-      (msg) =>
-        msg.senderId !== session.user.id &&
-        (!msg.readBy || !msg.readBy.includes(session.user.id)),
-    );
-
-    if (unreadMessages.length > 0) {
-      const messageIds = unreadMessages.map((msg) => msg.id);
-      chatApi.markMessagesAsRead(messageIds, roomId).catch((error) => {
-        console.error('Failed to mark messages as read:', error);
-      });
-    }
-  }, [messages, roomId, session?.user?.id]);
-
   const handleSendMessage = (content: string) => {
     if (!roomId || !isConnected || !session?.user?.id) return;
 
@@ -372,10 +321,6 @@ export function DMChat({
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('', 'transition-colors', 'duration-1000');
-      setTimeout(() => {
-        element.classList.remove('bg-blue-600');
-      }, 2000);
     }
   };
 
@@ -514,24 +459,22 @@ export function DMChat({
           onOpenSearch={() => setSearchOpen(true)}
         />
 
-        <div className='flex-1 min-h-0 overflow-hidden'>
-          <MessagesList
-            ref={messagesEndRef}
-            messages={messages}
-            users={users}
-            currentUserId={session.user.id}
-            recipientName={recipientName}
-            recipientId={recipientId}
-            isLoading={historyLoading && messages.length === 0}
-            onReply={handleStartReply}
-            onReaction={handleReaction}
-            onEdit={handleStartEdit}
-            onDelete={handleDeleteMessage}
-            onPin={handlePinMessage}
-            onScrollToMessage={handleScrollToMessage}
-            chatType='dm'
-          />
-        </div>
+        <MessagesList
+          ref={messagesEndRef}
+          messages={messages}
+          users={users}
+          currentUserId={session.user.id}
+          recipientName={recipientName}
+          recipientId={recipientId}
+          isLoading={historyLoading && messages.length === 0}
+          onReply={handleStartReply}
+          onReaction={handleReaction}
+          onEdit={handleStartEdit}
+          onDelete={handleDeleteMessage}
+          onPin={handlePinMessage}
+          onScrollToMessage={handleScrollToMessage}
+          chatType='dm'
+        />
 
         <TypingIndicator typingUsers={typingUsers} chatType='dm' />
 
@@ -546,6 +489,7 @@ export function DMChat({
             onEditSave={handleEditMessage}
             onTyping={handleTyping}
             onStopTyping={handleStopTyping}
+            participants={users}
           />
         </div>
       </div>
@@ -561,6 +505,7 @@ export function DMChat({
           onEditSave={handleEditMessage}
           onTyping={handleTyping}
           onStopTyping={handleStopTyping}
+          participants={users}
         />
       </div>
 

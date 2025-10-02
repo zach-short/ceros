@@ -6,7 +6,6 @@ import { MessageReactions } from './message-reactions';
 import { MessageEditIndicator } from './message-edit-indicator';
 import { ParentMessagePreview } from './parent-message-preview';
 import { MessageContextMenu } from './message-context-menu';
-import { ReadReceiptIndicator } from './read-receipt-indicator';
 import { getDisplayName, UserPrivacyContext } from '@/lib/user-privacy';
 
 interface MessageBubbleProps {
@@ -23,7 +22,6 @@ interface MessageBubbleProps {
   chatType?: 'dm' | 'committee';
   showAvatar?: boolean;
   isFirstInGroup?: boolean;
-  recipientId?: string;
 }
 
 const MessageHeader = ({
@@ -48,15 +46,9 @@ const MessageHeader = ({
 const MessageContent = ({
   message,
   onReactionClick,
-  isOwn,
-  recipientId,
-  chatType,
 }: {
   message: Message;
   onReactionClick: (emoji: string) => void;
-  isOwn: boolean;
-  recipientId?: string;
-  chatType?: 'dm' | 'committee';
 }) => {
   return (
     <>
@@ -79,14 +71,6 @@ const MessageContent = ({
             onReactionClick={onReactionClick}
           />
         )}
-
-        <ReadReceiptIndicator
-          isOwn={isOwn}
-          deliveredAt={message.deliveredAt}
-          readBy={message.readBy}
-          recipientId={recipientId}
-          chatType={chatType}
-        />
       </div>
     </>
   );
@@ -106,7 +90,6 @@ export function MessageBubble({
   chatType = 'dm',
   showAvatar = true,
   isFirstInGroup = true,
-  recipientId,
 }: MessageBubbleProps) {
   const sender = users.find((u) => u.id === message.senderId);
   const isOwn = message.senderId === currentUserId;
@@ -187,9 +170,6 @@ export function MessageBubble({
                 <MessageContent
                   message={message}
                   onReactionClick={handleReaction}
-                  isOwn={isOwn}
-                  recipientId={recipientId}
-                  chatType={chatType}
                 />
               </div>
             </div>

@@ -33,10 +33,6 @@ type Message struct {
 	OriginalContent *string    `json:"originalContent,omitempty" bson:"originalContent,omitempty"`
 	EditedAt        *time.Time `json:"editedAt,omitempty" bson:"editedAt,omitempty"`
 
-	ReadBy      []primitive.ObjectID `json:"readBy,omitempty" bson:"readBy,omitempty"`
-	ReadAt      *time.Time           `json:"readAt,omitempty" bson:"readAt,omitempty"`
-	DeliveredAt *time.Time           `json:"deliveredAt,omitempty" bson:"deliveredAt,omitempty"`
-
 	IsPinned bool               `json:"isPinned,omitempty" bson:"isPinned,omitempty"`
 	PinnedBy primitive.ObjectID `json:"pinnedBy,omitempty" bson:"pinnedBy,omitempty"`
 	PinnedAt *time.Time         `json:"pinnedAt,omitempty" bson:"pinnedAt,omitempty"`

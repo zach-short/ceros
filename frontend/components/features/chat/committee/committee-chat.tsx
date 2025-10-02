@@ -413,6 +413,7 @@ export default function CommitteeChat() {
                   onEditSave={handleEditMessage}
                   onTyping={handleTyping}
                   onStopTyping={handleStopTyping}
+                  participants={users}
                 />
               </div>
             </div>
@@ -433,6 +434,7 @@ export default function CommitteeChat() {
           onEditSave={handleEditMessage}
           onTyping={handleTyping}
           onStopTyping={handleStopTyping}
+          participants={users}
         />
       </div>
 
