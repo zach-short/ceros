@@ -1,32 +1,30 @@
 'use client';
 
+/*
+1. when input is activated, render the suggestions
+2. redeem the correct friendships into suggestions
+*/
+
 import { Input } from '@/components/ui/input';
 import { SearchIcon, UserPlus } from 'lucide-react';
 import {
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useMemo,
   useState,
 } from 'react';
-import { Friendship, User } from '@/lib/api/friends';
+import { User } from '@/lib/api/friends';
 import { useFriends } from '@/hooks/api/use-friends';
-import { toast } from 'sonner';
-import  Fuse  from "fuse.js"
 import { Checkbox } from '@radix-ui/react-checkbox';
 
-type AddMemberInputProps = {
-  /** Optional: parent can hook into this. If omitted, component still works. */
-  onAddMember?: (user: User) => void;
-};
 
-export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
+export function AddMemberInput() {
   const [value, setValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Load all friendships once
   const { data, error, loading } = useFriends();
-  console.log(data, error);
+  const friendships = data?.friendships ?? [];
+  const users = friendships.flatMap((friendship) =>  
+    friendship.user ? [friendship.user] : [])
+  console.log(users);
 
   return (
     <div className="relative max-w-80">
@@ -43,15 +41,13 @@ export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
       />
       <SearchIcon className="absolute top-2 right-3" size={20} />
 
-        
-      {/* {showSuggestions && (
+
+      {showSuggestions && (
          <Suggestions
-          users={loading ? [] : filteredUsers}
+          users={loading ? [] : users}
           isLoading={loading}
-          onSelect={handleAdd}
-          setValue={setValue}
         />
-      )} */}
+      )}
     </div>
   );
 }
@@ -59,13 +55,9 @@ export function AddMemberInput({ onAddMember }: AddMemberInputProps) {
 function Suggestions({
   users,
   isLoading,
-  onSelect,
-  setValue,
 }: {
   users: User[];
   isLoading: boolean;
-  onSelect: (user: User) => void;
-  setValue: Dispatch<SetStateAction<string>>;
 }) {
   if (isLoading) {
     return (
@@ -75,6 +67,14 @@ function Suggestions({
     );
   }
 
+  if (users.length === 0) {
+    return (
+      <div className='min-h-60 flex flex-col items-center justify-center mt-1'>
+        <p className='text-gray-500'>No friends found.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-60 flex flex-col items-start mt-1">
       {users.map((user) => (
@@ -82,7 +82,6 @@ function Suggestions({
           key={user.id}
           className="flex w-full items-center justify-between p-1 px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
           onMouseDown={(e) => e.preventDefault()} // keep focus so onBlur doesn't close early
-          onClick={() => onSelect(user)}
         >
           <div className="flex flex-col items-start">
             <Checkbox id="isSelectedIntoCommittee" />
