@@ -37,7 +37,7 @@ export function Navbar({
     <Popover open={open} onOpenChange={() => setOpen(!open)}>
       <PopoverTrigger
         asChild
-        className={`hidden lg:block lg:h-0 absolute lg:top-6 right-6 ${buttonClassName}`}
+        className={`hidden lg:block absolute lg:top-6 right-6 z-50 ${buttonClassName}`}
       >
         <button>
           <MenuIcon size={32} />
