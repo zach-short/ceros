@@ -6,6 +6,7 @@ import { MessagesSquareIcon, User, Users, Bell, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SignoutButton } from '../button/signout';
 import { NotificationBadge } from '../notification-badge';
+import { useUser } from '@/hooks/api/use-users';
 
 const menuItems = [
   { title: 'Messages', href: '/chat', icon: MessagesSquareIcon },
@@ -22,19 +23,27 @@ const menuItems = [
 
 function ProfileCard() {
   const session = useSession();
-  const user = session.data?.user;
+  const { data: userData } = useUser();
+  const sessionUser = session.data?.user;
+
+  const displayName = userData?.name || sessionUser?.name;
+  const displayEmail = userData?.email || sessionUser?.email;
+  const displayPicture = userData?.picture;
+
   return (
     <Link
-      href={`/profile/${user?.id}`}
+      href={`/profile/${sessionUser?.id}`}
       className={`flex flex-row items-center`}
     >
       <Avatar>
-        <AvatarImage src={user?.image as string | undefined} />
-        <AvatarFallback></AvatarFallback>
+        <AvatarImage src={displayPicture || undefined} />
+        <AvatarFallback>
+          {displayName?.substring(0, 2).toUpperCase()}
+        </AvatarFallback>
       </Avatar>
       <div className={`flex flex-col items-start ml-3`}>
-        <p>{user?.name}</p>
-        <p className={`text-xs`}>{user?.email}</p>
+        <p>{displayName}</p>
+        <p className={`text-xs`}>{displayEmail}</p>
       </div>
     </Link>
   );

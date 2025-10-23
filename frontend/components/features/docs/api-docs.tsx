@@ -31,13 +31,13 @@ function RouteCard({ route, onClick }: RouteCardProps) {
       className='flex items-center space-x-3 py-2 w-full hover:bg-neutral-800 rounded px-2 transition-colors cursor-pointer'
     >
       <span
-        className={`px-2 py-1 text-xs font-semibold rounded border flex-shrink-0 ${
+        className={`px-2 py-1 text-xs font-semibold rounded border flex-shrink-0 w-16 text-center ${
           methodColors[route.method]
         }`}
       >
         {route.method}
       </span>
-      <span className='font-mono text-sm text-neutral-300 break-all'>
+      <span className='font-mono text-xs text-neutral-300 break-all'>
         {route.path}
       </span>
     </button>
@@ -125,7 +125,7 @@ function RouteDetails({ route, routeId }: RouteDetailsProps) {
       <div className='mb-6'>
         <div className='flex items-center space-x-3 mb-2 flex-wrap'>
           <span
-            className={`px-2 py-1 text-xs font-semibold rounded border ${
+            className={`px-2 py-1 text-xs font-semibold rounded border w-16 text-center ${
               methodColors[route.method]
             }`}
           >
@@ -158,45 +158,37 @@ function RouteDetails({ route, routeId }: RouteDetailsProps) {
   );
 }
 
-interface MethodSectionProps {
-  method: HttpMethod;
+interface PathGroupSectionProps {
   routes: ApiRoute[];
-  getRouteId: (route: ApiRoute) => string;
   scrollToRoute: (route: ApiRoute) => void;
 }
 
-function MethodSection({ routes, scrollToRoute }: MethodSectionProps) {
+function PathGroupSection({ routes, scrollToRoute }: PathGroupSectionProps) {
   return (
-    <div>
-      <div className='space-y-2 bg-neutral-900 rounded-lg p-4 border border-neutral-800'>
-        {routes.map((route, index) => (
-          <RouteCard
-            key={index}
-            route={route}
-            onClick={() => scrollToRoute(route)}
-          />
-        ))}
-      </div>
+    <div className='space-y-2'>
+      {routes.map((route, index) => (
+        <RouteCard
+          key={index}
+          route={route}
+          onClick={() => scrollToRoute(route)}
+        />
+      ))}
     </div>
   );
 }
 
-interface MethodDetailsSectionProps {
-  method: HttpMethod;
+interface PathGroupDetailsSectionProps {
+  path: string;
   routes: ApiRoute[];
   getRouteId: (route: ApiRoute) => string;
 }
 
-function MethodDetailsSection({
-  method,
+function PathGroupDetailsSection({
   routes,
   getRouteId,
-}: MethodDetailsSectionProps) {
+}: PathGroupDetailsSectionProps) {
   return (
     <div>
-      <h2 className='text-2xl font-bold text-white mb-6 pb-2 border-b border-neutral-800'>
-        {method} Endpoints
-      </h2>
       <div className='space-y-12'>
         {routes.map((route, index) => (
           <RouteDetails key={index} route={route} routeId={getRouteId(route)} />
@@ -217,29 +209,29 @@ export default function ApiDocs() {
   );
 
   const groupedRoutes = useMemo(() => {
-    if (!currentSection) return {};
+    if (!currentSection) return [];
 
     const methodOrder: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
     const grouped = currentSection.routes.reduce(
       (acc, route) => {
-        if (!acc[route.method]) {
-          acc[route.method] = [];
+        if (!acc[route.path]) {
+          acc[route.path] = [];
         }
-        acc[route.method].push(route);
+        acc[route.path].push(route);
         return acc;
       },
-      {} as Record<HttpMethod, ApiRoute[]>,
+      {} as Record<string, ApiRoute[]>,
     );
 
-    return methodOrder.reduce(
-      (acc, method) => {
-        if (grouped[method]) {
-          acc[method] = grouped[method];
-        }
-        return acc;
-      },
-      {} as Record<HttpMethod, ApiRoute[]>,
-    );
+    return Object.entries(grouped)
+      .map(([path, routes]) => ({
+        path,
+        routes: routes.sort(
+          (a, b) =>
+            methodOrder.indexOf(a.method) - methodOrder.indexOf(b.method),
+        ),
+      }))
+      .sort((a, b) => a.path.localeCompare(b.path));
   }, [currentSection]);
 
   const getRouteId = (route: ApiRoute) => {
@@ -336,29 +328,25 @@ export default function ApiDocs() {
               <h2 className='text-sm font-semibold text-neutral-400 uppercase tracking-wider mb-4'>
                 Endpoints
               </h2>
-              <div className='space-y-4'>
-                {(
-                  Object.entries(groupedRoutes) as [HttpMethod, ApiRoute[]][]
-                ).map(([method, routes]) => (
-                  <MethodSection
-                    key={method}
-                    method={method}
-                    routes={routes}
-                    getRouteId={getRouteId}
-                    scrollToRoute={scrollToRoute}
-                  />
-                ))}
+              <div className='bg-neutral-900 rounded-lg p-1 border border-neutral-800'>
+                <div className='space-y-2'>
+                  {groupedRoutes.map((group) => (
+                    <PathGroupSection
+                      key={group.path}
+                      routes={group.routes}
+                      scrollToRoute={scrollToRoute}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
             <div className='space-y-16'>
-              {(
-                Object.entries(groupedRoutes) as [HttpMethod, ApiRoute[]][]
-              ).map(([method, routes]) => (
-                <MethodDetailsSection
-                  key={method}
-                  method={method}
-                  routes={routes}
+              {groupedRoutes.map((group) => (
+                <PathGroupDetailsSection
+                  key={group.path}
+                  path={group.path}
+                  routes={group.routes}
                   getRouteId={getRouteId}
                 />
               ))}
