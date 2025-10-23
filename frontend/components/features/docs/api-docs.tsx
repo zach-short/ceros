@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PanelLeft } from 'lucide-react';
 import {
   apiDocumentation,
@@ -216,7 +216,7 @@ export default function ApiDocs() {
     (section) => section.title === selectedSection,
   );
 
-  const groupedRoutes = React.useMemo(() => {
+  const groupedRoutes = useMemo(() => {
     if (!currentSection) return {};
 
     const methodOrder: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -270,7 +270,7 @@ export default function ApiDocs() {
         )}
 
         <aside
-          className={`w-64 max-w-[80vw] min-h-screen bg-neutral-900 border-r border-neutral-800 fixed left-0 top-0 overflow-y-auto z-50 transition-transform duration-300 ${
+          className={`w-64 max-w-[80vw] h-screen bg-neutral-900 border-r border-neutral-800 fixed left-0 top-0 overflow-y-auto z-40 transition-transform duration-300 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           } lg:translate-x-0`}
         >
