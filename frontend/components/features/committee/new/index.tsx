@@ -6,9 +6,25 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AddMemberInput } from "./add-member-input"
 import { Button } from "@/components/ui/button"
 import { AddObserverInput } from "./add-observer-input"
+import { useEffect, useState } from "react"
+import { User } from '@/lib/api/friends';
+import { sl } from "date-fns/locale"
 
 
 export default function NewCommittee() {
+  const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
+
+  function handleToggle(clickedMember: User) {
+    const selectedMemberIds = selectedMembers.map(member => member.id);
+
+    const isIncluded = selectedMemberIds.includes(clickedMember.id);
+    if (isIncluded) {
+      setSelectedMembers(selectedMembers.filter((member) => member.id !== clickedMember.id));
+    } else {
+      setSelectedMembers([...selectedMembers, clickedMember]);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl p-6">
       <form className="space-y-6">
@@ -19,7 +35,10 @@ export default function NewCommittee() {
 
         <div>
           <label className="block text-sm font-medium mb-1">Enter Members</label>
-          <AddMemberInput/>
+          <AddMemberInput 
+          selectedMembers={selectedMembers} 
+          onToggle={handleToggle}
+          />
         </div>
 
         {/* Put two fields side-by-side on larger screens */}

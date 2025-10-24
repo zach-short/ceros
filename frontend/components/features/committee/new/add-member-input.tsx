@@ -1,10 +1,5 @@
 'use client';
 
-/*
-1. when input is activated, render the suggestions
-2. redeem the correct friendships into suggestions
-*/
-
 import { Input } from '@/components/ui/input';
 import { SearchIcon, UserPlus } from 'lucide-react';
 import {
@@ -12,10 +7,18 @@ import {
 } from 'react';
 import { User } from '@/lib/api/friends';
 import { useFriends } from '@/hooks/api/use-friends';
-import { Checkbox } from '@radix-ui/react-checkbox';
+import { Checkbox } from "@/components/ui/checkbox"
+import { se } from 'date-fns/locale';
 
 
-export function AddMemberInput() {
+export function AddMemberInput({
+  selectedMembers,
+  onToggle
+}: {
+  selectedMembers: User[]
+  onToggle: (clickedMember : User) => void
+}
+) {
   const [value, setValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -24,7 +27,6 @@ export function AddMemberInput() {
   const friendships = data?.friendships ?? [];
   const users = friendships.flatMap((friendship) =>  
     friendship.user ? [friendship.user] : [])
-  console.log(users);
 
   return (
     <div className="relative max-w-80">
@@ -42,10 +44,12 @@ export function AddMemberInput() {
       <SearchIcon className="absolute top-2 right-3" size={20} />
 
 
-      {showSuggestions && (
+      {true && (
          <Suggestions
           users={loading ? [] : users}
           isLoading={loading}
+          selectedMembers={selectedMembers}
+          onToggle={onToggle}
         />
       )}
     </div>
@@ -55,10 +59,15 @@ export function AddMemberInput() {
 function Suggestions({
   users,
   isLoading,
+  selectedMembers,
+  onToggle
 }: {
   users: User[];
   isLoading: boolean;
+  selectedMembers: User[];
+  onToggle: (clickedMember: User) => void
 }) {
+
   if (isLoading) {
     return (
       <div className="min-h-60 flex flex-col items-center justify-center mt-1">
@@ -75,34 +84,39 @@ function Suggestions({
     )
   }
 
-  return (
-    <div className="min-h-60 flex flex-col items-start mt-1">
-      {users.map((user) => (
-        <button
-          key={user.id}
-          className="flex w-full items-center justify-between p-1 px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
-          onMouseDown={(e) => e.preventDefault()} // keep focus so onBlur doesn't close early
-        >
-          <div className="flex flex-col items-start">
-            <Checkbox id="isSelectedIntoCommittee" />
-            <p className="font-medium">
-              {user.name || 'Unnamed User'}
-              {'isCurrentUser' in user && (user as any).isCurrentUser && ' (You)'}
-            </p>
-            {(user.givenName || user.familyName) && (
-              <p className="text-sm text-gray-500">
-                {user.givenName && user.familyName
-                  ? `${user.givenName} ${user.familyName}`
-                  : user.givenName || user.familyName}
+    return (
+      <div className="min-h-60 flex flex-col items-start mt-1">
+        {users.map((user) => (
+          <div
+            key={user.id}
+            className="flex w-full items-center justify-between p-1 px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <div>
+              <p className="font-medium">
+                {user.name || 'Unnamed User'}
+                {'isCurrentUser' in user && (user as any).isCurrentUser && ' (You)'}
               </p>
-            )}
-            {user.email && (
-              <p className="text-xs text-gray-400">{user.email}</p>
-            )}
+              {(user.givenName || user.familyName) && (
+                <p className="text-sm text-gray-500">
+                  {user.givenName && user.familyName
+                    ? `${user.givenName} ${user.familyName}`
+                    : user.givenName || user.familyName}
+                </p>
+              )}
+              {user.email && (
+                <p className="text-xs text-gray-400">{user.email}</p>
+              )}
+            </div>
+            <div>
+              <Checkbox 
+              className='h-4 w-4 border border-gray-300'
+              onCheckedChange={() => {
+                onToggle(user);
+              }}
+              />
+            </div>
           </div>
-          <UserPlus size={16} className="text-green-600" />
-        </button>
-      ))}
-    </div>
-  );
-}
+        ))}
+      </div>
+    );
+  }
