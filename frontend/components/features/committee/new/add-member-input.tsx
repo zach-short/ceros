@@ -12,11 +12,11 @@ import { se } from 'date-fns/locale';
 
 
 export function AddMemberInput({
-  selectedMembers,
-  onToggle
+  onToggle,
+  isChecked
 }: {
-  selectedMembers: User[]
-  onToggle: (clickedMember : User) => void
+  onToggle: (clickedMember : User) => void;
+  isChecked: (member: User) => boolean;
 }
 ) {
   const [value, setValue] = useState('');
@@ -48,8 +48,8 @@ export function AddMemberInput({
          <Suggestions
           users={loading ? [] : users}
           isLoading={loading}
-          selectedMembers={selectedMembers}
           onToggle={onToggle}
+          isChecked={isChecked}
         />
       )}
     </div>
@@ -59,13 +59,13 @@ export function AddMemberInput({
 function Suggestions({
   users,
   isLoading,
-  selectedMembers,
-  onToggle
+  onToggle,
+  isChecked
 }: {
   users: User[];
   isLoading: boolean;
-  selectedMembers: User[];
-  onToggle: (clickedMember: User) => void
+  onToggle: (clickedMember: User) => void;
+  isChecked: (member: User) => boolean;
 }) {
 
   if (isLoading) {
@@ -110,6 +110,7 @@ function Suggestions({
             <div>
               <Checkbox 
               className='h-4 w-4 border border-gray-300'
+              checked={isChecked(user)}
               onCheckedChange={() => {
                 onToggle(user);
               }}

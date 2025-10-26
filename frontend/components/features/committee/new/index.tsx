@@ -6,15 +6,26 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AddMemberInput } from "./add-member-input"
 import { Button } from "@/components/ui/button"
 import { AddObserverInput } from "./add-observer-input"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { User } from '@/lib/api/friends';
 import { sl } from "date-fns/locale"
+import { MemberSheet } from "./member-sheet"
 
 
 export default function NewCommittee() {
   const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
+  const [chair, setChair] = useState<User[]>([]);
 
-  function handleToggle(clickedMember: User) {
+  useEffect(() => {
+    console.log(selectedMembers);
+  }, [selectedMembers]);
+
+  const isChecked = useCallback((member: User) => { 
+    const memberIds = selectedMembers.map((m) => m.id);
+    return memberIds.includes(member.id);
+  }, [selectedMembers])
+
+  const handleToggle = (clickedMember: User) => {
     const selectedMemberIds = selectedMembers.map(member => member.id);
 
     const isIncluded = selectedMemberIds.includes(clickedMember.id);
@@ -23,6 +34,14 @@ export default function NewCommittee() {
     } else {
       setSelectedMembers([...selectedMembers, clickedMember]);
     }
+  }
+
+  const handleSave = (membersBuffer: User[]) => {
+    if (membersBuffer.length === 0) {
+      return;
+    }
+    
+    setSelectedMembers(selectedMembers.filter((member) => !membersBuffer.includes(member)))
   }
 
   return (
@@ -35,10 +54,16 @@ export default function NewCommittee() {
 
         <div>
           <label className="block text-sm font-medium mb-1">Enter Members</label>
+          <div>
           <AddMemberInput 
-          selectedMembers={selectedMembers} 
           onToggle={handleToggle}
+          isChecked={isChecked}
           />
+          <MemberSheet
+          selectedMembers={selectedMembers}
+          onSave={handleSave}
+          />
+          </div>
         </div>
 
         {/* Put two fields side-by-side on larger screens */}
