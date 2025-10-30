@@ -4,10 +4,12 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from '@/components/ui/popover';
-import { MenuIcon } from 'lucide-react';
+import { MenuIcon, Home } from 'lucide-react';
 import { useState } from 'react';
 import { MenuContent } from './menu-content';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Navbar({
   buttonClassName,
@@ -18,16 +20,24 @@ export function Navbar({
 }) {
   const [open, setOpen] = useState(false);
   const { data: session } = useSession();
+  const pathname = usePathname();
 
-  if (!session) {
-    return;
+  if (!session && pathname !== '/') {
+    return (
+      <Link
+        href='/'
+        className={`fixed lg:absolute top-4 lg:top-6 right-4 lg:right-6 z-50 text-neutral-400 hover:text-white transition-colors ${buttonClassName}`}
+      >
+        <Home className={`text-blue-500`} strokeWidth={2} size={32} />
+      </Link>
+    );
   }
 
   return (
     <Popover open={open} onOpenChange={() => setOpen(!open)}>
       <PopoverTrigger
         asChild
-        className={`hidden lg:block lg:h-0 absolute lg:top-6 right-6 ${buttonClassName}`}
+        className={`hidden lg:block absolute lg:top-6 right-6 z-50 ${buttonClassName}`}
       >
         <button>
           <MenuIcon size={32} />
