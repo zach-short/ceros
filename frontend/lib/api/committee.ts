@@ -1,3 +1,4 @@
+import { Committee } from '@/models/committee';
 import { apiRequest } from '../api';
 
 export interface CommitteeRoom {
@@ -44,7 +45,23 @@ export interface GetMessageRepliesResponse {
   replies: Message[];
 }
 
+export interface CreateCommitteeRequest {
+  name: string;
+  description?: string;
+  type: string;
+  ownerId: string;
+  chairId: string;
+  memberIds: string[];
+  observerIds?: string[];
+}
+
 export const committeeApi = {
+  getOne: (committeeId: string): Promise<any> =>
+    apiRequest('get', `/committees/${committeeId}`),
+
+  createCommittee: (data: CreateCommitteeRequest): Promise<any> =>
+    apiRequest('post', `/committees`, data),
+
   startChat: (committeeId: string): Promise<any> =>
     apiRequest('post', `/committees/${committeeId}/chat/start`),
 
@@ -63,3 +80,4 @@ export const committeeApi = {
   deleteMessage: (messageId: string): Promise<any> =>
     apiRequest('delete', `/messages/${messageId}`),
 };
+

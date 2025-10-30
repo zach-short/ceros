@@ -92,6 +92,7 @@ export interface CheckUsernameResponse {
 
 export const usersApi = {
   getMe: (): Promise<any> => apiRequest('get', '/users/me'),
+
   getPublicProfile: (userId: string): Promise<any> =>
     apiRequest('get', `/users/${userId}/profile`),
 

@@ -1,134 +1,202 @@
-'use client'
+'use client';
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@radix-ui/react-label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { AddMemberInput } from "./add-member-input"
-import { Button } from "@/components/ui/button"
-import { useCallback, useState } from "react"
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AddMemberInput } from './add-member-input';
+import { Button } from '@/components/ui/button';
+import { useCallback, useState } from 'react';
 import { User } from '@/lib/api/friends';
-import { MemberSheet } from "./member-sheet"
+import { MemberSheet } from './member-sheet';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { stringify } from "querystring"
+} from '@/components/ui/select';
 import { useFriends } from '@/hooks/api/use-friends';
-
-
-
+import { toast } from 'sonner';
+import { useCreateCommittee } from '@/hooks/api/use-commitee';
+import { CreateCommitteeRequest } from '@/lib/api/committee';
+import { useSession } from 'next-auth/react';
 
 export default function NewCommittee() {
-  const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
-  const [chair, setChair] = useState<string | null>(null);
-  
-  // Load all friendships once
+  const { data: session } = useSession();
+
+  const [formData, setFormData] = useState<CreateCommitteeRequest>({
+    name: '',
+    description: '',
+    type: 'permanent',
+    ownerId: session!.user.id,
+    chairId: '',
+    memberIds: [],
+    observerIds: [],
+  });
+
   const { data, error, loading } = useFriends();
   const friendships = data?.friendships ?? [];
-  const users = friendships.flatMap((friendship) =>  
-    friendship.user ? [friendship.user] : [])
+  const users = friendships.flatMap((friendship) =>
+    friendship.user ? [friendship.user] : [],
+  );
 
+  const selectedMembers = users.filter((user) =>
+    formData.memberIds.includes(user.id),
+  );
 
-  const onChairChange = ((chairName: string|null) => {
-    setChair(chairName);
-  })
+  const onChairChange = (chairId: string) => {
+    setFormData({ ...formData, chairId });
+  };
 
-  const isChecked = useCallback((member: User) => { 
-    const memberIds = selectedMembers.map((m) => m.id);
-    return memberIds.includes(member.id);
-  }, [selectedMembers])
+  const isChecked = useCallback(
+    (member: User) => {
+      return formData.memberIds.includes(member.id);
+    },
+    [formData.memberIds],
+  );
 
   const handleToggle = (clickedMember: User) => {
-    const selectedMemberIds = selectedMembers.map(member => member.id);
-
-    const isIncluded = selectedMemberIds.includes(clickedMember.id);
+    const isIncluded = formData.memberIds.includes(clickedMember.id);
     if (isIncluded) {
-      setSelectedMembers(selectedMembers.filter((member) => member.id !== clickedMember.id));
+      setFormData({
+        ...formData,
+        memberIds: formData.memberIds.filter((id) => id !== clickedMember.id),
+      });
     } else {
-      setSelectedMembers([...selectedMembers, clickedMember]);
+      setFormData({
+        ...formData,
+        memberIds: [...formData.memberIds, clickedMember.id],
+      });
     }
-  }
+  };
 
-  const handleSave = (membersBuffer: User[]) => {
+  const handleSaveMemberChange = (membersBuffer: User[]) => {
     if (membersBuffer.length === 0) {
       return;
     }
-    
-    setSelectedMembers(selectedMembers.filter((member) => !membersBuffer.includes(member)))
-  }
+
+    const bufferIds = membersBuffer.map((m) => m.id);
+    setFormData({
+      ...formData,
+      memberIds: formData.memberIds.filter((id) => !bufferIds.includes(id)),
+    });
+  };
+
+  const { mutate: createCommittee, loading: createLoading } =
+    useCreateCommittee({
+      onSuccess: () => {
+        toast.success('Committee Created!');
+      },
+      onError: (error) => {
+        console.error('Commitee creation failed:', error);
+        toast.error(error.message || 'Failed to create committee');
+      },
+    });
+
+  const handleSave = () => {
+    if (!formData.name) {
+      toast.error('Please enter a committee name');
+      return;
+    }
+
+    createCommittee(formData);
+  };
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <form className="space-y-6">
+    <div className='mx-auto max-w-2xl p-6'>
+      <form className='space-y-6'>
         <div>
-          <label className="block text-sm font-medium mb-1">Committee Name</label>
-          <Input className="w-full" placeholder="Please enter you committee name..."/>
+          <label className='block text-sm font-medium mb-1'>
+            Committee Name
+          </label>
+          <Input
+            className='w-full'
+            placeholder='Please enter you committee name...'
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Committee Description</label>
-          <Textarea className="w-full h-50" placeholder="Please enter your committee description here..."/>
+          <label className='block text-sm font-medium mb-1'>
+            Committee Description
+          </label>
+          <Textarea
+            className='w-full h-50'
+            placeholder='Please enter your committee description here...'
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+          />
         </div>
 
-        {/* Put two fields side-by-side on larger screens */}
-        
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className='grid gap-6 sm:grid-cols-2'>
           <div>
-            <label className="block text-sm font-medium mb-1">Enter Members</label>
+            <label className='block text-sm font-medium mb-1'>
+              Enter Members
+            </label>
             <div>
-            <AddMemberInput
-            users={users}
-            loading={loading}
-            onToggle={handleToggle}
-            isChecked={isChecked}
-            />
-            <MemberSheet
-            selectedMembers={selectedMembers}
-            onSave={handleSave}
-            />
-          </div>
+              <AddMemberInput
+                users={users}
+                loading={loading}
+                onToggle={handleToggle}
+                isChecked={isChecked}
+              />
+              <MemberSheet
+                selectedMembers={selectedMembers}
+                onSave={handleSaveMemberChange}
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Assign Chair</label>
+            <label className='block text-sm font-medium mb-1'>
+              Assign Chair
+            </label>
             <Select onValueChange={onChairChange}>
-            <SelectTrigger className="w-[240px] font-medium">
-            <SelectValue placeholder="Select a Member"/>
-            </SelectTrigger>
-            <SelectContent className="font-medium">
-              {
-                selectedMembers.length > 0 ? selectedMembers.map(
-                  (member) => (
-                  <SelectItem key={member.id.toString()} value={member.name ?? ""}
-                    className="font-medium"> 
-                    {
-                      member.name?.substring(0, member.name.length)
-                    }
-                  </SelectItem>)
-                ) : 
-                <div className="text-muted-foreground px-2 py-1 text-sm italic">
-                  No members found
-                </div>
-              }
-            </SelectContent>
+              <SelectTrigger className='w-[240px] font-medium'>
+                <SelectValue placeholder='Select a Member' />
+              </SelectTrigger>
+              <SelectContent className='font-medium'>
+                {selectedMembers.length > 0 ? (
+                  selectedMembers.map((member) => (
+                    <SelectItem
+                      key={member.id}
+                      value={member.id}
+                      className='font-medium'
+                    >
+                      {member.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className='text-muted-foreground px-2 py-1 text-sm italic'>
+                    No members found
+                  </div>
+                )}
+              </SelectContent>
             </Select>
+          </div>
         </div>
-      </div>
 
         <label
-          htmlFor="IsTemporaryCommittee"
-          className="flex items-center gap-3"
+          htmlFor='IsTemporaryCommittee'
+          className='flex items-center gap-3'
         >
-          {/* If using shadcn Checkbox, you usually don't style via bg-*; leave as is or use data-state styles */}
-          <Checkbox id="IsTemporaryCommittee" />
+          <Checkbox
+            id='IsTemporaryCommittee'
+            checked={formData.type === 'temporary'}
+            onCheckedChange={(checked) =>
+              setFormData({
+                ...formData,
+                type: checked ? 'temporary' : 'permanent',
+              })
+            }
+          />
           <span>Is this committee temporary?</span>
         </label>
 
-        <div className="flex justify-end pt-2">
-          <Button>Save</Button>
+        <div className='flex justify-end pt-2'>
+          <Button onClick={handleSave}>Save</Button>
         </div>
       </form>
     </div>
