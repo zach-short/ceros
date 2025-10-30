@@ -6,27 +6,24 @@ import {
   useState,
 } from 'react';
 import { User } from '@/lib/api/friends';
-import { useFriends } from '@/hooks/api/use-friends';
 import { Checkbox } from "@/components/ui/checkbox"
 import { se } from 'date-fns/locale';
 
 
 export function AddMemberInput({
+  users,
+  loading,
   onToggle,
   isChecked
 }: {
+  users: User[];
+  loading: boolean;
   onToggle: (clickedMember : User) => void;
   isChecked: (member: User) => boolean;
 }
 ) {
   const [value, setValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-
-  // Load all friendships once
-  const { data, error, loading } = useFriends();
-  const friendships = data?.friendships ?? [];
-  const users = friendships.flatMap((friendship) =>  
-    friendship.user ? [friendship.user] : [])
 
   return (
     <div className="relative max-w-80">

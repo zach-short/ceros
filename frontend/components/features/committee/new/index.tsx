@@ -19,12 +19,25 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { stringify } from "querystring"
+import { useFriends } from '@/hooks/api/use-friends';
+
 
 
 
 export default function NewCommittee() {
   const [selectedMembers, setSelectedMembers] = useState<User[]>([]);
-  const [chair, setChair] = useState<User[]>([]);
+  const [chair, setChair] = useState<string | null>(null);
+  
+  // Load all friendships once
+  const { data, error, loading } = useFriends();
+  const friendships = data?.friendships ?? [];
+  const users = friendships.flatMap((friendship) =>  
+    friendship.user ? [friendship.user] : [])
+
+
+  const onChairChange = ((chairName: string|null) => {
+    setChair(chairName);
+  })
 
   const isChecked = useCallback((member: User) => { 
     const memberIds = selectedMembers.map((m) => m.id);
@@ -54,8 +67,8 @@ export default function NewCommittee() {
     <div className="mx-auto max-w-2xl p-6">
       <form className="space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Enter Committee Name</label>
-          <Input className="w-full" />
+          <label className="block text-sm font-medium mb-1">Committee Name</label>
+          <Input className="w-full" placeholder="Please enter you committee name..."/>
         </div>
 
         <div>
@@ -63,34 +76,36 @@ export default function NewCommittee() {
           <Textarea className="w-full h-50" placeholder="Please enter your committee description here..."/>
         </div>
 
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Enter Members</label>
-          <div>
-          <AddMemberInput 
-          onToggle={handleToggle}
-          isChecked={isChecked}
-          />
-          <MemberSheet
-          selectedMembers={selectedMembers}
-          onSave={handleSave}
-          />
-          </div>
-        </div>
-
         {/* Put two fields side-by-side on larger screens */}
+        
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
+            <label className="block text-sm font-medium mb-1">Enter Members</label>
+            <div>
+            <AddMemberInput
+            users={users}
+            loading={loading}
+            onToggle={handleToggle}
+            isChecked={isChecked}
+            />
+            <MemberSheet
+            selectedMembers={selectedMembers}
+            onSave={handleSave}
+            />
+          </div>
+          </div>
+          <div>
             <label className="block text-sm font-medium mb-1">Assign Chair</label>
-            <Select>
-            <SelectTrigger className="w-[240px]">
-            <SelectValue placeholder="Select a Member" />
+            <Select onValueChange={onChairChange}>
+            <SelectTrigger className="w-[240px] font-medium">
+            <SelectValue placeholder="Select a Member"/>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="font-medium">
               {
                 selectedMembers.length > 0 ? selectedMembers.map(
                   (member) => (
-                  <SelectItem key={member.id.toString()} value={member.id.toString()}> 
+                  <SelectItem key={member.id.toString()} value={member.name ?? ""}
+                    className="font-medium"> 
                     {
                       member.name?.substring(0, member.name.length)
                     }
@@ -103,12 +118,7 @@ export default function NewCommittee() {
             </SelectContent>
             </Select>
         </div>
-
-        <div>
-            <label className="block text-sm font-medium mb-1">Enter Observers</label>
-            <AddObserverInput/>
-          </div>
-        </div>
+      </div>
 
         <label
           htmlFor="IsTemporaryCommittee"
