@@ -3,7 +3,7 @@
 import { useWebSocket } from '@/hooks/use-web-socket';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Bell, Info, AlertCircle, CheckCircle } from 'lucide-react';
+import { Info, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -58,3 +58,4 @@ export function NotificationProvider({
 
   return <>{children}</>;
 }
+

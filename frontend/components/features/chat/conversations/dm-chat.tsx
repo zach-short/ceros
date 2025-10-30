@@ -32,7 +32,7 @@ export function DMChat({
   recipientName,
   recipientPicture,
 }: DMChatProps) {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);

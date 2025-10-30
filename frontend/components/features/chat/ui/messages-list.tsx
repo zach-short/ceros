@@ -60,8 +60,6 @@ const shouldShowTimeHeader = (
 
 const shouldGroupMessages = (
   currentMessage: Message,
-  messages: Message[],
-  currentIndex: number,
   previousMessage?: Message,
 ): boolean => {
   if (!previousMessage) return false;
@@ -94,7 +92,6 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
       users,
       currentUserId,
       recipientName,
-      recipientId,
       isLoading,
       onReply,
       onReaction,
@@ -125,12 +122,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                 message,
                 previousMessage,
               );
-              const isGrouped = shouldGroupMessages(
-                message,
-                messages,
-                index,
-                previousMessage,
-              );
+              const isGrouped = shouldGroupMessages(message, previousMessage);
               const isFirstInGroup = !isGrouped;
 
               let parentMessage: Message | undefined;
