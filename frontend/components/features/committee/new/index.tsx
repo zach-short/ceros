@@ -6,10 +6,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AddMemberInput } from "./add-member-input"
 import { Button } from "@/components/ui/button"
-import { AddObserverInput } from "./add-observer-input"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { User } from '@/lib/api/friends';
-import { sl } from "date-fns/locale"
 import { MemberSheet } from "./member-sheet"
 import {
   Select,
