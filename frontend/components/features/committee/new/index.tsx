@@ -90,7 +90,9 @@ export default function NewCommittee() {
 
   const { mutate: createCommittee, loading: createLoading } =
     useCreateCommittee({
-      onSuccess: () => {
+      onSuccess: (data: { id: string }) => {
+        // PUSH THEM TO
+        // .push(`/committees/${id}/chat`)
         toast.success('Committee Created!');
       },
       onError: (error) => {
@@ -107,7 +109,6 @@ export default function NewCommittee() {
       return;
     }
 
-    console.log(formData);
     createCommittee(formData);
   };
 

@@ -11,11 +11,11 @@ export function useCommittees() {
 }
 
 export function useCreateCommittee(options?: {
-  onSuccess?: (data: { message: string }) => void;
+  onSuccess?: (data: { id: string; message: string }) => void;
   onError?: (error: any) => void;
 }) {
   return useMutation(committeeApi.createCommittee, {
-    onSuccess: (data: { message: string }) => {
+    onSuccess: (data: { message: string; id: string }) => {
       options?.onSuccess?.(data);
     },
     onError: (error) => {
