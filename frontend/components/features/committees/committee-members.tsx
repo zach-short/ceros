@@ -1,77 +1,51 @@
 'use client';
 
+import { useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { CommitteeHeader } from './committee-header';
-import { MemberListSection } from './member-list-section';
 import { CommitteeActions } from './committee-actions';
-
-const dummyMembers = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john@example.com',
-    role: 'Chair',
-    image: null,
-    isOnline: true,
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah@example.com',
-    role: 'Vice Chair',
-    image: null,
-    isOnline: true,
-  },
-  {
-    id: '3',
-    name: 'Mike Davis',
-    email: 'mike@example.com',
-    role: 'Secretary',
-    image: null,
-    isOnline: false,
-  },
-  {
-    id: '4',
-    name: 'Lisa Wilson',
-    email: 'lisa@example.com',
-    role: 'Member',
-    image: null,
-    isOnline: true,
-  },
-  {
-    id: '5',
-    name: 'Tom Brown',
-    email: 'tom@example.com',
-    role: 'Member',
-    image: null,
-    isOnline: false,
-  },
-  {
-    id: '6',
-    name: 'Emily Garcia',
-    email: 'emily@example.com',
-    role: 'Member',
-    image: null,
-    isOnline: true,
-  },
-];
+import { useCommittee } from '@/hooks/api/use-commitee';
+import { DefaultLoader } from '@/components/shared/layout/loader';
 
 export default function CommitteeMembers() {
+  const params = useParams();
+  const committeeId = params.id as string;
+  const { data: session } = useSession();
 
-  const onlineMembers = dummyMembers.filter(member => member.isOnline);
-  const offlineMembers = dummyMembers.filter(member => !member.isOnline);
+  const { data: committeeData, loading } = useCommittee({
+    resourceParams: [committeeId],
+    enabled: !!committeeId && !!session?.apiToken,
+  });
+
+  const committee = committeeData?.committee;
+
+  const totalMembers =
+    (committee?.ownerId ? 1 : 0) +
+    (committee?.chairId ? 1 : 0) +
+    (committee?.memberIds?.length || 0);
+
+  if (loading) {
+    return (
+      <div className='h-[calc(100vh-4rem)] lg:h-screen flex items-center justify-center'>
+        <DefaultLoader />
+      </div>
+    );
+  }
 
   return (
-    <div className="h-[calc(100vh-4rem)] lg:h-screen flex flex-col">
+    <div className='h-[calc(100vh-4rem)] lg:h-screen flex flex-col'>
       <CommitteeHeader
-        title="Committee Members"
-        subtitle={`${dummyMembers.length} members`}
+        title={committee?.name || 'Committee Members'}
+        subtitle={`${totalMembers} member${totalMembers !== 1 ? 's' : ''}`}
       />
 
-      <div className="flex-1 overflow-y-auto">
-        <MemberListSection title="Online" members={onlineMembers} />
-        <MemberListSection title="Offline" members={offlineMembers} />
+      <div className='flex-1 overflow-y-auto p-6'>
+        <div className='text-center py-8 opacity-60'>
+          <p>Member management coming soon</p>
+        </div>
         <CommitteeActions />
       </div>
     </div>
   );
 }
+

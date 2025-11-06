@@ -20,8 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui/card';
-import Dashboard from '../features/dashboard';
-
 type AuthStep = 'providers' | 'email' | 'password';
 
 interface UnifiedAuthFormProps {
@@ -306,7 +304,11 @@ export function UnifiedAuth() {
   }
 
   if (session) {
-    return <Dashboard />;
+    return (
+      <CenteredDiv>
+        <DefaultLoader />
+      </CenteredDiv>
+    );
   }
 
   return (

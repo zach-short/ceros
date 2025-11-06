@@ -11,6 +11,7 @@ interface ChatHeaderProps {
   isConnected: boolean;
   isLoading?: boolean;
   onToggleMotions?: () => void;
+  onToggleMembers?: () => void;
   onOpenSearch?: () => void;
   chatType?: 'dm' | 'committee';
   isOnline?: boolean;
@@ -23,13 +24,14 @@ export function ChatHeader({
   isConnected,
   isLoading,
   onToggleMotions,
+  onToggleMembers,
   onOpenSearch,
   chatType = 'dm',
   isOnline,
 }: ChatHeaderProps) {
   const isCommittee = chatType === 'committee';
   const profileLink = isCommittee
-    ? `/committees/${recipientId}`
+    ? `/committees/${recipientId}/profile`
     : `/profile/${recipientId}`;
 
   return (
@@ -40,7 +42,16 @@ export function ChatHeader({
       >
         <Avatar>
           <AvatarImage src={recipientPicture as string | undefined} />
-          <AvatarFallback></AvatarFallback>
+          <AvatarFallback>
+            {isCommittee
+              ? recipientName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2)
+              : ''}
+          </AvatarFallback>
         </Avatar>
         <div>
           <h2 className='font-semibold'>{recipientName}</h2>
@@ -50,13 +61,6 @@ export function ChatHeader({
             )}
             {!isCommittee && isOnline !== undefined && (
               <OnlineStatusIndicator isOnline={isOnline} size='sm' showText />
-            )}
-            {isCommittee && (
-              <>
-                <span>30 members</span>
-                <span>•</span>
-                <span>1 Active Motion</span>
-              </>
             )}
           </div>
         </div>
@@ -74,14 +78,14 @@ export function ChatHeader({
         )}
         {isCommittee && (
           <>
-            <button
-              onClick={() => {
-                window.location.href = `/committees/${recipientId}/members`;
-              }}
-              className='px-3 py-1 text-sm rounded border hover:bg-accent'
-            >
-              Members
-            </button>
+            {onToggleMembers && (
+              <button
+                onClick={onToggleMembers}
+                className='px-3 py-1 text-sm rounded border hover:bg-accent'
+              >
+                Members
+              </button>
+            )}
             {onToggleMotions && (
               <button
                 onClick={onToggleMotions}

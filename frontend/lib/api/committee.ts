@@ -39,6 +39,9 @@ export interface GetCommitteeHistoryResponse {
   roomId: string;
   messages: Message[];
   users: any[];
+  committee: any;
+  members: any[];
+  motions: any[];
 }
 
 export interface GetMessageRepliesResponse {
@@ -55,14 +58,28 @@ export interface CreateCommitteeRequest {
   observerIds?: string[];
 }
 
+export interface UpdateCommitteeRequest {
+  name: string;
+  description: string;
+  picture: string;
+}
+
 export const committeeApi = {
   getOne: (committeeId: string): Promise<any> =>
     apiRequest('get', `/committees/${committeeId}`),
 
   getMany: (): Promise<any> => apiRequest('get', `/committees`),
 
+  getUserCommittees: (): Promise<any> => apiRequest('get', `/users/me/committees`),
+
   createCommittee: (data: CreateCommitteeRequest): Promise<any> =>
     apiRequest('post', `/committees`, data),
+
+  updateCommittee: (committeeId: string, data: UpdateCommitteeRequest): Promise<any> =>
+    apiRequest('put', `/committees/${committeeId}`, data),
+
+  deleteCommittee: (committeeId: string): Promise<any> =>
+    apiRequest('delete', `/committees/${committeeId}`),
 
   startChat: (committeeId: string): Promise<any> =>
     apiRequest('post', `/committees/${committeeId}/chat/start`),

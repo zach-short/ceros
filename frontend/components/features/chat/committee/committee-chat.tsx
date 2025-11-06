@@ -20,6 +20,10 @@ import {
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
+import { Committee } from '@/models/committee';
+import { CommitteeMembersSheet } from './committee-members-sheet';
+import { CommitteeMotionsSheet } from './committee-motions-sheet';
+import { getCommitteePicture } from '@/lib/utils/committee-avatar';
 
 export default function CommitteeChat() {
   const params = useParams();
@@ -32,10 +36,15 @@ export default function CommitteeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [committee, setCommittee] = useState<Committee | null>(null);
+  const [members, setMembers] = useState<User[]>([]);
+  const [motions, setMotions] = useState<any[]>([]);
   const [typingUsers, setTypingUsers] = useState<
     Array<{ userId: string; name: string }>
   >([]);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [membersSheetOpen, setMembersSheetOpen] = useState(false);
+  const [motionsSheetOpen, setMotionsSheetOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     { messageId: string; content: string } | undefined
   >(undefined);
@@ -183,6 +192,15 @@ export default function CommitteeChat() {
     }
     if (historyData?.users) {
       setUsers(historyData.users);
+    }
+    if (historyData?.committee) {
+      setCommittee(historyData.committee);
+    }
+    if (historyData?.members) {
+      setMembers(historyData.members);
+    }
+    if (historyData?.motions) {
+      setMotions(historyData.motions);
     }
   }, [historyData, session?.user?.id]);
 
@@ -368,18 +386,20 @@ export default function CommitteeChat() {
     );
   }
 
+  const committeeName = committee?.name || 'Committee';
+
   return (
     <>
       <div className='flex h-[calc(100vh-4rem)] sm:h-screen'>
         <div className='flex flex-col flex-1 max-w-4xl mx-auto'>
           <ChatHeader
-            recipientName={`Committee`}
+            recipientName={committeeName}
             recipientId={committeeId}
+            recipientPicture={committee ? getCommitteePicture(committee) : undefined}
             isConnected={isConnected}
             isLoading={historyLoading || startingChat}
-            onToggleMotions={() => {
-              window.location.href = `/committees/${committeeId}/motions`;
-            }}
+            onToggleMotions={() => setMotionsSheetOpen(true)}
+            onToggleMembers={() => setMembersSheetOpen(true)}
             onOpenSearch={() => setSearchOpen(true)}
             chatType='committee'
           />
@@ -392,7 +412,7 @@ export default function CommitteeChat() {
                   messages={messages}
                   users={users}
                   currentUserId={session.user.id}
-                  recipientName={`Committee ${committeeId}`}
+                  recipientName={committeeName}
                   isLoading={historyLoading && messages.length === 0}
                   onReply={handleStartReply}
                   /* onOpenThread={handleOpenThread} */
@@ -449,6 +469,20 @@ export default function CommitteeChat() {
         onOpenChange={setSearchOpen}
         messages={messages}
         onSelectMessage={handleScrollToMessage}
+      />
+
+      <CommitteeMembersSheet
+        open={membersSheetOpen}
+        onOpenChange={setMembersSheetOpen}
+        members={members}
+        committee={committee}
+      />
+
+      <CommitteeMotionsSheet
+        open={motionsSheetOpen}
+        onOpenChange={setMotionsSheetOpen}
+        motions={motions}
+        committee={committee}
       />
     </>
   );

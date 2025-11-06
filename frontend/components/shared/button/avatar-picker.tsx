@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { PRESET_AVATARS } from '@/lib/constants/avatars';
 import { UploadButton } from '@/lib/uploadthing';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,22 +13,61 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import { PencilIcon, Upload, Image as ImageIcon } from 'lucide-react';
+import {
+  PencilIcon,
+  Upload,
+  Image as ImageIcon,
+  RefreshCw,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const USER_DICEBEAR_STYLES = [
+  { name: 'Avataaars', value: 'avataaars' },
+  { name: 'Big Smile', value: 'big-smile' },
+  { name: 'Personas', value: 'personas' },
+  { name: 'Lorelei', value: 'lorelei' },
+  { name: 'Fun Emoji', value: 'fun-emoji' },
+  { name: 'Adventurer', value: 'adventurer' },
+];
+
+const COMMITTEE_DICEBEAR_STYLES = [
+  { name: '', value: 'shapes' },
+  { name: '', value: 'identicon' },
+  { name: '', value: 'rings' },
+  { name: '', value: 'pixel-art' },
+  { name: '', value: 'bottts' },
+  { name: '', value: 'thumbs' },
+];
+
+const generateDiceBearAvatar = (seed: string, style: string) => {
+  return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
+};
+
+const generateRandomSeed = () => {
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
+};
+
 interface AvatarPickerProps {
+  type?: 'user' | 'committee';
+  seed?: string;
   onSelect: (url: string) => void;
   onUploadError?: (error: Error) => void;
   currentAvatar?: string;
 }
 
 export function AvatarPicker({
+  type = 'user',
+  seed = 'default',
   onSelect,
   onUploadError,
   currentAvatar,
 }: AvatarPickerProps) {
   const [open, setOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [currentSeed, setCurrentSeed] = useState(seed);
 
   const handlePresetSelect = (avatar: string) => {
     setSelectedPreset(avatar);
@@ -41,6 +79,18 @@ export function AvatarPicker({
     onSelect(res[0].url);
     setOpen(false);
   };
+
+  const handleRegenerate = () => {
+    const newSeed = generateRandomSeed();
+    setCurrentSeed(newSeed);
+    setSelectedPreset(null);
+  };
+
+  const styles =
+    type === 'user' ? USER_DICEBEAR_STYLES : COMMITTEE_DICEBEAR_STYLES;
+  const avatars = styles.map((style) =>
+    generateDiceBearAvatar(currentSeed, style.value),
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -55,16 +105,22 @@ export function AvatarPicker({
       </DialogTrigger>
       <DialogContent className='sm:max-w-[600px]'>
         <DialogHeader>
-          <DialogTitle>Choose Profile Picture</DialogTitle>
+          <DialogTitle>
+            {type === 'user'
+              ? 'Choose Profile Picture'
+              : 'Choose Committee Picture'}
+          </DialogTitle>
           <DialogDescription>
-            Select a preset avatar or upload your own image
+            {type === 'user'
+              ? 'Select an avatar style or upload your own image'
+              : 'Select an abstract pattern or upload your own image'}
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue='presets' className='w-full'>
           <TabsList className='grid w-full grid-cols-2'>
             <TabsTrigger value='presets'>
               <ImageIcon className='mr-2 h-4 w-4' />
-              Preset Avatars
+              {type === 'user' ? 'Avatar Styles' : 'Patterns'}
             </TabsTrigger>
             <TabsTrigger value='upload'>
               <Upload className='mr-2 h-4 w-4' />
@@ -72,22 +128,37 @@ export function AvatarPicker({
             </TabsTrigger>
           </TabsList>
           <TabsContent value='presets' className='mt-4'>
-            <div className='grid grid-cols-4 gap-x-4 sm:gap-x-8 gap-y-4 max-h-[400px] overflow-y-auto p-2'>
-              {PRESET_AVATARS.map((avatar, index) => (
-                <button
-                  key={avatar}
-                  onClick={() => handlePresetSelect(avatar)}
-                  className={cn(
-                    'relative rounded-full sm:h-20 sm:w-20 w-12 h-12 transition-all hover:ring-2 hover:ring-primary',
-                    selectedPreset === avatar && 'ring-2 ring-primary',
-                    currentAvatar === avatar && 'ring-2 ring-primary',
-                  )}
-                >
-                  <Avatar className='sm:h-20 sm:w-20 w-12 h-12'>
-                    <AvatarImage src={avatar} alt={`Avatar ${index + 1}`} />
-                  </Avatar>
-                </button>
+            <div className='grid grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-4 max-h-[400px] overflow-y-auto p-2'>
+              {avatars.map((avatar, index) => (
+                <div key={avatar} className='flex flex-col items-center gap-2'>
+                  <button
+                    onClick={() => handlePresetSelect(avatar)}
+                    className={cn(
+                      'relative rounded-full sm:h-20 sm:w-20 w-16 h-16 transition-all hover:ring-2 hover:ring-primary',
+                      selectedPreset === avatar && 'ring-2 ring-primary',
+                      currentAvatar === avatar && 'ring-2 ring-primary',
+                    )}
+                  >
+                    <Avatar className='sm:h-20 sm:w-20 w-16 h-16'>
+                      <AvatarImage src={avatar} alt={styles[index]?.name} />
+                    </Avatar>
+                  </button>
+                  <span className='text-xs text-muted-foreground'>
+                    {styles[index].name}
+                  </span>
+                </div>
               ))}
+            </div>
+            <div className='flex justify-end mt-3'>
+              <Button
+                onClick={handleRegenerate}
+                variant='outline'
+                size='sm'
+                className='gap-2'
+              >
+                <RefreshCw className='h-4 w-4' />
+                Regenerate
+              </Button>
             </div>
           </TabsContent>
           <TabsContent value='upload' className='mt-4'>

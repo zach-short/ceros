@@ -10,10 +10,34 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
-	"github.com/zach-short/final-web-programming/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+func userHasCommitteeAccess(ctx context.Context, committeeID primitive.ObjectID, userID primitive.ObjectID) (*models.Committee, error) {
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	var committee models.Committee
+	err := collection.FindOne(ctx, bson.M{
+		"_id": committeeID,
+		"$or": []bson.M{
+			{"ownerId": userID},
+			{"chairId": userID},
+			{"memberIds": userID},
+			{"observerIds": userID},
+		},
+	}).Decode(&committee)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("access denied or committee not found")
+		}
+		return nil, err
+	}
+
+	return &committee, nil
+}
 
 type NewCommitteeReq struct {
 	Name        string   `json:"name" binding:"required"`
@@ -33,6 +57,11 @@ func GetCommittees(c *gin.Context) {
 		return
 	}
 
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	query := bson.M{
 		"$and": []bson.M{
 			{
@@ -44,9 +73,16 @@ func GetCommittees(c *gin.Context) {
 		},
 	}
 
-	committees, err := utils.FetchItems(query, "committees")
+	cursor, err := collection.Find(ctx, query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding committees"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var committees []models.Committee
+	if err = cursor.All(ctx, &committees); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "decoding committees"})
 		return
 	}
 
@@ -54,7 +90,68 @@ func GetCommittees(c *gin.Context) {
 }
 
 func GetCommittee(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
 
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"committee": committee})
+}
+
+func GetUserCommittees(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"$or": []bson.M{
+			{"ownerId": userID},
+			{"chairId": userID},
+			{"memberIds": userID},
+			{"observerIds": userID},
+		},
+	}
+
+	cursor, err := collection.Find(ctx, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding committees"})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var committees []models.Committee
+	if err = cursor.All(ctx, &committees); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "decoding committees"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"committees": committees})
 }
 
 func CreateCommittee(c *gin.Context) {
@@ -117,6 +214,7 @@ func CreateCommittee(c *gin.Context) {
 		return
 	}
 
+	now := time.Now()
 	newCommittee := models.Committee{
 		ID:          primitive.NewObjectID(),
 		Name:        req.Name,
@@ -126,6 +224,8 @@ func CreateCommittee(c *gin.Context) {
 		ChairID:     chairIDHex,
 		MemberIDs:   memberIDsHex,
 		ObserverIDs: observerIDsHex,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
@@ -140,5 +240,116 @@ func CreateCommittee(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Created new committee"})
+	c.JSON(http.StatusOK, gin.H{"message": "Created new committee", "id": newCommittee.ID.Hex()})
+}
+
+type UpdateCommitteeReq struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Picture     string `json:"picture"`
+}
+
+func UpdateCommittee(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner can update committee settings"})
+		return
+	}
+
+	var req UpdateCommitteeReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	update := bson.M{
+		"$set": bson.M{
+			"name":        req.Name,
+			"description": req.Description,
+			"picture":     req.Picture,
+			"updatedAt":   time.Now(),
+		},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update committee"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Committee updated successfully"})
+}
+
+func DeleteCommittee(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner can delete the committee"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	result, err := collection.DeleteOne(ctx, bson.M{"_id": committeeID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete committee"})
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Committee deleted successfully"})
 }

@@ -2,14 +2,16 @@
 
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { MessagesSquareIcon, User, Users, Bell, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SignoutButton } from '../button/signout';
 import { NotificationBadge } from '../notification-badge';
 import { useUser } from '@/hooks/api/use-users';
+import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { title: 'Messages', href: '/chat', icon: MessagesSquareIcon },
+  { title: 'Messages', href: '/', icon: MessagesSquareIcon },
   {
     title: 'Notifications',
     href: '/notifications',
@@ -55,16 +57,21 @@ function MenuItem({
   icon: Icon,
   onClick,
   showBadge = false,
+  isActive = false,
 }: {
   href: string;
   title: string;
   icon: React.ComponentType<{ size?: number }>;
   onClick?: () => void;
   showBadge?: boolean;
+  isActive?: boolean;
 }) {
   return (
     <Link
-      className={`py-1 flex items-center gap-3 relative`}
+      className={cn(
+        'py-1 flex items-center gap-3 relative transition-colors rounded-md px-2 py-2',
+        isActive ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted',
+      )}
       href={href}
       onClick={onClick}
     >
@@ -85,6 +92,33 @@ interface MenuContentProps {
 }
 
 export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return (
+        pathname === '/' ||
+        pathname.startsWith('/chat/') ||
+        (pathname.startsWith('/committees/') &&
+          !pathname.includes('/profile') &&
+          !pathname.includes('/members') &&
+          !pathname.includes('/motions') &&
+          !pathname.includes('/motion'))
+      );
+    }
+    if (href === '/profile') {
+      return (
+        pathname === '/profile' ||
+        (pathname.startsWith('/profile/') &&
+          !pathname.startsWith('/profile/settings'))
+      );
+    }
+    if (href === '/profile/settings') {
+      return pathname.startsWith('/profile/settings');
+    }
+    return pathname === href || pathname.startsWith(href + '/');
+  };
+
   return (
     <div className={`flex flex-col ${className}`}>
       <ProfileCard />
@@ -97,6 +131,7 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
             icon={menuItem.icon}
             onClick={onItemClick}
             showBadge={menuItem.showBadge}
+            isActive={isActive(menuItem.href)}
           />
         ))}
       </div>
