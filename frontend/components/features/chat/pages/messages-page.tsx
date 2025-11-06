@@ -2,62 +2,48 @@
 
 import { useState, useMemo } from 'react';
 import { useConversations } from '@/hooks/api/use-chat';
+import { useUserCommittees } from '@/hooks/api/use-commitee';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { ChatSearch } from '@/components/features/chat/search/chat-search';
 import { ChatSearchResults } from '@/components/features/chat/search/chat-search-results';
 import { ChatSections } from '@/components/features/chat/pages/chat-sections';
 
-const dummyCommittees = [
-  {
-    id: '507f1f77bcf86cd799439011',
-    name: 'Budget Committee',
-    memberCount: 12,
-    lastActivity: '2 hours ago',
-    unreadCount: 3,
-  },
-  {
-    id: '507f1f77bcf86cd799439012',
-    name: 'Policy Review Committee',
-    memberCount: 8,
-    lastActivity: '1 day ago',
-    unreadCount: 0,
-  },
-  {
-    id: '507f1f77bcf86cd799439013',
-    name: 'Events Planning Committee',
-    memberCount: 15,
-    lastActivity: '3 days ago',
-    unreadCount: 1,
-  },
-];
-
 export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: conversationsData, loading: conversationsLoading } =
     useConversations();
+  const { data: committeesData, loading: committeesLoading } =
+    useUserCommittees();
 
-  const conversations = useMemo(() => conversationsData?.conversations || [], [conversationsData]);
+  const conversations = useMemo(
+    () => conversationsData?.conversations || [],
+    [conversationsData],
+  );
+  const committees = useMemo(
+    () => committeesData?.committees || [],
+    [committeesData],
+  );
 
   const filteredResults = useMemo(() => {
     if (!searchQuery.trim()) {
       return {
         conversations: conversations,
-        committees: dummyCommittees,
+        committees: committees,
       };
     }
 
     const query = searchQuery.toLowerCase();
     return {
       conversations: conversations,
-      committees: dummyCommittees.filter((committee) =>
+      committees: committees.filter((committee) =>
         committee.name.toLowerCase().includes(query),
       ),
     };
-  }, [searchQuery, conversations]);
+  }, [searchQuery, conversations, committees]);
 
   const showSearchResults = searchQuery.trim().length > 0;
 
-  if (conversationsLoading) {
+  if (conversationsLoading || committeesLoading) {
     return (
       <div className='h-[calc(100vh-4rem)] lg:h-screen flex items-center justify-center'>
         <DefaultLoader />
@@ -75,19 +61,26 @@ export default function MessagesPage() {
               <p className='opacity-60'>Your conversations and committees</p>
             </div>
 
-            <ChatSearch searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+            <ChatSearch
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+            />
           </div>
 
           <div className='flex-1 overflow-y-auto'>
             {showSearchResults ? (
               <ChatSearchResults
                 searchQuery={searchQuery}
-                conversationsCount={filteredResults.conversations.length + filteredResults.committees.length}
+                conversationsCount={
+                  filteredResults.conversations.length +
+                  filteredResults.committees.length
+                }
               />
             ) : (
               <ChatSections
                 conversationsCount={conversations.length}
-                committeesCount={dummyCommittees.length}
+                committeesCount={committees.length}
+                committees={committees}
               />
             )}
           </div>
@@ -96,3 +89,4 @@ export default function MessagesPage() {
     </div>
   );
 }
+

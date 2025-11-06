@@ -1,62 +1,71 @@
 'use client';
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
-
-const dummyCommittees: any[] = [];
+import { Committee } from '@/models/committee';
+import { getCommitteePicture } from '@/lib/utils/committee-avatar';
 
 interface CommitteeListProps {
+  committees: Committee[];
   searchQuery?: string;
-  showMemberCount?: boolean;
 }
 
 export function CommitteeList({
+  committees,
   searchQuery = '',
-  showMemberCount = true,
 }: CommitteeListProps) {
   const router = useRouter();
 
   const filteredCommittees = searchQuery.trim()
-    ? dummyCommittees.filter((committee) =>
+    ? committees.filter((committee) =>
         committee.name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
-    : dummyCommittees;
+    : committees;
+
+  const getMemberCount = (committee: Committee) => {
+    const chairCount = committee.chairId ? 1 : 0;
+    const regularMembersCount = committee.memberIds?.length || 0;
+    return chairCount + regularMembersCount;
+  };
 
   return (
     <div className='space-y-2'>
-      {filteredCommittees.map((committee) => (
-        <div
-          key={committee.id}
-          onClick={() => router.push(`/committees/${committee.id}/chat`)}
-          className='flex items-center gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer'
-        >
-          <Avatar>
-            <AvatarFallback>
-              {committee.name
-                .split(' ')
-                .map((n: any) => n[0])
-                .join('')}
-            </AvatarFallback>
-          </Avatar>
-          <div className='flex-1 min-w-0'>
-            <div className='flex items-center justify-between'>
-              <p className='font-medium truncate'>{committee.name}</p>
-              {!showMemberCount && (
-                <span className='text-xs opacity-60'>Committee</span>
-              )}
-            </div>
-            <p className='text-sm opacity-75'>
-              {committee.memberCount} members • {committee.lastActivity}
-            </p>
-          </div>
-          {committee.unreadCount > 0 && (
-            <div className='bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center'>
-              {committee.unreadCount}
-            </div>
-          )}
+      {filteredCommittees.length === 0 ? (
+        <div className='text-center py-8 text-sm opacity-60'>
+          No committees found
         </div>
-      ))}
+      ) : (
+        filteredCommittees.map((committee) => {
+          const memberCount = getMemberCount(committee);
+          return (
+            <div
+              key={committee.id}
+              onClick={() => router.push(`/committees/${committee.id}`)}
+              className='flex items-center gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer'
+            >
+              <Avatar>
+                <AvatarImage src={getCommitteePicture(committee)} />
+                <AvatarFallback>
+                  {committee.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className='flex-1 min-w-0'>
+                <p className='font-medium truncate'>{committee.name}</p>
+                <p className='text-sm opacity-60'>
+                  {memberCount} member{memberCount !== 1 ? 's' : ''}
+                  {committee.observerIds?.length > 0 &&
+                    ` • ${committee.observerIds.length} observer${committee.observerIds.length !== 1 ? 's' : ''}`}
+                </p>
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
-

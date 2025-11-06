@@ -1131,14 +1131,7 @@ export const apiDocumentation: RouteSection[] = [
         response: {
           status: 200,
           body: `{
-  "id": "507f1f77bcf86cd799439011",
-  "email": "user@example.com",
-  "name": "johndoe",
-  "givenName": "John",
-  "familyName": "Doe",
-  "bio": "Updated bio",
-  "picture": "https://...",
-  "phoneNumber": "+1234567890"
+    message: "Created new committee!"
 }`,
         },
       },

@@ -202,9 +202,9 @@ type ConversationSummary struct {
 	RoomID        string               `json:"roomId"`
 	Type          models.RoomType      `json:"type"`
 	Participants  []primitive.ObjectID `json:"participants"`
-	OtherUser     *ConversationUser    `json:"otherUser,omitempty"`  // for dms only
-	GroupName     string               `json:"groupName,omitempty"`  // for groups/committees
-	GroupImage    string               `json:"groupImage,omitempty"` // for groups/committees
+	OtherUser     *ConversationUser    `json:"otherUser,omitempty"`
+	GroupName     string               `json:"groupName,omitempty"`
+	GroupImage    string               `json:"groupImage,omitempty"`
 	LastMessage   *models.Message      `json:"lastMessage,omitempty"`
 	LastMessageAt time.Time            `json:"lastMessageAt"`
 	UnreadCount   int                  `json:"unreadCount"`
@@ -371,30 +371,33 @@ func StartCommitteeChat(c *gin.Context) {
 		return
 	}
 
-	roomID := models.CreateCommitteeRoomID(committeeID)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	room := models.Room{
-		ID:          roomID,
-		Type:        models.RoomTypeCommittee,
-		OwnerID:     userID,
-		CommitteeID: &committeeID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
 	}
+
+	roomID := models.CreateCommitteeRoomID(committeeID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"roomId": roomID,
-		"room":   room,
+		"committee": gin.H{
+			"id":   committee.ID.Hex(),
+			"name": committee.Name,
+		},
 	})
 }
 
 func GetCommitteeHistory(c *gin.Context) {
-	/* userIDStr := c.MustGet("userID").(string) */
-	/* userID, err := primitive.ObjectIDFromHex(userIDStr) */
-	/* if err != nil { */
-	/* 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"}) */
-	/* 	return */
-	/* } */
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
 
 	committeeID := c.Param("id")
 	committeeOID, err := primitive.ObjectIDFromHex(committeeID)
@@ -403,11 +406,18 @@ func GetCommitteeHistory(c *gin.Context) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeOID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
 	roomID := models.CreateCommitteeRoomID(committeeOID)
 
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	filter := bson.M{"roomId": roomID}
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(200)
@@ -427,35 +437,43 @@ func GetCommitteeHistory(c *gin.Context) {
 		return
 	}
 
-	senderIDs := make(map[primitive.ObjectID]bool)
-	for _, msg := range messages {
-		senderIDs[msg.SenderID] = true
+	allMemberIDs := make(map[primitive.ObjectID]bool)
+	allMemberIDs[committee.OwnerID] = true
+	allMemberIDs[committee.ChairID] = true
+	for _, memberID := range committee.MemberIDs {
+		allMemberIDs[memberID] = true
+	}
+	for _, observerID := range committee.ObserverIDs {
+		allMemberIDs[observerID] = true
 	}
 
-	var uniqueSenderIDs []primitive.ObjectID
-	for senderID := range senderIDs {
-		uniqueSenderIDs = append(uniqueSenderIDs, senderID)
+	var uniqueMemberIDs []primitive.ObjectID
+	for memberID := range allMemberIDs {
+		uniqueMemberIDs = append(uniqueMemberIDs, memberID)
 	}
 
-	var users []models.User
-	if len(uniqueSenderIDs) > 0 {
+	var members []models.User
+	if len(uniqueMemberIDs) > 0 {
 		usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
-		userFilter := bson.M{"_id": bson.M{"$in": uniqueSenderIDs}}
+		userFilter := bson.M{"_id": bson.M{"$in": uniqueMemberIDs}}
 		userCursor, err := usersCollection.Find(ctx, userFilter)
 		if err != nil {
 			log.Printf("Error fetching users: %v", err)
 		} else {
 			defer userCursor.Close(ctx)
-			if err = userCursor.All(ctx, &users); err != nil {
+			if err = userCursor.All(ctx, &members); err != nil {
 				log.Printf("Error decoding users: %v", err)
 			}
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"roomId":   roomID,
-		"messages": messages,
-		"users":    users,
+		"roomId":    roomID,
+		"messages":  messages,
+		"users":     members,
+		"committee": committee,
+		"members":   members,
+		"motions":   []interface{}{},
 	})
 }
 
@@ -812,7 +830,7 @@ func ToggleMessagePin(c *gin.Context) {
 	var update bson.M
 
 	if message.IsPinned {
-		// Unpin the message
+
 		update = bson.M{
 			"$set": bson.M{
 				"isPinned": false,
@@ -821,7 +839,7 @@ func ToggleMessagePin(c *gin.Context) {
 			},
 		}
 	} else {
-		// Pin the message
+
 		update = bson.M{
 			"$set": bson.M{
 				"isPinned": true,

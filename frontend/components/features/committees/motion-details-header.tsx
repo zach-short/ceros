@@ -14,7 +14,7 @@ export function MotionDetailsHeader({ motion, committeeId }: MotionDetailsHeader
   return (
     <header className='p-4 border-b flex items-center gap-3'>
       <button
-        onClick={() => router.push(`/committees/${committeeId}/chat`)}
+        onClick={() => router.push(`/committees/${committeeId}`)}
         className='p-2 hover:bg-accent rounded-full'
       >
         <ArrowLeft size={20} />

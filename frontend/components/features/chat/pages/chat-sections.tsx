@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, MessageSquare, Users } from 'lucide-react';
 import { ConversationsList } from '@/components/features/chat/conversations/conversations-list';
+import { CommitteeList } from '@/components/features/chat/committee/committee-list';
+import { Committee } from '@/models/committee';
 
 interface ChatSectionsProps {
   conversationsCount: number;
   committeesCount: number;
+  committees: Committee[];
 }
 
 function DirectMessagesSection({
@@ -38,7 +41,13 @@ function DirectMessagesSection({
   );
 }
 
-function GroupChatsSection({ committeesCount }: { committeesCount: number }) {
+function GroupChatsSection({
+  committeesCount,
+  committees,
+}: {
+  committeesCount: number;
+  committees: Committee[];
+}) {
   const [groupChatsExpanded, setGroupChatsExpanded] = useState(true);
   return (
     <div>
@@ -52,12 +61,12 @@ function GroupChatsSection({ committeesCount }: { committeesCount: number }) {
           <ChevronRight size={16} />
         )}
         <Users size={16} />
-        <span className='font-medium'>Group Chats</span>
+        <span className='font-medium'>Committees</span>
         <span className='text-sm opacity-60'>({committeesCount})</span>
       </button>
 
       <div className={groupChatsExpanded ? 'block' : 'hidden'}>
-        <div className='rounded-lg border divide-y'></div>
+        <CommitteeList committees={committees} />
       </div>
     </div>
   );
@@ -66,10 +75,14 @@ function GroupChatsSection({ committeesCount }: { committeesCount: number }) {
 export function ChatSections({
   conversationsCount,
   committeesCount,
+  committees,
 }: ChatSectionsProps) {
   return (
     <div className='p-6 space-y-6'>
-      <GroupChatsSection committeesCount={committeesCount} />
+      <GroupChatsSection
+        committeesCount={committeesCount}
+        committees={committees}
+      />
       <DirectMessagesSection conversationsCount={conversationsCount} />
     </div>
   );

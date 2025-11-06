@@ -59,6 +59,8 @@ func SetupRoutes(r *gin.Engine) {
 				}
 			}
 
+			me.GET("/committees", handlers.GetUserCommittees)
+
 			comittees := me.Group("/comittees")
 			{
 				comittee := comittees.Group("/:comitteeId")
@@ -96,6 +98,9 @@ func SetupRoutes(r *gin.Engine) {
 
 		committee := committees.Group("/:id")
 		{
+			committee.GET("", handlers.GetCommittee)
+			committee.PUT("", handlers.UpdateCommittee)
+			committee.DELETE("", handlers.DeleteCommittee)
 			committee.POST("/chat/start", handlers.StartCommitteeChat)
 			committee.GET("/chat/history", handlers.GetCommitteeHistory)
 		}

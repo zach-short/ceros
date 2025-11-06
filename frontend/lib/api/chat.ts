@@ -54,9 +54,9 @@ export interface ConversationSummary {
   roomId: string;
   type: 'dm' | 'group' | 'committee';
   participants: string[];
-  otherUser?: ConversationUser; // For DMs only
-  groupName?: string; // For groups/committees
-  groupImage?: string; // For groups/committees
+  otherUser?: ConversationUser;
+  groupName?: string;
+  groupImage?: string;
   lastMessage?: Message;
   lastMessageAt: string;
   unreadCount: number;
@@ -73,7 +73,11 @@ export const chatApi = {
   startDM: (data: StartDMRequest): Promise<any> =>
     apiRequest('post', '/chat/dm/start', data),
 
-  getDMHistory: (recipientId: string, before?: string, limit?: number): Promise<any> => {
+  getDMHistory: (
+    recipientId: string,
+    before?: string,
+    limit?: number,
+  ): Promise<any> => {
     const params = new URLSearchParams();
     if (before) params.append('before', before);
     if (limit) params.append('limit', limit.toString());
@@ -102,4 +106,3 @@ export const chatApi = {
   getPinnedMessages: (roomId: string): Promise<any> =>
     apiRequest('get', `/messages/pinned?roomId=${roomId}`),
 };
-

@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AddMemberInput } from './add-member-input';
 import { Button } from '@/components/ui/button';
 import { useCallback, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { User } from '@/lib/api/friends';
 import { MemberSheet } from './member-sheet';
 import {
@@ -33,6 +34,8 @@ export default function NewCommittee() {
     memberIds: [],
     observerIds: [],
   });
+
+  const router = useRouter();
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -90,8 +93,9 @@ export default function NewCommittee() {
 
   const { mutate: createCommittee, loading: createLoading } =
     useCreateCommittee({
-      onSuccess: () => {
+      onSuccess: (data: { id: string }) => {
         toast.success('Committee Created!');
+        router.push(`/committees/${data.id}`);
       },
       onError: (error) => {
         console.error('Commitee creation failed:', error);
@@ -107,7 +111,6 @@ export default function NewCommittee() {
       return;
     }
 
-    console.log(formData);
     createCommittee(formData);
   };
 
