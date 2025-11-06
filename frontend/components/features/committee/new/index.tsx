@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AddMemberInput } from './add-member-input';
 import { Button } from '@/components/ui/button';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { User } from '@/lib/api/friends';
 import { MemberSheet } from './member-sheet';
 import {
@@ -28,11 +28,18 @@ export default function NewCommittee() {
     name: '',
     description: '',
     type: 'permanent',
-    ownerId: session!.user.id,
+    ownerId: '',
     chairId: '',
     memberIds: [],
     observerIds: [],
   });
+
+  useEffect(() => {
+  if (session?.user?.id) {
+    setFormData((prev) => ({ ...prev, ownerId: session.user.id }));
+  }
+  }, [session]);
+
 
   const { data, error, loading } = useFriends();
   const friendships = data?.friendships ?? [];
