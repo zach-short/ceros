@@ -91,6 +91,9 @@ func SetupRoutes(r *gin.Engine) {
 	committees := r.Group("/committees")
 	committees.Use(middleware.AuthMiddleware())
 	{
+		committees.POST("", handlers.CreateCommittee)
+		committees.GET("", handlers.GetCommittees)
+
 		committee := committees.Group("/:id")
 		{
 			committee.POST("/chat/start", handlers.StartCommitteeChat)

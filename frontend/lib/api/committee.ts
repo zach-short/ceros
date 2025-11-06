@@ -59,6 +59,8 @@ export const committeeApi = {
   getOne: (committeeId: string): Promise<any> =>
     apiRequest('get', `/committees/${committeeId}`),
 
+  getMany: (): Promise<any> => apiRequest('get', `/committees`),
+
   createCommittee: (data: CreateCommitteeRequest): Promise<any> =>
     apiRequest('post', `/committees`, data),
 
@@ -80,4 +82,3 @@ export const committeeApi = {
   deleteMessage: (messageId: string): Promise<any> =>
     apiRequest('delete', `/messages/${messageId}`),
 };
-

@@ -35,11 +35,10 @@ export default function NewCommittee() {
   });
 
   useEffect(() => {
-  if (session?.user?.id) {
-    setFormData((prev) => ({ ...prev, ownerId: session.user.id }));
-  }
+    if (session?.user?.id) {
+      setFormData((prev) => ({ ...prev, ownerId: session.user.id }));
+    }
   }, [session]);
-
 
   const { data, error, loading } = useFriends();
   const friendships = data?.friendships ?? [];
@@ -100,17 +99,20 @@ export default function NewCommittee() {
       },
     });
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+
     if (!formData.name) {
       toast.error('Please enter a committee name');
       return;
     }
 
+    console.log(formData);
     createCommittee(formData);
   };
 
   return (
-    <div className='mx-auto max-w-2xl p-6'>
+    <div className='mx-auto max-w-2xl p-6 mb-20'>
       <form className='space-y-6'>
         <div>
           <label className='block text-sm font-medium mb-1'>
