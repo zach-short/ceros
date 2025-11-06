@@ -10,41 +10,71 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
+	"github.com/zach-short/final-web-programming/utils"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type NewCommiteeReq struct {
-	Name        string `json:"name" binding:"required"`
-	Type        string `bson:"type" json:"type"`
-	Description string `bson:"description,omitempty" json:"description,omitempty"`
-	OwnerID     string
-	ChairID     string
-	MemberIDs   []string
-	ObserverIDs []string
+type NewCommitteeReq struct {
+	Name        string   `json:"name" binding:"required"`
+	Type        string   `json:"type" binding:"required"`
+	Description string   `json:"description,omitempty"`
+	OwnerID     string   `json:"ownerId" binding:"required"`
+	ChairID     string   `json:"chairId" binding:"required"`
+	MemberIDs   []string `json:"memberIds" binding:"required"`
+	ObserverIDs []string `json:"observerIds,omitempty"`
 }
 
-func GetComittee() {
+func GetCommittees(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	query := bson.M{
+		"$and": []bson.M{
+			{
+				"$or": []bson.M{
+					{"ownerId": userID},
+					{"chairId": userID},
+				},
+			},
+		},
+	}
+
+	committees, err := utils.FetchItems(query, "committees")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding committees"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"committees": committees})
+}
+
+func GetCommittee(c *gin.Context) {
 
 }
 
-func CreateComittee(c *gin.Context) {
-	var req NewCommiteeReq
-	userIdParam := c.Param("userId")
+func CreateCommittee(c *gin.Context) {
+	var req NewCommitteeReq
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	userIdObjectID, err := primitive.ObjectIDFromHex(userIdParam)
+	userIdFromContext := c.GetString("userID")
+	userIdObjectID, err := primitive.ObjectIDFromHex(userIdFromContext)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "with user id"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID from auth context"})
 		return
 	}
 
 	userId, err := primitive.ObjectIDFromHex(req.OwnerID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "with user id format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid owner ID format"})
 		return
 	}
 
@@ -98,7 +128,7 @@ func CreateComittee(c *gin.Context) {
 		ObserverIDs: observerIDsHex,
 	}
 
-	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Committee")
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -111,12 +141,4 @@ func CreateComittee(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Created new committee"})
-}
-
-func UpdateComittee() {
-
-}
-
-func DeleteComittee() {
-
 }

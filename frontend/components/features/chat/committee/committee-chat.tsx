@@ -24,11 +24,17 @@ import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
 export default function CommitteeChat() {
   const params = useParams();
   const committeeId = params.id as string;
+  console.log(
+    committeeId,
+    'committeeId in /Projects/wm-courses/3-fall-2025/web-programming/ceros/frontend/components/features/chat/committee/committee-chat.tsx',
+  );
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
-  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; name: string }>>([]);
+  const [typingUsers, setTypingUsers] = useState<
+    Array<{ userId: string; name: string }>
+  >([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     { messageId: string; content: string } | undefined

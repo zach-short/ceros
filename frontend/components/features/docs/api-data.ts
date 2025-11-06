@@ -1079,6 +1079,69 @@ export const apiDocumentation: RouteSection[] = [
 }`,
         },
       },
+      {
+        method: 'PATCH',
+        path: '/users/me',
+        description: "Update the authenticated user's profile.",
+        requiresAuth: true,
+        requestBody: [
+          {
+            name: 'name',
+            type: 'string',
+            required: false,
+            description: 'Updated username (must be unique)',
+          },
+          {
+            name: 'givenName',
+            type: 'string',
+            required: false,
+            description: 'Updated given name',
+          },
+          {
+            name: 'familyName',
+            type: 'string',
+            required: false,
+            description: 'Updated family name',
+          },
+          {
+            name: 'bio',
+            type: 'string',
+            required: false,
+            description: 'Updated bio',
+          },
+          {
+            name: 'picture',
+            type: 'string',
+            required: false,
+            description: 'Updated avatar URL',
+          },
+          {
+            name: 'phoneNumber',
+            type: 'string',
+            required: false,
+            description: 'Updated phone number',
+          },
+          {
+            name: 'address',
+            type: 'object',
+            required: false,
+            description: 'Updated address object',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "id": "507f1f77bcf86cd799439011",
+  "email": "user@example.com",
+  "name": "johndoe",
+  "givenName": "John",
+  "familyName": "Doe",
+  "bio": "Updated bio",
+  "picture": "https://...",
+  "phoneNumber": "+1234567890"
+}`,
+        },
+      },
     ],
   },
   {
