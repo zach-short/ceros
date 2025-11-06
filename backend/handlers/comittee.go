@@ -54,6 +54,34 @@ func CreateComittee(c *gin.Context) {
 		return
 	}
 
+	chairIDHex, err := primitive.ObjectIDFromHex(req.ChairID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "with user id format"})
+		return
+	}
+
+	var memberIDsHex []primitive.ObjectID
+	for _, memberID := range req.MemberIDs {
+		memberIDHex, err := primitive.ObjectIDFromHex(memberID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "with user id format"})
+			return
+		}
+
+		memberIDsHex = append(memberIDsHex, memberIDHex)
+	}
+
+	var observerIDsHex []primitive.ObjectID
+	for _, observerId := range req.ObserverIDs {
+		observerIDHex, err := primitive.ObjectIDFromHex(observerId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "with user id format"})
+			return
+		}
+
+		observerIDsHex = append(observerIDsHex, observerIDHex)
+	}
+
 	if userId != userIdObjectID {
 		c.JSON(http.StatusNotAcceptable, gin.H{"error": "user ids did not match"})
 		return
@@ -65,9 +93,9 @@ func CreateComittee(c *gin.Context) {
 		Type:        req.Type,
 		Description: req.Description,
 		OwnerID:     ownerIDHex,
-		ChairID:     req.ChairID,
-		MemberIDs:   req.MemberIDs,
-		ObserverIDs: req.ObserverIDs,
+		ChairID:     chairIDHex,
+		MemberIDs:   memberIDsHex,
+		ObserverIDs: observerIDsHex,
 	}
 
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("Committee")
