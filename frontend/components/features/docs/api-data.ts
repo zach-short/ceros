@@ -1031,26 +1031,26 @@ export const apiDocumentation: RouteSection[] = [
 }`,
         },
       },
-      {
-        method: 'GET',
-        path: '/users/me/comittees/:comitteeId/motions/:motionId',
-        description: 'Get details of a specific motion.',
-        requiresAuth: true,
-        parameters: [
-          {
-            name: 'comitteeId',
-            type: 'string',
-            required: true,
-            description: 'Committee ID',
-          },
-          {
-            name: 'motionId',
-            type: 'string',
-            required: true,
-            description: 'Motion ID',
-          },
-        ],
-      },
+      // {
+      //   method: 'GET',
+      //   path: '/users/me/comittees/:comitteeId/motions/:motionId',
+      //   description: 'Get details of a specific motion.',
+      //   requiresAuth: true,
+      //   parameters: [
+      //     {
+      //       name: 'comitteeId',
+      //       type: 'string',
+      //       required: true,
+      //       description: 'Committee ID',
+      //     },
+      //     {
+      //       name: 'motionId',
+      //       type: 'string',
+      //       required: true,
+      //       description: 'Motion ID',
+      //     },
+      //   ],
+      // },
       {
         method: 'POST',
         path: '/committees/:id/chat/start',
@@ -1080,59 +1080,249 @@ export const apiDocumentation: RouteSection[] = [
         },
       },
       {
-        method: 'PATCH',
-        path: '/users/me',
-        description: "Update the authenticated user's profile.",
+        method: 'POST',
+        path: '/committees',
+        description: 'Create one committee.',
         requiresAuth: true,
+        parameters: [
+          {
+            name: 'Id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'name',
+            type: 'string',
+            required: true,
+            description: 'Committee name',
+          },
+          {
+            name: 'type',
+            type: 'string',
+            required: true,
+            description: 'Commmittee type',
+          },
+          {
+            name: 'description',
+            type: 'string',
+            required: true,
+            description: 'Committee description',
+          },
+          {
+            name: 'ownerID',
+            type: 'string',
+            required: true,
+            description: 'Owner ID',
+          },
+          {
+            name: 'chairID',
+            type: 'string',
+            required: true,
+            description: 'Chair ID',
+          },
+          {
+            name: 'memeberIDs',
+            type: 'string[]',
+            required: true,
+            description: 'Member IDs',
+          },
+          {
+            name: 'observerIDs',
+            type: 'string[]',
+            required: false,
+            description: 'Observer IDs',
+          },
+        ],
+                response: {
+          status: 200,
+          body: 
+`{
+"committees": [
+  {
+    "id": "6754aabb0837f25a36e4cdde",
+    "name": "Finance Committee",
+    "type": "permanent",
+    "description": "Handles budgeting",
+    "picture": "https://example.com/image.png",
+    "ownerId": "6754aaa00837f25a36e4ca30",
+    "chairId": "6754aaa00837f25a36e4ca30",
+    "memberIds": [
+      "6754ab990837f25a36e4cf12",
+      "6754ac230837f25a36e4cfff"
+    ],
+    "observerIds": [
+      "6754ae310837f25a36e4d111"
+    ],
+    "createdAt": "2025-02-01T17:18:45.123Z",
+    "updatedAt": "2025-02-05T22:51:03.812Z"
+  }
+  ]
+}`,
+        },
+      },
+      {
+        method: 'GET',
+        path: '/committees',
+        description: 'Get all committees.',
+        requiresAuth: true,
+        response: {
+          status: 200,
+          body: 
+`{
+"committees": [
+  {
+    "id": "6754aabb0837f25a36e4cdde",
+    "name": "Finance Committee",
+    "type": "permanent",
+    "description": "Handles budgeting",
+    "picture": "https://example.com/image.png",
+    "ownerId": "6754aaa00837f25a36e4ca30",
+    "chairId": "6754aaa00837f25a36e4ca30",
+    "memberIds": [
+      "6754ab990837f25a36e4cf12",
+      "6754ac230837f25a36e4cfff"
+    ],
+    "observerIds": [
+      "6754ae310837f25a36e4d111"
+    ],
+    "createdAt": "2025-02-01T17:18:45.123Z",
+    "updatedAt": "2025-02-05T22:51:03.812Z"
+  }
+  ]
+}`,
+        },
+      },
+      {
+        method: 'GET',
+        path: '/committees/:id',
+        description: 'Get the committee of current id.',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'Id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          }
+        ],
+        response: {
+          status: 200,
+          body: 
+`{
+  "committee": {
+    "id": "6754aabb0837f25a36e4cdde",
+    "name": "Finance Committee",
+    "type": "permanent",
+    "description": "Handles budgeting",
+    "picture": "https://example.com/image.png",
+    "ownerId": "6754aaa00837f25a36e4ca30",
+    "chairId": "6754aaa00837f25a36e4ca30",
+    "memberIds": [
+      "6754ab990837f25a36e4cf12",
+      "6754ac230837f25a36e4cfff"
+    ],
+    "observerIds": [
+      "6754ae310837f25a36e4d111"
+    ],
+    "createdAt": "2025-02-01T17:18:45.123Z",
+    "updatedAt": "2025-02-05T22:51:03.812Z"
+  }
+}`,
+        },
+      },
+      {
+        method: 'PUT',
+        path: '/committees/:id',
+        description: 'Update current committee',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'Id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          }
+        ],
         requestBody: [
+          {
+            name: 'Id',
+            type: 'string',
+            required: false,
+            description: 'Updated committee ID',
+          },
           {
             name: 'name',
             type: 'string',
             required: false,
-            description: 'Updated username (must be unique)',
+            description: 'Updated committee Name',
           },
           {
-            name: 'givenName',
+            name: 'type',
             type: 'string',
             required: false,
-            description: 'Updated given name',
+            description: 'Updated commmittee type',
           },
           {
-            name: 'familyName',
+            name: 'description',
             type: 'string',
             required: false,
-            description: 'Updated family name',
+            description: 'Updated committee description',
           },
           {
-            name: 'bio',
+            name: 'ownerID',
             type: 'string',
             required: false,
-            description: 'Updated bio',
+            description: 'Updated owner ID',
           },
           {
-            name: 'picture',
+            name: 'chairID',
             type: 'string',
             required: false,
-            description: 'Updated avatar URL',
+            description: 'Updated chair ID',
           },
           {
-            name: 'phoneNumber',
-            type: 'string',
+            name: 'memeberIDs',
+            type: 'string[]',
             required: false,
-            description: 'Updated phone number',
+            description: 'Updated member IDs',
           },
           {
-            name: 'address',
-            type: 'object',
+            name: 'observerIDs',
+            type: 'string[]',
             required: false,
-            description: 'Updated address object',
+            description: 'Updated observer IDs',
           },
         ],
         response: {
           status: 200,
-          body: `{
-    message: "Created new committee!"
-}`,
+          body: 
+`{
+  "message": "Committee updated successfully"
+}
+`,
+        },
+      },
+      {
+        method: 'DELETE',
+        path: '/committees/:id',
+        description: 'Delete current committee',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'Id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          }
+        ],
+        response: {
+          status: 200,
+          body: 
+`{
+  "message": "Committee deleted successfully"
+}
+`,
         },
       },
     ],
