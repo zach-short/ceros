@@ -17,6 +17,7 @@ import {
   useEditMessage,
   useDeleteMessage,
 } from '@/hooks/api/use-committee-chat';
+import { useCreateMotion } from '@/hooks/api/use-motions';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
@@ -143,18 +144,46 @@ export default function CommitteeChat() {
     });
   };
 
+  const handleMotionEvent = (payload: any) => {
+    if (payload.action === 'motion_proposed' && payload.payload?.motion) {
+      setMotions((prev) => {
+        const exists = prev.some((m) => m.id === payload.payload.motion.id);
+        if (exists) return prev;
+        return [...prev, payload.payload.motion];
+      });
+    } else if (
+      payload.action === 'motion_seconded' &&
+      payload.payload?.motion
+    ) {
+      setMotions((prev) =>
+        prev.map((m) =>
+          m.id === payload.payload.motion.id ? payload.payload.motion : m,
+        ),
+      );
+    } else if (payload.action === 'vote_cast' && payload.payload?.motion) {
+      setMotions((prev) =>
+        prev.map((m) =>
+          m.id === payload.payload.motion.id ? payload.payload.motion : m,
+        ),
+      );
+    }
+  };
+
   const {
     isConnected,
     sendMessage,
     replyToMessage,
     sendTypingStart,
     sendTypingStop,
-    /* proposeMotion, */
-    /* secondMotion, */
-    /* voteOnMotion, */
+    proposeMotion,
+    secondMotion,
+    voteOnMotion,
     joinRoom,
   } = useWebSocket({
-    onMessage: handleNewMessage,
+    onMessage: (payload: any) => {
+      handleNewMessage(payload);
+      handleMotionEvent(payload);
+    },
     onTypingUpdate: handleTypingUpdate,
     onConnect: () => {},
     onDisconnect: () => {},
@@ -313,6 +342,22 @@ export default function CommitteeChat() {
     },
   });
 
+  const { mutate: createMotion, loading: creatingMotion } = useCreateMotion(
+    committeeId,
+    {
+      onSuccess: (data) => {
+        setMotions((prev) => {
+          const exists = prev.some((m) => m.id === data.motion.id);
+          if (exists) return prev;
+          return [...prev, data.motion];
+        });
+      },
+      onError: (error) => {
+        console.error('Failed to create motion:', error);
+      },
+    },
+  );
+
   const handleReaction = (messageId: string, emoji: string) => {
     toggleReaction({ messageId, emoji });
   };
@@ -369,6 +414,32 @@ export default function CommitteeChat() {
     sendTypingStop(roomId);
   };
 
+  const handleVoteMotion = async (
+    motionId: string,
+    vote: 'aye' | 'nay' | 'abstain',
+  ) => {
+    if (!roomId || !isConnected) return;
+    try {
+      voteOnMotion(roomId, motionId, vote);
+    } catch (error) {
+      console.error('Failed to vote on motion:', error);
+    }
+  };
+
+  const handleSecondMotion = async (motionId: string) => {
+    if (!roomId || !isConnected) return;
+    try {
+      secondMotion(roomId, motionId);
+    } catch (error) {
+      console.error('Failed to second motion:', error);
+    }
+  };
+
+  const handleCreateMotion = async (title: string, description: string) => {
+    if (!committeeId) return;
+    await createMotion({ title, description });
+  };
+
   if (!session) {
     return (
       <CenteredDiv>
@@ -395,7 +466,9 @@ export default function CommitteeChat() {
           <ChatHeader
             recipientName={committeeName}
             recipientId={committeeId}
-            recipientPicture={committee ? getCommitteePicture(committee) : undefined}
+            recipientPicture={
+              committee ? getCommitteePicture(committee) : undefined
+            }
             isConnected={isConnected}
             isLoading={historyLoading || startingChat}
             onToggleMotions={() => setMotionsSheetOpen(true)}
@@ -415,12 +488,14 @@ export default function CommitteeChat() {
                   recipientName={committeeName}
                   isLoading={historyLoading && messages.length === 0}
                   onReply={handleStartReply}
-                  /* onOpenThread={handleOpenThread} */
                   onReaction={handleReaction}
                   onEdit={handleStartEdit}
                   onDelete={handleDeleteMessage}
                   onScrollToMessage={handleScrollToMessage}
                   chatType='committee'
+                  motions={motions}
+                  onVoteMotion={handleVoteMotion}
+                  onSecondMotion={handleSecondMotion}
                 />
               </div>
 
@@ -430,7 +505,6 @@ export default function CommitteeChat() {
                 <MessageInput
                   isConnected={isConnected}
                   onSendMessage={handleSendMessage}
-                  /* onProposeMotion={() => setShowMotionPanel(true)} */
                   showMotionButton={true}
                   replyState={replyState}
                   editState={editState}
@@ -451,7 +525,6 @@ export default function CommitteeChat() {
         <MessageInput
           isConnected={isConnected}
           onSendMessage={handleSendMessage}
-          /* onProposeMotion={() => setShowMotionPanel(true)} */
           showMotionButton={true}
           replyState={replyState}
           editState={editState}
@@ -483,71 +556,9 @@ export default function CommitteeChat() {
         onOpenChange={setMotionsSheetOpen}
         motions={motions}
         committee={committee}
+        onCreateMotion={handleCreateMotion}
+        isSubmitting={creatingMotion}
       />
     </>
   );
 }
-
-/*
- const handleProposeMotion = (title: string, description: string) => {
-    if (!roomId || !isConnected || !committeeId) return;
-    proposeMotion(roomId, title, description, committeeId);
-    setShowMotionPanel(false);
-  };
-
-  const handleCloseThread = () => {
-    setThreadMessage(null);
-  };
-
-  const handleSendReply = (content: string) => {
-    if (!threadMessage) return;
-    handleReplyToMessage(threadMessage.id, content);
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === threadMessage.id
-          ? { ...m, threadCount: (m.threadCount || 0) + 1 }
-          : m,
-      ),
-    );
-  };
-
-  const handleOpenThread = (messageId: string) => {
-    const message = messages.find((m) => m.id === messageId);
-    if (message) {
-      setThreadMessage(message);
-    }
-  };
-
-
-
-{showMotionPanel && (
-            <>
-              <div
-                className='fixed inset-0 bg-black/50 z-40 lg:hidden'
-                onClick={() => setShowMotionPanel(false)}
-              />
-
-              <div className='fixed inset-0 z-50 lg:absolute lg:inset-auto lg:right-4 lg:top-4 lg:bottom-4 lg:w-80 lg:z-40'>
-                <MotionPanel
-                  onClose={() => setShowMotionPanel(false)}
-                  onProposeMotion={handleProposeMotion}
-                  roomId={roomId}
-                  committeeId={committeeId}
-                  onSecondMotion={secondMotion}
-                  onVoteMotion={voteOnMotion}
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-
-        {threadMessage && (
-          <ThreadView
-            parentMessage={threadMessage}
-            onClose={handleCloseThread}
-            onSendReply={handleSendReply}
-            currentUserId={session.user.id}
-          />
-        )}
-*/

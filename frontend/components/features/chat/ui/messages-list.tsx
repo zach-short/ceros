@@ -2,6 +2,7 @@ import { forwardRef } from 'react';
 import { MessageBubble } from './message-bubble';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { Message, User } from './types';
+import { Motion } from '@/models/motion';
 
 interface MessagesListProps {
   messages: Message[];
@@ -17,6 +18,9 @@ interface MessagesListProps {
   onPin?: (messageId: string) => void;
   onScrollToMessage?: (messageId: string) => void;
   chatType?: 'dm' | 'committee';
+  motions?: Motion[];
+  onVoteMotion?: (motionId: string, vote: 'aye' | 'nay' | 'abstain') => void;
+  onSecondMotion?: (motionId: string) => void;
 }
 
 const getTimeGroupHeader = (timestamp: string): string => {
@@ -100,6 +104,9 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
       onPin,
       onScrollToMessage,
       chatType = 'dm',
+      motions = [],
+      onVoteMotion,
+      onSecondMotion,
     },
     messagesEndRef,
   ) => {
@@ -156,6 +163,9 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                     chatType={chatType}
                     showAvatar={true}
                     isFirstInGroup={isFirstInGroup}
+                    motions={motions}
+                    onVoteMotion={onVoteMotion}
+                    onSecondMotion={onSecondMotion}
                   />
                 </div>
               );

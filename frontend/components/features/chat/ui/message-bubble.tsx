@@ -1,12 +1,14 @@
 'use client';
 
 import { Message, User } from '@/models';
+import { Motion } from '@/models/motion';
 import { UserAvatar } from '@/components/shared/user/user-avatar';
 import { MessageReactions } from './message-reactions';
 import { MessageEditIndicator } from './message-edit-indicator';
 import { ParentMessagePreview } from './parent-message-preview';
 import { MessageContextMenu } from './message-context-menu';
 import { getDisplayName, UserPrivacyContext } from '@/lib/user-privacy';
+import { MotionCard } from '../committee/motion-card';
 
 interface MessageBubbleProps {
   message: Message;
@@ -22,6 +24,9 @@ interface MessageBubbleProps {
   chatType?: 'dm' | 'committee';
   showAvatar?: boolean;
   isFirstInGroup?: boolean;
+  motions?: Motion[];
+  onVoteMotion?: (motionId: string, vote: 'aye' | 'nay' | 'abstain') => void;
+  onSecondMotion?: (motionId: string) => void;
 }
 
 const MessageHeader = ({
@@ -90,10 +95,14 @@ export function MessageBubble({
   chatType = 'dm',
   showAvatar = true,
   isFirstInGroup = true,
+  motions = [],
+  onVoteMotion,
+  onSecondMotion,
 }: MessageBubbleProps) {
   const sender = users.find((u) => u.id === message.senderId);
   const isOwn = message.senderId === currentUserId;
   const isReply = message.type === 'reply';
+  const isMotion = message.type === 'motion';
 
   const privacyContext: UserPrivacyContext = {
     user: sender || ({ id: message.senderId } as User),
@@ -107,6 +116,24 @@ export function MessageBubble({
 
   const handleContextMenuReaction = (messageId: string, emoji: string) => {
     onReaction?.(messageId, emoji);
+  };
+
+  const motion =
+    isMotion && message.motionId
+      ? motions.find((m) => m.id === message.motionId)
+      : undefined;
+
+  const mover = motion ? users.find((u) => u.id === motion.moverId) : undefined;
+  const seconder = motion?.seconderId
+    ? users.find((u) => u.id === motion.seconderId)
+    : undefined;
+
+  const handleVote = (motionId: string, vote: 'aye' | 'nay' | 'abstain') => {
+    onVoteMotion?.(motionId, vote);
+  };
+
+  const handleSecond = (motionId: string) => {
+    onSecondMotion?.(motionId);
   };
 
   return (
@@ -128,7 +155,7 @@ export function MessageBubble({
 
       <div className='flex space-x-2'>
         <div className=''>
-          {showAvatar && isFirstInGroup && sender ? (
+          {showAvatar && isFirstInGroup && sender && !isMotion ? (
             <UserAvatar
               user={sender}
               viewerUserId={currentUserId}
@@ -141,39 +168,52 @@ export function MessageBubble({
         </div>
 
         <div className='flex-1 min-w-0'>
-          <MessageContextMenu
-            message={message}
-            isOwn={isOwn}
-            onReply={onReply}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onReaction={handleContextMenuReaction}
-            onPin={onPin}
-            chatType={chatType}
-          >
-            <div
-              className='select-none touch-manipulation'
-              style={{
-                WebkitUserSelect: 'none',
-                WebkitTouchCallout: 'none',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {isFirstInGroup && (
-                <MessageHeader
-                  sender={sender}
-                  privacyContext={privacyContext}
-                />
-              )}
-
-              <div className='flex flex-col'>
-                <MessageContent
-                  message={message}
-                  onReactionClick={handleReaction}
-                />
-              </div>
+          {isMotion && motion && mover ? (
+            <div className='py-2'>
+              <MotionCard
+                motion={motion}
+                mover={mover}
+                seconder={seconder}
+                currentUserId={currentUserId}
+                onVote={handleVote}
+                onSecond={handleSecond}
+              />
             </div>
-          </MessageContextMenu>
+          ) : (
+            <MessageContextMenu
+              message={message}
+              isOwn={isOwn}
+              onReply={onReply}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onReaction={handleContextMenuReaction}
+              onPin={onPin}
+              chatType={chatType}
+            >
+              <div
+                className='select-none touch-manipulation'
+                style={{
+                  WebkitUserSelect: 'none',
+                  WebkitTouchCallout: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                {isFirstInGroup && (
+                  <MessageHeader
+                    sender={sender}
+                    privacyContext={privacyContext}
+                  />
+                )}
+
+                <div className='flex flex-col'>
+                  <MessageContent
+                    message={message}
+                    onReactionClick={handleReaction}
+                  />
+                </div>
+              </div>
+            </MessageContextMenu>
+          )}
         </div>
       </div>
     </div>
