@@ -27,7 +27,11 @@ export default function CommitteeMotions() {
     enabled: !!committeeId && !!session?.apiToken,
   });
 
-  const { data: motionsData, loading: motionsLoading, mutate } = useCommitteeMotions({
+  const {
+    data: motionsData,
+    loading: motionsLoading,
+    mutate,
+  } = useCommitteeMotions({
     resourceParams: [committeeId],
     enabled: !!committeeId && !!session?.apiToken,
   });
@@ -54,7 +58,12 @@ export default function CommitteeMotions() {
         setIsCreateDialogOpen(false);
         toast.success('Motion proposed successfully!');
         if (roomId) {
-          proposeMotion(roomId, committeeId, data.motion.title, data.motion.description);
+          proposeMotion(
+            roomId,
+            committeeId,
+            data.motion.title,
+            data.motion.description,
+          );
         }
         mutate();
       },
@@ -83,8 +92,8 @@ export default function CommitteeMotions() {
     );
   }
 
-  const activeMotionsCount = motions.filter(m =>
-    ['proposed', 'seconded', 'open'].includes(m.status)
+  const activeMotionsCount = motions.filter((m) =>
+    ['proposed', 'seconded', 'open'].includes(m.status),
   ).length;
 
   return (
@@ -98,17 +107,18 @@ export default function CommitteeMotions() {
             <ArrowLeft size={20} />
           </button>
           <div className='flex-1'>
-            <h1 className='font-semibold'>{committeeData?.committee?.name || 'Committee'} Motions</h1>
+            <h1 className='font-semibold'>
+              {committeeData?.committee?.name || 'Committee'} Motions
+            </h1>
             <p className='text-sm opacity-75'>
               {motions.length === 0
                 ? 'No motions yet'
-                : `${motions.length} total motion${motions.length !== 1 ? 's' : ''} • ${activeMotionsCount} active`
-              }
+                : `${motions.length} total motion${motions.length !== 1 ? 's' : ''} • ${activeMotionsCount} active`}
             </p>
           </div>
           {activeMotionsCount === 0 && (
-            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
-              <Plus size={16} className="mr-1" />
+            <Button onClick={() => setIsCreateDialogOpen(true)} size='sm'>
+              <Plus size={16} className='mr-1' />
               New Motion
             </Button>
           )}
@@ -135,3 +145,4 @@ export default function CommitteeMotions() {
     </>
   );
 }
+

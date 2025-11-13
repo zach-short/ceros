@@ -9,7 +9,10 @@ interface ChatSearchResultsProps {
   conversationsCount: number;
 }
 
-export function ChatSearchResults({ searchQuery, conversationsCount }: ChatSearchResultsProps) {
+export function ChatSearchResults({
+  searchQuery,
+  conversationsCount,
+}: ChatSearchResultsProps) {
   return (
     <div className='p-6 space-y-6'>
       <div>
@@ -29,14 +32,17 @@ export function ChatSearchResults({ searchQuery, conversationsCount }: ChatSearc
           <Users size={16} />
           Committees
         </h3>
-        <CommitteeList searchQuery={searchQuery} showMemberCount={false} />
+        <CommitteeList searchQuery={searchQuery} committees={[]} />
       </div>
 
       {conversationsCount === 0 && (
         <div className='text-center py-12'>
-          <p className='opacity-60'>No results found for &quot;{searchQuery}&quot;</p>
+          <p className='opacity-60'>
+            No results found for &quot;{searchQuery}&quot;
+          </p>
         </div>
       )}
     </div>
   );
 }
+
