@@ -12,6 +12,7 @@ import { OnlineStatusIndicator } from '@/components/shared/user/online-status-in
 import { User } from '../ui/types';
 import { Committee } from '@/models/committee';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import Link from 'next/link';
 
 interface CommitteeMembersSheetProps {
   open: boolean;
@@ -114,7 +115,12 @@ export function CommitteeMembersSheet({
                 <h3 className='text-xs font-semibold uppercase opacity-60 mb-2 px-3'>
                   Owner
                 </h3>
+                <Link
+                  href={`/profile/${owner?.id}`}
+                  className='flex-1'
+                >
                 <MemberCard member={owner} />
+                </Link>
               </div>
             )}
 
@@ -123,7 +129,12 @@ export function CommitteeMembersSheet({
                 <h3 className='text-xs font-semibold uppercase opacity-60 mb-2 px-3'>
                   Chair
                 </h3>
+                <Link
+                  href={`/profile/${chair?.id}`}
+                  className='flex-1'
+                >
                 <MemberCard member={chair} />
+                </Link>
               </div>
             )}
 
@@ -134,7 +145,12 @@ export function CommitteeMembersSheet({
                 </h3>
                 <div className='space-y-1'>
                   {regularMembers.map((member) => (
+                  <Link key={member.id}
+                  href={`/profile/${member?.id}`}
+                  className='flex-1'
+                  >
                     <MemberCard key={member.id} member={member} />
+                  </Link>
                   ))}
                 </div>
               </div>
