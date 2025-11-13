@@ -47,21 +47,6 @@ export function MobileBottomNav() {
   const { data: session } = useSession();
 
   const isActive = (href: string) => {
-    if (href === '/') {
-      // Match root, /chat/[id] and /committees/[id] (but not sub-pages like /profile, /members, /motions)
-      return (
-        pathname === '/' ||
-        pathname.startsWith('/chat/') ||
-        (pathname.startsWith('/committees/') &&
-         !pathname.includes('/profile') &&
-         !pathname.includes('/members') &&
-         !pathname.includes('/motions') &&
-         !pathname.includes('/motion'))
-      );
-    }
-    if (href === '/notifications') {
-      return pathname === '/notifications';
-    }
     return pathname === href || pathname.startsWith(href + '/');
   };
 

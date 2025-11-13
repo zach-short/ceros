@@ -467,13 +467,36 @@ func GetCommitteeHistory(c *gin.Context) {
 		}
 	}
 
+	// Fetch motions for this committee
+	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
+	motionFilter := bson.M{"committee_id": committeeOID}
+	motionOpts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	motionCursor, err := motionsCollection.Find(ctx, motionFilter, motionOpts)
+	var motions []models.Motion
+	if err != nil {
+		log.Printf("Error fetching motions: %v", err)
+		motions = []models.Motion{}
+	} else {
+		defer motionCursor.Close(ctx)
+		if err = motionCursor.All(ctx, &motions); err != nil {
+			log.Printf("Error decoding motions: %v", err)
+			motions = []models.Motion{}
+		}
+	}
+
+	// Ensure motions is never nil
+	if motions == nil {
+		motions = []models.Motion{}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"roomId":    roomID,
 		"messages":  messages,
 		"users":     members,
 		"committee": committee,
 		"members":   members,
-		"motions":   []interface{}{},
+		"motions":   motions,
 	})
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -7,14 +8,19 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { Committee } from '@/models/committee';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { CreateMotionDialog } from '@/components/features/committees/create-motion-dialog';
 
 interface CommitteeMotionsSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   motions: any[];
   committee: Committee | null;
+  onCreateMotion: (title: string, description: string) => Promise<void>;
+  isSubmitting?: boolean;
 }
 
 export function CommitteeMotionsSheet({
@@ -22,19 +28,53 @@ export function CommitteeMotionsSheet({
   onOpenChange,
   motions,
   committee,
+  onCreateMotion,
+  isSubmitting = false,
 }: CommitteeMotionsSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const side = isDesktop ? 'right' : 'bottom';
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  // Check if there's an active motion (following Robert's Rules - only one motion at a time)
+  const activeMotionsCount = motions.filter(m =>
+    ['proposed', 'seconded', 'open'].includes(m.status)
+  ).length;
+  const hasActiveMotion = activeMotionsCount > 0;
+
+  const handleCreateMotion = async (title: string, description: string) => {
+    await onCreateMotion(title, description);
+    setIsCreateDialogOpen(false);
+  };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={side} className="w-full sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{committee?.name || 'Committee'} Motions</SheetTitle>
-          <SheetDescription>
-            {motions.length} motion{motions.length !== 1 ? 's' : ''}
-          </SheetDescription>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side={side} className="w-full sm:max-w-md">
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <SheetTitle>{committee?.name || 'Committee'} Motions</SheetTitle>
+                <SheetDescription>
+                  {motions.length} motion{motions.length !== 1 ? 's' : ''} • {activeMotionsCount} active
+                </SheetDescription>
+              </div>
+              {!hasActiveMotion && (
+                <Button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  size="sm"
+                  className="ml-2"
+                >
+                  <Plus size={16} className="mr-1" />
+                  New
+                </Button>
+              )}
+            </div>
+            {hasActiveMotion && (
+              <p className="text-xs text-muted-foreground pt-1">
+                Complete the active motion before proposing a new one
+              </p>
+            )}
+          </SheetHeader>
 
         <div className="flex-1 overflow-y-auto -mx-4 px-4">
           {motions.length === 0 ? (
@@ -82,5 +122,13 @@ export function CommitteeMotionsSheet({
         </div>
       </SheetContent>
     </Sheet>
+
+    <CreateMotionDialog
+      open={isCreateDialogOpen}
+      onOpenChange={setIsCreateDialogOpen}
+      onSubmit={handleCreateMotion}
+      isSubmitting={isSubmitting}
+    />
+    </>
   );
 }

@@ -66,6 +66,7 @@ func SetupRoutes(r *gin.Engine) {
 				comittee := comittees.Group("/:comitteeId")
 				{
 					motions := comittee.Group("/motions")
+					motions.POST("", handlers.CreateMotion)
 					{
 						motion := motions.Group("/:motionId")
 						{
@@ -103,6 +104,20 @@ func SetupRoutes(r *gin.Engine) {
 			committee.DELETE("", handlers.DeleteCommittee)
 			committee.POST("/chat/start", handlers.StartCommitteeChat)
 			committee.GET("/chat/history", handlers.GetCommitteeHistory)
+
+			// Motion routes
+			committee.GET("/motions", handlers.GetCommitteeMotions)
+			committee.POST("/motions", handlers.CreateMotion)
+
+			motions := committee.Group("/motions")
+			{
+				motion := motions.Group("/:motionId")
+				{
+					motion.GET("", handlers.GetMotion)
+					motion.PATCH("", handlers.UpdateMotion)
+					motion.DELETE("", handlers.DeleteMotion)
+				}
+			}
 		}
 	}
 
