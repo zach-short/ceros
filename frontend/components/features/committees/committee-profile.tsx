@@ -78,7 +78,7 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
         <Users className='mb-4 h-12 w-12 text-muted-foreground' />
         <h3 className='mb-2 text-lg font-semibold'>Committee not found</h3>
         <p className='text-muted-foreground mb-4'>
-          {"This committee may not exist or you don't have access to it"}
+          This committee may not exist or you don&apos;t have access to it
         </p>
         <Button onClick={() => router.push('/')}>Back to Chats</Button>
       </div>

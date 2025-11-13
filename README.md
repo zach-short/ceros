@@ -6,13 +6,14 @@ COMPLETED:
 
 - User registration, login, and name change.
 - Changing other properties, like short-bio, phone number, address, and profile picture, are optional.
+- Creating a committee, adding users to a committee.
+- Raise motion (title and description).
 
 INCOMPLETE:
 
-- Creating a committee, adding users to a committee.
+
 - Role control of users (e.g., owner, chair, member, and optionally observer). Fine-grained authentication control (e.g., create motion, discussion, move to vote, vote) is optional.
 - Control panel for chairs to toggle some styles.
-- Raise motion (title and description).
 - Raise motions that decide to change the procedure (typically required 2/3 vote to pass).
 - One or both of the feature
   - For offline discussion, motions can be replied to and discussed. Each reply should have a pro/con/neutral selection.
