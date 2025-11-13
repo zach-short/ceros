@@ -145,7 +145,7 @@ export function CommitteeMembersSheet({
                 </h3>
                 <div className='space-y-1'>
                   {regularMembers.map((member) => (
-                  <Link
+                  <Link key={member.id}
                   href={`/profile/${member?.id}`}
                   className='flex-1'
                   >
