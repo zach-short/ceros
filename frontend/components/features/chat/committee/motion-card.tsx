@@ -11,19 +11,12 @@ import {
   CheckCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { User } from '@/models';
 
 interface MotionCardProps {
   motion: Motion;
-  mover: {
-    id: string;
-    name: string;
-    picture?: string;
-  };
-  seconder?: {
-    id: string;
-    name: string;
-    picture?: string;
-  };
+  mover: User;
+  seconder?: User;
   currentUserId: string;
   onVote: (motionId: string, vote: 'aye' | 'nay' | 'abstain') => void;
   onSecond?: (motionId: string) => void;
