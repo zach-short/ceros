@@ -30,7 +30,7 @@ export default function CommitteeMotions() {
   const {
     data: motionsData,
     loading: motionsLoading,
-    mutate,
+    refetch,
   } = useCommitteeMotions({
     resourceParams: [committeeId],
     enabled: !!committeeId && !!session?.apiToken,
@@ -41,7 +41,7 @@ export default function CommitteeMotions() {
   const { proposeMotion } = useWebSocket({
     onMessage: (payload: any) => {
       if (payload.action === 'motion_proposed') {
-        mutate();
+        refetch();
       }
     },
   });
@@ -65,7 +65,7 @@ export default function CommitteeMotions() {
             data.motion.description,
           );
         }
-        mutate();
+        refetch();
       },
       onError: (error) => {
         console.error('Failed to create motion:', error);

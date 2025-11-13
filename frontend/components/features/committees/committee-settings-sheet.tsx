@@ -114,7 +114,7 @@ export function CommitteeSettingsSheet({
 
   const handleDeleteConfirm = () => {
     if (deleteConfirmation === committee.name) {
-      deleteCommittee();
+      deleteCommittee(undefined as any);
     } else {
       toast.error('Committee name does not match');
     }
