@@ -30,11 +30,7 @@ export function CommitteeList({
 
   return (
     <div className='space-y-2'>
-      {filteredCommittees.length === 0 ? (
-        <div className='text-center py-8 text-sm opacity-60'>
-          No committees found
-        </div>
-      ) : (
+      {filteredCommittees.length !== 0 &&
         filteredCommittees.map((committee) => {
           const memberCount = getMemberCount(committee);
           return (
@@ -64,8 +60,7 @@ export function CommitteeList({
               </div>
             </div>
           );
-        })
-      )}
+        })}
     </div>
   );
 }

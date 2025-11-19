@@ -8,7 +8,10 @@ interface MotionDetailsHeaderProps {
   committeeId: string;
 }
 
-export function MotionDetailsHeader({ motion, committeeId }: MotionDetailsHeaderProps) {
+export function MotionDetailsHeader({
+  motion,
+  committeeId,
+}: MotionDetailsHeaderProps) {
   const router = useRouter();
 
   return (
@@ -50,3 +53,4 @@ export function MotionDetailsHeader({ motion, committeeId }: MotionDetailsHeader
     </header>
   );
 }
+

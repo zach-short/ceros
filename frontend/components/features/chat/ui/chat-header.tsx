@@ -11,10 +11,10 @@ interface ChatHeaderProps {
   isConnected: boolean;
   isLoading?: boolean;
   onToggleMotions?: () => void;
-  onToggleMembers?: () => void;
   onOpenSearch?: () => void;
   chatType?: 'dm' | 'committee';
   isOnline?: boolean;
+  activeMotionCount?: number;
 }
 
 export function ChatHeader({
@@ -24,10 +24,10 @@ export function ChatHeader({
   isConnected,
   isLoading,
   onToggleMotions,
-  onToggleMembers,
   onOpenSearch,
   chatType = 'dm',
   isOnline,
+  activeMotionCount = 0,
 }: ChatHeaderProps) {
   const isCommittee = chatType === 'committee';
   const profileLink = isCommittee
@@ -75,26 +75,6 @@ export function ChatHeader({
           >
             <Search className='h-4 w-4' />
           </Button>
-        )}
-        {isCommittee && (
-          <>
-            {onToggleMembers && (
-              <button
-                onClick={onToggleMembers}
-                className='px-3 py-1 text-sm rounded border hover:bg-accent'
-              >
-                Members
-              </button>
-            )}
-            {onToggleMotions && (
-              <button
-                onClick={onToggleMotions}
-                className='px-3 py-1 text-sm rounded border hover:bg-accent'
-              >
-                Motions
-              </button>
-            )}
-          </>
         )}
       </div>
     </div>

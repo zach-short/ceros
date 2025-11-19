@@ -105,4 +105,7 @@ export const chatApi = {
 
   getPinnedMessages: (roomId: string): Promise<any> =>
     apiRequest('get', `/messages/pinned?roomId=${roomId}`),
+
+  deleteConversations: (roomIds: string[]): Promise<any> =>
+    apiRequest('delete', '/chat/conversations', { roomIds }),
 };

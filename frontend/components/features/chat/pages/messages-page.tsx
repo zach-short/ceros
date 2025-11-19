@@ -58,7 +58,6 @@ export default function MessagesPage() {
           <div className='p-6 border-b'>
             <div className='mb-4'>
               <h1 className='text-2xl font-bold'>Messages</h1>
-              <p className='opacity-60'>Your conversations and committees</p>
             </div>
 
             <ChatSearch
@@ -89,4 +88,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Message, User } from '@/models';
 import { Motion } from '@/models/motion';
 import { UserAvatar } from '@/components/shared/user/user-avatar';
@@ -8,7 +9,8 @@ import { MessageEditIndicator } from './message-edit-indicator';
 import { ParentMessagePreview } from './parent-message-preview';
 import { MessageContextMenu } from './message-context-menu';
 import { getDisplayName, UserPrivacyContext } from '@/lib/user-privacy';
-import { MotionCard } from '../committee/motion-card';
+import { MotionCardCompact } from '../committee/motions/motion-card-compact';
+import { MotionDetailsDialog } from '../committee/motions/motion-details-dialog';
 
 interface MessageBubbleProps {
   message: Message;
@@ -99,6 +101,8 @@ export function MessageBubble({
   onVoteMotion,
   onSecondMotion,
 }: MessageBubbleProps) {
+  const [isMotionDialogOpen, setIsMotionDialogOpen] = useState(false);
+
   const sender = users.find((u) => u.id === message.senderId);
   const isOwn = message.senderId === currentUserId;
   const isReply = message.type === 'reply';
@@ -136,11 +140,12 @@ export function MessageBubble({
     onSecondMotion?.(motionId);
   };
 
+  const handleMotionCardClick = () => {
+    setIsMotionDialogOpen(true);
+  };
+
   return (
-    <div
-      id={`message-${message.id}`}
-      className='group hover:bg-accent/50 py-[.5]'
-    >
+    <div id={`message-${message.id}`} className='group py-[.5]'>
       {isReply && parentMessage && isFirstInGroup && (
         <div className='mb-2 ml-12'>
           <ParentMessagePreview
@@ -153,24 +158,35 @@ export function MessageBubble({
         </div>
       )}
 
-      <div className='flex space-x-2'>
+      <div className='flex'>
         <div className=''>
-          {showAvatar && isFirstInGroup && sender && !isMotion ? (
-            <UserAvatar
-              user={sender}
-              viewerUserId={currentUserId}
-              isOwnProfile={isOwn}
-              size='md'
-            />
-          ) : (
-            <div className='w-10 h-2' />
+          {showAvatar && isFirstInGroup && sender && !isMotion && (
+            <div className={`pr-2 pb-2`}>
+              <UserAvatar
+                user={sender}
+                viewerUserId={currentUserId}
+                isOwnProfile={isOwn}
+                size='md'
+              />
+            </div>
           )}
         </div>
 
-        <div className='flex-1 min-w-0'>
+        <div className='flex-1 w-full min-w-0'>
           {isMotion && motion && mover ? (
-            <div className='py-2'>
-              <MotionCard
+            <>
+              <div className='py-2'>
+                <MotionCardCompact
+                  motion={motion}
+                  mover={mover}
+                  seconder={seconder}
+                  onClick={handleMotionCardClick}
+                />
+              </div>
+
+              <MotionDetailsDialog
+                open={isMotionDialogOpen}
+                onOpenChange={setIsMotionDialogOpen}
                 motion={motion}
                 mover={mover}
                 seconder={seconder}
@@ -178,7 +194,7 @@ export function MessageBubble({
                 onVote={handleVote}
                 onSecond={handleSecond}
               />
-            </div>
+            </>
           ) : (
             <MessageContextMenu
               message={message}
