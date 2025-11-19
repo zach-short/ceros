@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { OnlineStatusIndicator } from '@/components/shared/user/online-status-indicator';
-import { User } from '../ui/types';
+import { User } from '../../ui/types';
 import { Committee } from '@/models/committee';
 import { useMediaQuery } from '@/hooks/use-media-query';
 

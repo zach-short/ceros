@@ -3,12 +3,11 @@
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AddMemberInput } from './add-member-input';
+import { FriendsSelector } from '../shared/friends-selector';
 import { Button } from '@/components/ui/button';
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/api/friends';
-import { MemberSheet } from './member-sheet';
 import {
   Select,
   SelectContent,
@@ -57,38 +56,36 @@ export default function NewCommittee() {
     setFormData({ ...formData, chairId });
   };
 
-  const isChecked = useCallback(
-    (member: User) => {
-      return formData.memberIds.includes(member.id);
-    },
-    [formData.memberIds],
-  );
-
-  const handleToggle = (clickedMember: User) => {
-    const isIncluded = formData.memberIds.includes(clickedMember.id);
+  const handleToggleMember = (user: User) => {
+    const isIncluded = formData.memberIds.includes(user.id);
     if (isIncluded) {
       setFormData({
         ...formData,
-        memberIds: formData.memberIds.filter((id) => id !== clickedMember.id),
+        memberIds: formData.memberIds.filter((id) => id !== user.id),
+        // Clear chair if removing the current chair
+        chairId: formData.chairId === user.id ? '' : formData.chairId,
       });
     } else {
       setFormData({
         ...formData,
-        memberIds: [...formData.memberIds, clickedMember.id],
+        memberIds: [...formData.memberIds, user.id],
       });
     }
   };
 
-  const handleSaveMemberChange = (membersBuffer: User[]) => {
-    if (membersBuffer.length === 0) {
-      return;
+  const handleToggleObserver = (user: User) => {
+    const isIncluded = formData.observerIds?.includes(user.id);
+    if (isIncluded) {
+      setFormData({
+        ...formData,
+        observerIds: formData.observerIds?.filter((id) => id !== user.id) || [],
+      });
+    } else {
+      setFormData({
+        ...formData,
+        observerIds: [...(formData.observerIds || []), user.id],
+      });
     }
-
-    const bufferIds = membersBuffer.map((m) => m.id);
-    setFormData({
-      ...formData,
-      memberIds: formData.memberIds.filter((id) => !bufferIds.includes(id)),
-    });
   };
 
   const { mutate: createCommittee, loading: createLoading } =
@@ -143,30 +140,46 @@ export default function NewCommittee() {
           />
         </div>
 
-        <div className='grid gap-6 sm:grid-cols-2'>
+        <div className='space-y-6'>
           <div>
-            <label className='block text-sm font-medium mb-1'>
-              Enter Members
+            <label className='block text-sm font-medium mb-3'>
+              Add Members
             </label>
-            <div>
-              <AddMemberInput
-                users={users}
-                loading={loading}
-                onToggle={handleToggle}
-                isChecked={isChecked}
-              />
-              <MemberSheet
-                selectedMembers={selectedMembers}
-                onSave={handleSaveMemberChange}
-              />
-            </div>
+            <FriendsSelector
+              friends={users}
+              loading={loading}
+              selectedIds={formData.memberIds}
+              onToggle={handleToggleMember}
+              excludeIds={formData.observerIds || []}
+              placeholder='Search friends to add as members...'
+              emptyMessage='No friends available'
+            />
           </div>
+
+          <div>
+            <label className='block text-sm font-medium mb-3'>
+              Add Observers (Optional)
+            </label>
+            <FriendsSelector
+              friends={users}
+              loading={loading}
+              selectedIds={formData.observerIds || []}
+              onToggle={handleToggleObserver}
+              excludeIds={formData.memberIds}
+              placeholder='Search friends to add as observers...'
+              emptyMessage='No friends available'
+            />
+          </div>
+
           <div>
             <label className='block text-sm font-medium mb-1'>
               Assign Chair
             </label>
-            <Select onValueChange={onChairChange}>
-              <SelectTrigger className='w-[240px] font-medium'>
+            <Select
+              value={formData.chairId}
+              onValueChange={onChairChange}
+            >
+              <SelectTrigger className='w-full font-medium'>
                 <SelectValue placeholder='Select a Member' />
               </SelectTrigger>
               <SelectContent className='font-medium'>
@@ -182,7 +195,7 @@ export default function NewCommittee() {
                   ))
                 ) : (
                   <div className='text-muted-foreground px-2 py-1 text-sm italic'>
-                    No members found
+                    No members selected
                   </div>
                 )}
               </SelectContent>

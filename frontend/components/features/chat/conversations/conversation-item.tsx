@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ConversationSummary } from '@/lib/api/chat';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -22,6 +23,9 @@ import {
 interface ConversationItemProps {
   conversation: ConversationSummary;
   searchQuery?: string;
+  isEditMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: (roomId: string) => void;
   onArchive?: (roomId: string) => void;
   onPin?: (roomId: string) => void;
   onMute?: (roomId: string) => void;
@@ -32,6 +36,9 @@ interface ConversationItemProps {
 export function ConversationItem({
   conversation,
   searchQuery,
+  isEditMode = false,
+  isSelected = false,
+  onToggleSelection,
   onArchive,
   onPin,
   onMute,
@@ -61,7 +68,9 @@ export function ConversationItem({
   };
 
   const handleClick = () => {
-    if (conversation.type === 'dm' && otherUser) {
+    if (isEditMode && onToggleSelection) {
+      onToggleSelection(conversation.roomId);
+    } else if (conversation.type === 'dm' && otherUser) {
       router.push(`/chat/${otherUser.id}`);
     }
   };
@@ -123,6 +132,13 @@ export function ConversationItem({
           className='p-4 cursor-pointer transition-colors hover:bg-accent'
         >
           <div className='flex items-center space-x-3'>
+            {isEditMode && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={() => onToggleSelection?.(conversation.roomId)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
             <div className='relative'>
               <Avatar className={`h-12 w-12`}>
                 <AvatarImage

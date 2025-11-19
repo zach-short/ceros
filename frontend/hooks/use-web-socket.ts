@@ -116,6 +116,13 @@ export function useWebSocket({
           wsMessage.action === 'new_reply'
         ) {
           onMessage?.(wsMessage.payload as Message);
+        } else if (
+          wsMessage.action === 'motion_proposed' ||
+          wsMessage.action === 'motion_seconded' ||
+          wsMessage.action === 'vote_cast'
+        ) {
+          // Pass the entire websocket message for motion events
+          onMessage?.(wsMessage as any);
         } else if (wsMessage.action === 'reaction_update') {
           onReactionUpdate?.(
             wsMessage.payload as { messageId: string; reactions: any[] },

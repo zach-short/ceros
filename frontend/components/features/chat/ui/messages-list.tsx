@@ -70,7 +70,12 @@ const shouldGroupMessages = (
 
   if (currentMessage.senderId !== previousMessage.senderId) return false;
 
-  if (currentMessage.type === 'reply' || previousMessage.type === 'reply')
+  if (
+    currentMessage.type === 'reply' ||
+    previousMessage.type === 'reply' ||
+    currentMessage.type === 'motion' ||
+    previousMessage.type === 'motion'
+  )
     return false;
 
   const showTimeHeaderBetween = shouldShowTimeHeader(

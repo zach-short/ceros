@@ -16,11 +16,16 @@ import {
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { useCommittee } from '@/hooks/api/use-commitee';
+import { useCommitteeHistory } from '@/hooks/api/use-committee-chat';
 import { Committee } from '@/models/committee';
 import { User } from '@/components/features/chat/ui/types';
-import { Users, Settings, MessageSquare } from 'lucide-react';
+import { Users, Settings, MessageSquare, FileText } from 'lucide-react';
 import { CommitteeSettingsSheet } from './committee-settings-sheet';
+import { CommitteeMembersSheet } from '../chat/committee/sheets/committee-members-sheet';
+import { CommitteeMotionsSheet } from '../chat/committee/sheets/committee-motions-sheet';
 import { getCommitteePicture } from '@/lib/utils/committee-avatar';
+import { useWebSocket } from '@/hooks/use-web-socket';
+import { ShareButton } from '@/components/shared/share-button';
 
 interface CommitteeProfileProps {
   committeeId: string;
@@ -55,14 +60,37 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [membersSheetOpen, setMembersSheetOpen] = useState(false);
+  const [motionsSheetOpen, setMotionsSheetOpen] = useState(false);
 
-  const { data: committeeData, loading, refetch } = useCommittee({
+  const {
+    data: committeeData,
+    loading,
+    refetch,
+  } = useCommittee({
     resourceParams: [committeeId],
     enabled: !!committeeId && !!session?.apiToken,
   });
 
+  const { data: historyData } = useCommitteeHistory(
+    committeeId,
+    !!session?.apiToken && !!committeeId,
+  );
+
   const committee = committeeData?.committee;
+  const members = historyData?.members || [];
+  const motions = historyData?.motions || [];
+  const roomId = historyData?.roomId;
   const isOwner = committee?.ownerId === session?.user?.id;
+  const isChair = committee?.chairId === session?.user?.id;
+  const canManageSettings = isOwner || isChair;
+
+  const { proposeMotion } = useWebSocket({});
+
+  const handleCreateMotion = async (title: string, description: string) => {
+    if (!committeeId || !roomId) return;
+    proposeMotion(roomId, title, description, committeeId);
+  };
 
   if (loading) {
     return (
@@ -104,7 +132,7 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
             <MessageSquare size={16} className='mr-2' />
             Back to Chat
           </Button>
-          {isOwner && (
+          {canManageSettings && (
             <Button
               onClick={() => setSettingsOpen(true)}
               variant='outline'
@@ -119,6 +147,13 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
         <div className='space-y-6'>
           <Card>
             <CardContent className='relative py-6'>
+              <div className='absolute top-4 right-4'>
+                <ShareButton
+                  title={`${committee.name}`}
+                  text={`View ${committee.name} on Ceros`}
+                  url={typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL}/committees/${committeeId}/profile`}
+                />
+              </div>
               <div className='flex items-start gap-4'>
                 <div className='relative'>
                   <Avatar className='w-20 h-20'>
@@ -152,18 +187,23 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
                     </p>
                   )}
                   <div className='flex items-center gap-4 mt-3 text-sm text-muted-foreground'>
-                    <div className='flex items-center gap-1'>
+                    <button
+                      onClick={() => setMembersSheetOpen(true)}
+                      className='flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer'
+                    >
                       <Users size={16} />
-                      <span>
+                      <span className='underline decoration-dotted'>
                         {memberCount} member{memberCount !== 1 ? 's' : ''}
                       </span>
-                    </div>
-                    {committee.observerIds && committee.observerIds.length > 0 && (
-                      <span>
-                        • {committee.observerIds.length} observer
-                        {committee.observerIds.length !== 1 ? 's' : ''}
-                      </span>
-                    )}
+                    </button>
+                    •
+                    {committee.observerIds &&
+                      committee.observerIds.length > 0 && (
+                        <span>
+                          {committee.observerIds.length} observer
+                          {committee.observerIds.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
                   </div>
                 </div>
               </div>
@@ -179,31 +219,96 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3'>
               <CardTitle>Motions</CardTitle>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => setMotionsSheetOpen(true)}
+                className='text-sm'
+              >
+                <FileText size={16} className='mr-2' />
+                View All
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className='text-center py-8'>
-                <p className='text-sm text-muted-foreground'>
-                  No motions yet
-                </p>
-                <p className='text-xs text-muted-foreground mt-1'>
-                  Motions and votes will appear here
-                </p>
-              </div>
+              {motions.length === 0 ? (
+                <div className='text-center py-8'>
+                  <p className='text-sm text-muted-foreground'>
+                    No motions yet
+                  </p>
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    Motions and votes will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className='space-y-3'>
+                  {motions
+                    .filter((m) =>
+                      ['proposed', 'seconded', 'open'].includes(m.status),
+                    )
+                    .slice(0, 3)
+                    .map((motion) => (
+                      <div
+                        key={motion.id}
+                        onClick={() => setMotionsSheetOpen(true)}
+                        className='p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors'
+                      >
+                        <h4 className='font-medium mb-1'>{motion.title}</h4>
+                        <p className='text-sm text-muted-foreground line-clamp-2'>
+                          {motion.description}
+                        </p>
+                        <div className='flex items-center gap-2 mt-2'>
+                          <Badge variant='secondary' className='text-xs'>
+                            {motion.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  {motions.filter((m) =>
+                    ['proposed', 'seconded', 'open'].includes(m.status),
+                  ).length === 0 && (
+                    <div className='text-center py-8'>
+                      <p className='text-sm text-muted-foreground'>
+                        No active motions
+                      </p>
+                      <p className='text-xs text-muted-foreground mt-1'>
+                        Click &quot;View All&quot; to see past motions
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {isOwner && (
+      {canManageSettings && (
         <CommitteeSettingsSheet
           open={settingsOpen}
           onOpenChange={setSettingsOpen}
           committee={committee}
+          members={members}
           onUpdate={refetch}
         />
       )}
+
+      <CommitteeMembersSheet
+        open={membersSheetOpen}
+        onOpenChange={setMembersSheetOpen}
+        members={members}
+        committee={committee}
+      />
+
+      <CommitteeMotionsSheet
+        open={motionsSheetOpen}
+        onOpenChange={setMotionsSheetOpen}
+        motions={motions}
+        committee={committee}
+        onCreateMotion={handleCreateMotion}
+        isSubmitting={false}
+      />
     </TooltipProvider>
   );
 }

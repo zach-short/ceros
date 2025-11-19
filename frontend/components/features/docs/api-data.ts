@@ -910,6 +910,27 @@ export const apiDocumentation: RouteSection[] = [
         },
       },
       {
+        method: 'DELETE',
+        path: '/chat/conversations',
+        description: 'Delete multiple conversations by room IDs.',
+        requiresAuth: true,
+        requestBody: [
+          {
+            name: 'roomIds',
+            type: 'string[]',
+            required: true,
+            description: 'Array of room IDs to delete',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "deletedCount": 42,
+  "message": "Conversations deleted successfully"
+}`,
+        },
+      },
+      {
         method: 'GET',
         path: '/chat/dm/:recipientId/history',
         description: 'Get direct message history with a user.',
@@ -1134,10 +1155,9 @@ export const apiDocumentation: RouteSection[] = [
             description: 'Observer IDs',
           },
         ],
-                response: {
+        response: {
           status: 200,
-          body: 
-`{
+          body: `{
 "committees": [
   {
     "id": "6754aabb0837f25a36e4cdde",
@@ -1168,8 +1188,7 @@ export const apiDocumentation: RouteSection[] = [
         requiresAuth: true,
         response: {
           status: 200,
-          body: 
-`{
+          body: `{
 "committees": [
   {
     "id": "6754aabb0837f25a36e4cdde",
@@ -1204,12 +1223,11 @@ export const apiDocumentation: RouteSection[] = [
             type: 'string',
             required: true,
             description: 'Committee ID',
-          }
+          },
         ],
         response: {
           status: 200,
-          body: 
-`{
+          body: `{
   "committee": {
     "id": "6754aabb0837f25a36e4cdde",
     "name": "Finance Committee",
@@ -1234,70 +1252,39 @@ export const apiDocumentation: RouteSection[] = [
       {
         method: 'PUT',
         path: '/committees/:id',
-        description: 'Update current committee',
+        description: 'Update committee basic info (owner only)',
         requiresAuth: true,
         parameters: [
           {
-            name: 'Id',
+            name: 'id',
             type: 'string',
             required: true,
             description: 'Committee ID',
-          }
+          },
         ],
         requestBody: [
           {
-            name: 'Id',
-            type: 'string',
-            required: false,
-            description: 'Updated committee ID',
-          },
-          {
             name: 'name',
             type: 'string',
-            required: false,
-            description: 'Updated committee Name',
-          },
-          {
-            name: 'type',
-            type: 'string',
-            required: false,
-            description: 'Updated commmittee type',
+            required: true,
+            description: 'Updated committee name',
           },
           {
             name: 'description',
             type: 'string',
-            required: false,
+            required: true,
             description: 'Updated committee description',
           },
           {
-            name: 'ownerID',
+            name: 'picture',
             type: 'string',
-            required: false,
-            description: 'Updated owner ID',
-          },
-          {
-            name: 'chairID',
-            type: 'string',
-            required: false,
-            description: 'Updated chair ID',
-          },
-          {
-            name: 'memeberIDs',
-            type: 'string[]',
-            required: false,
-            description: 'Updated member IDs',
-          },
-          {
-            name: 'observerIDs',
-            type: 'string[]',
-            required: false,
-            description: 'Updated observer IDs',
+            required: true,
+            description: 'Updated committee picture URL',
           },
         ],
         response: {
           status: 200,
-          body: 
-`{
+          body: `{
   "message": "Committee updated successfully"
 }
 `,
@@ -1314,15 +1301,360 @@ export const apiDocumentation: RouteSection[] = [
             type: 'string',
             required: true,
             description: 'Committee ID',
-          }
+          },
         ],
         response: {
           status: 200,
-          body: 
-`{
+          body: `{
   "message": "Committee deleted successfully"
 }
 `,
+        },
+      },
+      {
+        method: 'GET',
+        path: '/users/me/committees',
+        description: 'Get all committees the authenticated user is part of',
+        requiresAuth: true,
+        response: {
+          status: 200,
+          body: `{
+  "committees": [
+    {
+      "id": "6754aabb0837f25a36e4cdde",
+      "name": "Finance Committee",
+      "type": "permanent",
+      "description": "Handles budgeting",
+      "picture": "https://example.com/image.png",
+      "ownerId": "6754aaa00837f25a36e4ca30",
+      "chairId": "6754aaa00837f25a36e4ca30",
+      "memberIds": [
+        "6754ab990837f25a36e4cf12",
+        "6754ac230837f25a36e4cfff"
+      ],
+      "observerIds": [
+        "6754ae310837f25a36e4d111"
+      ],
+      "createdAt": "2025-02-01T17:18:45.123Z",
+      "updatedAt": "2025-02-05T22:51:03.812Z"
+    }
+  ]
+}`,
+        },
+      },
+      {
+        method: 'POST',
+        path: '/committees/:id/members',
+        description: 'Add a member to the committee (owner/chair only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+        ],
+        requestBody: [
+          {
+            name: 'userId',
+            type: 'string',
+            required: true,
+            description: 'User ID to add as member',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Member added successfully"
+}`,
+        },
+      },
+      {
+        method: 'DELETE',
+        path: '/committees/:id/members/:memberId',
+        description: 'Remove a member from the committee (owner/chair only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'memberId',
+            type: 'string',
+            required: true,
+            description: 'Member ID to remove',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Member removed successfully"
+}`,
+        },
+      },
+      {
+        method: 'POST',
+        path: '/committees/:id/observers',
+        description: 'Add an observer to the committee (owner/chair only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+        ],
+        requestBody: [
+          {
+            name: 'userId',
+            type: 'string',
+            required: true,
+            description: 'User ID to add as observer',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Observer added successfully"
+}`,
+        },
+      },
+      {
+        method: 'DELETE',
+        path: '/committees/:id/observers/:observerId',
+        description: 'Remove an observer from the committee (owner/chair only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'observerId',
+            type: 'string',
+            required: true,
+            description: 'Observer ID to remove',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Observer removed successfully"
+}`,
+        },
+      },
+      {
+        method: 'PUT',
+        path: '/committees/:id/chair',
+        description: 'Change the committee chair (owner only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+        ],
+        requestBody: [
+          {
+            name: 'newChairId',
+            type: 'string',
+            required: true,
+            description: 'User ID of the new chair',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Chair changed successfully"
+}`,
+        },
+      },
+      {
+        method: 'GET',
+        path: '/committees/:id/motions',
+        description: 'Get all motions for a committee',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "motions": [
+    {
+      "id": "507f1f77bcf86cd799439040",
+      "committeeId": "6754aabb0837f25a36e4cdde",
+      "title": "Budget Approval 2025",
+      "description": "Approve the annual budget for 2025",
+      "proposerId": "6754aaa00837f25a36e4ca30",
+      "status": "open",
+      "createdAt": "2025-01-16T10:00:00Z",
+      "updatedAt": "2025-01-16T10:00:00Z"
+    }
+  ]
+}`,
+        },
+      },
+      {
+        method: 'POST',
+        path: '/committees/:id/motions',
+        description: 'Create a new motion in a committee',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+        ],
+        requestBody: [
+          {
+            name: 'title',
+            type: 'string',
+            required: true,
+            description: 'Motion title',
+          },
+          {
+            name: 'description',
+            type: 'string',
+            required: true,
+            description: 'Motion description',
+          },
+        ],
+        response: {
+          status: 201,
+          body: `{
+  "message": "Motion created successfully",
+  "motionId": "507f1f77bcf86cd799439040"
+}`,
+        },
+      },
+      {
+        method: 'GET',
+        path: '/committees/:id/motions/:motionId',
+        description: 'Get details of a specific motion',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'motionId',
+            type: 'string',
+            required: true,
+            description: 'Motion ID',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "motion": {
+    "id": "507f1f77bcf86cd799439040",
+    "committeeId": "6754aabb0837f25a36e4cdde",
+    "title": "Budget Approval 2025",
+    "description": "Approve the annual budget for 2025",
+    "proposerId": "6754aaa00837f25a36e4ca30",
+    "status": "open",
+    "votes": {
+      "yes": 5,
+      "no": 2,
+      "abstain": 1
+    },
+    "createdAt": "2025-01-16T10:00:00Z",
+    "updatedAt": "2025-01-16T10:00:00Z"
+  }
+}`,
+        },
+      },
+      {
+        method: 'PATCH',
+        path: '/committees/:id/motions/:motionId',
+        description: 'Update a motion (proposer only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'motionId',
+            type: 'string',
+            required: true,
+            description: 'Motion ID',
+          },
+        ],
+        requestBody: [
+          {
+            name: 'title',
+            type: 'string',
+            required: false,
+            description: 'Updated motion title',
+          },
+          {
+            name: 'description',
+            type: 'string',
+            required: false,
+            description: 'Updated motion description',
+          },
+          {
+            name: 'status',
+            type: 'string',
+            required: false,
+            description:
+              'Updated status (proposed, seconded, open, passed, failed, withdrawn)',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Motion updated successfully"
+}`,
+        },
+      },
+      {
+        method: 'DELETE',
+        path: '/committees/:id/motions/:motionId',
+        description: 'Delete a motion (proposer only)',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'motionId',
+            type: 'string',
+            required: true,
+            description: 'Motion ID',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Motion deleted successfully"
+}`,
         },
       },
     ],

@@ -17,34 +17,26 @@ import {
   useEditMessage,
   useDeleteMessage,
 } from '@/hooks/api/use-committee-chat';
-import { useCreateMotion } from '@/hooks/api/use-motions';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { transformMessagesWithReactions } from '@/lib/utils/message-utils';
 import { Committee } from '@/models/committee';
-import { CommitteeMembersSheet } from './committee-members-sheet';
-import { CommitteeMotionsSheet } from './committee-motions-sheet';
+import { CommitteeMotionsSheet } from './sheets/committee-motions-sheet';
 import { getCommitteePicture } from '@/lib/utils/committee-avatar';
 
 export default function CommitteeChat() {
   const params = useParams();
   const committeeId = params.id as string;
-  console.log(
-    committeeId,
-    'committeeId in /Projects/wm-courses/3-fall-2025/web-programming/ceros/frontend/components/features/chat/committee/committee-chat.tsx',
-  );
   const { data: session } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [committee, setCommittee] = useState<Committee | null>(null);
-  const [members, setMembers] = useState<User[]>([]);
   const [motions, setMotions] = useState<any[]>([]);
   const [typingUsers, setTypingUsers] = useState<
     Array<{ userId: string; name: string }>
   >([]);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [membersSheetOpen, setMembersSheetOpen] = useState(false);
   const [motionsSheetOpen, setMotionsSheetOpen] = useState(false);
   const [replyState, setReplyState] = useState<
     { messageId: string; content: string } | undefined
@@ -52,8 +44,6 @@ export default function CommitteeChat() {
   const [editState, setEditState] = useState<
     { messageId: string; content: string } | undefined
   >(undefined);
-  /* const [showMotionPanel, setShowMotionPanel] = useState(false); */
-  /* const [threadMessage, setThreadMessage] = useState<Message | null>(null); */
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -144,26 +134,61 @@ export default function CommitteeChat() {
     });
   };
 
+  const transformMotion = (motion: any) => ({
+    ...motion,
+    moverId: motion.mover_id || motion.moverId,
+    seconderId: motion.seconder_id || motion.seconderId,
+    committeeId: motion.committee_id || motion.committeeId,
+    createdAt: motion.created_at || motion.createdAt,
+    updatedAt: motion.updated_at || motion.updatedAt,
+    votingEndsAt: motion.voting_ends_at || motion.votingEndsAt,
+    votes: motion.votes?.map((vote: any) => ({
+      ...vote,
+      id: vote._id || vote.id,
+      motionId: vote.motion_id || vote.motionId,
+      userId: vote.user_id || vote.userId,
+      createdAt: vote.created_at || vote.createdAt,
+    })) || [],
+  });
+
   const handleMotionEvent = (payload: any) => {
     if (payload.action === 'motion_proposed' && payload.payload?.motion) {
+      const transformedMotion = transformMotion(payload.payload.motion);
       setMotions((prev) => {
-        const exists = prev.some((m) => m.id === payload.payload.motion.id);
+        const exists = prev.some((m) => m.id === transformedMotion.id);
         if (exists) return prev;
-        return [...prev, payload.payload.motion];
+        return [...prev, transformedMotion];
       });
+
+      if (payload.payload?.message) {
+        const transformedMessage = session?.user?.id
+          ? transformMessagesWithReactions(
+              [payload.payload.message],
+              session.user.id,
+            )[0]
+          : payload.payload.message;
+
+        setMessages((prev) => {
+          const exists = prev.some((m) => m.id === transformedMessage.id);
+          if (exists) return prev;
+          return [...prev, transformedMessage];
+        });
+      }
     } else if (
       payload.action === 'motion_seconded' &&
       payload.payload?.motion
     ) {
+      const transformedMotion = transformMotion(payload.payload.motion);
       setMotions((prev) =>
         prev.map((m) =>
-          m.id === payload.payload.motion.id ? payload.payload.motion : m,
+          m.id === transformedMotion.id ? transformedMotion : m,
         ),
       );
     } else if (payload.action === 'vote_cast' && payload.payload?.motion) {
+      const transformedMotion = transformMotion(payload.payload.motion);
       setMotions((prev) =>
         prev.map((m) =>
-          m.id === payload.payload.motion.id ? payload.payload.motion : m,
+          m.id === transformedMotion.id ? transformedMotion : m,
         ),
       );
     }
@@ -181,8 +206,11 @@ export default function CommitteeChat() {
     joinRoom,
   } = useWebSocket({
     onMessage: (payload: any) => {
-      handleNewMessage(payload);
-      handleMotionEvent(payload);
+      if (payload.action && ['motion_proposed', 'motion_seconded', 'vote_cast'].includes(payload.action)) {
+        handleMotionEvent(payload);
+      } else {
+        handleNewMessage(payload);
+      }
     },
     onTypingUpdate: handleTypingUpdate,
     onConnect: () => {},
@@ -225,11 +253,8 @@ export default function CommitteeChat() {
     if (historyData?.committee) {
       setCommittee(historyData.committee);
     }
-    if (historyData?.members) {
-      setMembers(historyData.members);
-    }
     if (historyData?.motions) {
-      setMotions(historyData.motions);
+      setMotions(historyData.motions.map(transformMotion));
     }
   }, [historyData, session?.user?.id]);
 
@@ -342,21 +367,6 @@ export default function CommitteeChat() {
     },
   });
 
-  const { mutate: createMotion, loading: creatingMotion } = useCreateMotion(
-    committeeId,
-    {
-      onSuccess: (data) => {
-        setMotions((prev) => {
-          const exists = prev.some((m) => m.id === data.motion.id);
-          if (exists) return prev;
-          return [...prev, data.motion];
-        });
-      },
-      onError: (error) => {
-        console.error('Failed to create motion:', error);
-      },
-    },
-  );
 
   const handleReaction = (messageId: string, emoji: string) => {
     toggleReaction({ messageId, emoji });
@@ -436,8 +446,8 @@ export default function CommitteeChat() {
   };
 
   const handleCreateMotion = async (title: string, description: string) => {
-    if (!committeeId) return;
-    await createMotion({ title, description });
+    if (!committeeId || !roomId || !isConnected) return;
+    proposeMotion(roomId, title, description, committeeId);
   };
 
   if (!session) {
@@ -458,6 +468,9 @@ export default function CommitteeChat() {
   }
 
   const committeeName = committee?.name || 'Committee';
+  const activeMotionCount = motions.filter((m) =>
+    ['proposed', 'seconded', 'open'].includes(m.status),
+  ).length;
 
   return (
     <>
@@ -471,10 +484,10 @@ export default function CommitteeChat() {
             }
             isConnected={isConnected}
             isLoading={historyLoading || startingChat}
-            onToggleMotions={() => setMotionsSheetOpen(true)}
-            onToggleMembers={() => setMembersSheetOpen(true)}
+            onToggleMotions={activeMotionCount > 0 ? () => setMotionsSheetOpen(true) : undefined}
             onOpenSearch={() => setSearchOpen(true)}
             chatType='committee'
+            activeMotionCount={activeMotionCount}
           />
 
           <div className='flex flex-1 relative min-h-0 overflow-hidden'>
@@ -544,21 +557,16 @@ export default function CommitteeChat() {
         onSelectMessage={handleScrollToMessage}
       />
 
-      <CommitteeMembersSheet
-        open={membersSheetOpen}
-        onOpenChange={setMembersSheetOpen}
-        members={members}
-        committee={committee}
-      />
-
-      <CommitteeMotionsSheet
-        open={motionsSheetOpen}
-        onOpenChange={setMotionsSheetOpen}
-        motions={motions}
-        committee={committee}
-        onCreateMotion={handleCreateMotion}
-        isSubmitting={creatingMotion}
-      />
+      {activeMotionCount > 0 && (
+        <CommitteeMotionsSheet
+          open={motionsSheetOpen}
+          onOpenChange={setMotionsSheetOpen}
+          motions={motions}
+          committee={committee}
+          onCreateMotion={handleCreateMotion}
+          isSubmitting={false}
+        />
+      )}
     </>
   );
 }

@@ -9,10 +9,16 @@ import { toast } from 'sonner';
 
 interface ConversationsListProps {
   searchQuery?: string;
+  isEditMode?: boolean;
+  selectedRoomIds?: string[];
+  onToggleSelection?: (roomId: string) => void;
 }
 
 export function ConversationsList({
   searchQuery,
+  isEditMode = false,
+  selectedRoomIds = [],
+  onToggleSelection,
 }: ConversationsListProps = {}) {
   const { data: conversationsData, loading, error } = useConversations();
   const [conversationStates, setConversationStates] = useState<
@@ -132,6 +138,9 @@ export function ConversationsList({
             key={conversation.roomId}
             conversation={conversation}
             searchQuery={searchQuery}
+            isEditMode={isEditMode}
+            isSelected={selectedRoomIds.includes(conversation.roomId)}
+            onToggleSelection={onToggleSelection}
             onPin={handlePin}
             onMute={handleMute}
             onArchive={handleArchive}

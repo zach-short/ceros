@@ -64,6 +64,18 @@ export interface UpdateCommitteeRequest {
   picture: string;
 }
 
+export interface AddMemberRequest {
+  userId: string;
+}
+
+export interface AddObserverRequest {
+  userId: string;
+}
+
+export interface ChangeChairRequest {
+  newChairId: string;
+}
+
 export const committeeApi = {
   getOne: (committeeId: string): Promise<any> =>
     apiRequest('get', `/committees/${committeeId}`),
@@ -80,6 +92,21 @@ export const committeeApi = {
 
   deleteCommittee: (committeeId: string): Promise<any> =>
     apiRequest('delete', `/committees/${committeeId}`),
+
+  addMember: (committeeId: string, data: AddMemberRequest): Promise<any> =>
+    apiRequest('post', `/committees/${committeeId}/members`, data),
+
+  removeMember: (committeeId: string, memberId: string): Promise<any> =>
+    apiRequest('delete', `/committees/${committeeId}/members/${memberId}`),
+
+  addObserver: (committeeId: string, data: AddObserverRequest): Promise<any> =>
+    apiRequest('post', `/committees/${committeeId}/observers`, data),
+
+  removeObserver: (committeeId: string, observerId: string): Promise<any> =>
+    apiRequest('delete', `/committees/${committeeId}/observers/${observerId}`),
+
+  changeChair: (committeeId: string, data: ChangeChairRequest): Promise<any> =>
+    apiRequest('put', `/committees/${committeeId}/chair`, data),
 
   startChat: (committeeId: string): Promise<any> =>
     apiRequest('post', `/committees/${committeeId}/chat/start`),

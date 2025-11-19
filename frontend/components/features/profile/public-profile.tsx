@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { UserAvatar, UserName } from '@/components/shared/user';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import { ShareButton } from '@/components/shared/share-button';
 import {
   User,
   Users,
@@ -214,6 +215,13 @@ export function PublicProfile({ userId }: PublicProfileProps) {
       <div className='space-y-6'>
         <Card className={`p-0`}>
           <CardContent className={`relative py-6`}>
+            <div className='absolute top-4 right-4'>
+              <ShareButton
+                title={`${user.name || user.email}'s Profile`}
+                text={`View ${user.name || user.email}'s Profile on Ceros`}
+                url={typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL}/profile/${userId}`}
+              />
+            </div>
             <div className='flex items-center space-x-2'>
               <div className='relative'>
                 <UserAvatar

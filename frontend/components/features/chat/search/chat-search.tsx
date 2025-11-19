@@ -16,7 +16,7 @@ export function ChatSearch({ searchQuery, onSearchChange }: ChatSearchProps) {
         size={20}
       />
       <Input
-        placeholder='Search messages and committees...'
+        placeholder='Search Messages'
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         className='pl-10'
@@ -24,3 +24,4 @@ export function ChatSearch({ searchQuery, onSearchChange }: ChatSearchProps) {
     </div>
   );
 }
+
