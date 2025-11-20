@@ -30,10 +30,9 @@ type CheckUsernameRequest struct {
 }
 
 type UpdateUserSettingsRequest struct {
-	Theme                       *string                      `json:"theme,omitempty"`
-	AutoAcceptFriendInvitations *bool                        `json:"autoAcceptFriendInvitations,omitempty"`
-	Privacy                     *models.PrivacySettings      `json:"privacy,omitempty"`
-	Notifications               *models.NotificationSettings `json:"notifications,omitempty"`
+	Theme                       *string                 `json:"theme,omitempty"`
+	AutoAcceptFriendInvitations *bool                   `json:"autoAcceptFriendInvitations,omitempty"`
+	Privacy                     *models.PrivacySettings `json:"privacy,omitempty"`
 }
 
 func GetPublicProfile(c *gin.Context) {
@@ -329,13 +328,6 @@ func UpdateUserSettings(c *gin.Context) {
 		settings.Privacy.ShowFamilyName = req.Privacy.ShowFamilyName
 		settings.Privacy.ShowBio = req.Privacy.ShowBio
 		settings.Privacy.ShowPicture = req.Privacy.ShowPicture
-	}
-	if req.Notifications != nil {
-		settings.Notifications.EmailNotifications = req.Notifications.EmailNotifications
-		settings.Notifications.CommitteeInvitations = req.Notifications.CommitteeInvitations
-		settings.Notifications.MotionNotifications = req.Notifications.MotionNotifications
-		settings.Notifications.VoteNotifications = req.Notifications.VoteNotifications
-		settings.Notifications.FriendRequestNotifications = req.Notifications.FriendRequestNotifications
 	}
 
 	update := bson.M{"$set": bson.M{"settings": settings}}

@@ -46,19 +46,6 @@ func SetupRoutes(r *gin.Engine) {
 				}
 			}
 
-			notifications := me.Group("/notifications")
-			{
-				notifications.GET("", handlers.GetNotifications)
-				notifications.PATCH("/mark-all-read", handlers.MarkAllNotificationsRead)
-				notifications.POST("", handlers.CreateNotification)
-
-				notification := notifications.Group("/:notificationId")
-				{
-					notification.PATCH("/read", handlers.MarkNotificationRead)
-					notification.DELETE("", handlers.DismissNotification)
-				}
-			}
-
 			me.GET("/committees", handlers.GetUserCommittees)
 
 			comittees := me.Group("/comittees")

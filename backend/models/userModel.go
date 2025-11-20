@@ -21,19 +21,10 @@ type PrivacySettings struct {
 	ShowPicture     bool `bson:"showPicture" json:"showPicture"`
 }
 
-type NotificationSettings struct {
-	EmailNotifications         bool `bson:"emailNotifications" json:"emailNotifications"`
-	CommitteeInvitations       bool `bson:"committeeInvitations" json:"committeeInvitations"`
-	MotionNotifications        bool `bson:"motionNotifications" json:"motionNotifications"`
-	VoteNotifications          bool `bson:"voteNotifications" json:"voteNotifications"`
-	FriendRequestNotifications bool `bson:"friendRequestNotifications" json:"friendRequestNotifications"`
-}
-
 type UserSettings struct {
-	Theme                       string               `bson:"theme" json:"theme"` // "light", "dark", "system"
-	AutoAcceptFriendInvitations bool                 `bson:"autoAcceptFriendInvitations" json:"autoAcceptFriendInvitations"`
-	Privacy                     PrivacySettings      `bson:"privacy" json:"privacy"`
-	Notifications               NotificationSettings `bson:"notifications" json:"notifications"`
+	Theme                       string          `bson:"theme" json:"theme"` // "light", "dark", "system"
+	AutoAcceptFriendInvitations bool            `bson:"autoAcceptFriendInvitations" json:"autoAcceptFriendInvitations"`
+	Privacy                     PrivacySettings `bson:"privacy" json:"privacy"`
 }
 
 type User struct {
@@ -64,13 +55,6 @@ func GetDefaultUserSettings() UserSettings {
 			ShowFamilyName:  true,
 			ShowBio:         true,
 			ShowPicture:     true,
-		},
-		Notifications: NotificationSettings{
-			EmailNotifications:         true,
-			CommitteeInvitations:       true,
-			MotionNotifications:        true,
-			VoteNotifications:          true,
-			FriendRequestNotifications: true,
 		},
 	}
 }
