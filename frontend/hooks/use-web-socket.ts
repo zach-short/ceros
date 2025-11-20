@@ -23,6 +23,14 @@ interface WSMessage {
 interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
   onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
+  onMessageEdited?: (data: {
+    messageId: string;
+    content: string;
+    isEdited: boolean;
+    originalContent: string;
+    editedAt: string;
+  }) => void;
+  onMessageDeleted?: (data: { messageId: string }) => void;
   onTypingUpdate?: (data: {
     userId: string;
     roomId: string;
@@ -48,6 +56,8 @@ interface UseWebSocketOptions {
 export function useWebSocket({
   onMessage,
   onReactionUpdate,
+  onMessageEdited,
+  onMessageDeleted,
   onTypingUpdate,
   onPinToggled,
   onUserStatusChanged,
@@ -116,12 +126,23 @@ export function useWebSocket({
           wsMessage.action === 'motion_seconded' ||
           wsMessage.action === 'vote_cast'
         ) {
-          // Pass the entire websocket message for motion events
           onMessage?.(wsMessage as any);
         } else if (wsMessage.action === 'reaction_update') {
           onReactionUpdate?.(
             wsMessage.payload as { messageId: string; reactions: any[] },
           );
+        } else if (wsMessage.action === 'message_edited') {
+          onMessageEdited?.(
+            wsMessage.payload as {
+              messageId: string;
+              content: string;
+              isEdited: boolean;
+              originalContent: string;
+              editedAt: string;
+            },
+          );
+        } else if (wsMessage.action === 'message_deleted') {
+          onMessageDeleted?.(wsMessage.payload as { messageId: string });
         } else if (wsMessage.action === 'user_typing') {
           onTypingUpdate?.(
             wsMessage.payload as {
@@ -159,6 +180,8 @@ export function useWebSocket({
     session?.apiToken,
     onMessage,
     onReactionUpdate,
+    onMessageEdited,
+    onMessageDeleted,
     onTypingUpdate,
     onPinToggled,
     onUserStatusChanged,

@@ -133,6 +133,20 @@ export default function CommitteeChat() {
     }
   };
 
+  const handleReactionUpdate = (data: {
+    messageId: string;
+    reactions: any[];
+  }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === data.messageId) {
+          return { ...msg, reactions: data.reactions };
+        }
+        return msg;
+      }),
+    );
+  };
+
   const handleTypingUpdate = (data: {
     userId: string;
     roomId: string;
@@ -151,6 +165,59 @@ export default function CommitteeChat() {
       }
       return prev;
     });
+  };
+
+  const handleMessageEdited = (data: {
+    messageId: string;
+    content: string;
+    isEdited: boolean;
+    originalContent: string;
+    editedAt: string;
+  }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === data.messageId) {
+          return {
+            ...msg,
+            content: data.content,
+            isEdited: true,
+            editedAt: data.editedAt,
+            originalContent: data.originalContent,
+          };
+        }
+        return msg;
+      }),
+    );
+  };
+
+  const handleMessageDeleted = (data: { messageId: string }) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((msg) => msg.id !== data.messageId),
+    );
+  };
+
+  const handlePinToggled = (data: {
+    messageId: string;
+    isPinned: boolean;
+    pinnedBy: string;
+    pinnedAt: string;
+    roomId: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === data.messageId) {
+          return {
+            ...msg,
+            isPinned: data.isPinned,
+            pinnedBy: data.pinnedBy,
+            pinnedAt: data.pinnedAt,
+          };
+        }
+        return msg;
+      }),
+    );
   };
 
   const transformMotion = (motion: any) => ({
@@ -231,7 +298,11 @@ export default function CommitteeChat() {
         handleNewMessage(payload);
       }
     },
+    onReactionUpdate: handleReactionUpdate,
+    onMessageEdited: handleMessageEdited,
+    onMessageDeleted: handleMessageDeleted,
     onTypingUpdate: handleTypingUpdate,
+    onPinToggled: handlePinToggled,
     onConnect: () => {},
     onDisconnect: () => {},
   });

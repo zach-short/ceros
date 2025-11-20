@@ -940,3 +940,60 @@ func GetPinnedMessages(c *gin.Context) {
 		"pinnedMessages": pinnedMessages,
 	})
 }
+
+func DeleteConversations(c *gin.Context) {
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req struct {
+		RoomIds []string `json:"roomIds" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(req.RoomIds) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No room IDs provided"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Verify user is participant in each conversation
+	userIDHex := userID.Hex()
+	for _, roomID := range req.RoomIds {
+		if strings.HasPrefix(roomID, "dm_") {
+			// For DM rooms, verify user ID is in the room ID
+			if !strings.Contains(roomID, userIDHex) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to delete this conversation"})
+				return
+			}
+		}
+		// For committee/group rooms, we could add additional checks here
+	}
+
+	// Delete all messages for the given room IDs
+	filter := bson.M{
+		"roomId": bson.M{"$in": req.RoomIds},
+	}
+
+	result, err := collection.DeleteMany(ctx, filter)
+	if err != nil {
+		log.Printf("Error deleting conversations: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete conversations"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"deletedCount": result.DeletedCount,
+		"message":      "Conversations deleted successfully",
+	})
+}

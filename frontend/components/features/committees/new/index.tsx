@@ -34,6 +34,10 @@ export default function NewCommittee() {
     observerIds: [],
   });
 
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [selectedObserverIds, setSelectedObserverIds] = useState<string[]>([]);
+  const [selectedChairId, setSelectedChairId] = useState<string>('');
+
   const router = useRouter();
 
   useEffect(() => {
@@ -54,43 +58,33 @@ export default function NewCommittee() {
   );
 
   const selectedMembers = useMemo(
-    () => users.filter((user) => formData.memberIds.includes(user.id)),
-    [users, formData.memberIds],
+    () => users.filter((user) => selectedMemberIds.includes(user.id)),
+    [users, selectedMemberIds],
   );
 
-  const onChairChange = (chairId: string) => {
-    setFormData({ ...formData, chairId });
-  };
+  const existingUserIds = useMemo(
+    () => [...selectedMemberIds, ...selectedObserverIds],
+    [selectedMemberIds, selectedObserverIds],
+  );
 
   const handleToggleMember = (user: User) => {
-    const isIncluded = formData.memberIds.includes(user.id);
-    if (isIncluded) {
-      setFormData({
-        ...formData,
-        memberIds: formData.memberIds.filter((id) => id !== user.id),
-        chairId: formData.chairId === user.id ? undefined : formData.chairId,
-      });
-    } else {
-      setFormData({
-        ...formData,
-        memberIds: [...formData.memberIds, user.id],
-      });
-    }
+    setSelectedMemberIds((prev) =>
+      prev.includes(user.id)
+        ? prev.filter((id) => id !== user.id)
+        : [...prev, user.id],
+    );
   };
 
   const handleToggleObserver = (user: User) => {
-    const isIncluded = formData.observerIds?.includes(user.id);
-    if (isIncluded) {
-      setFormData({
-        ...formData,
-        observerIds: formData.observerIds?.filter((id) => id !== user.id) || [],
-      });
-    } else {
-      setFormData({
-        ...formData,
-        observerIds: [...(formData.observerIds || []), user.id],
-      });
-    }
+    setSelectedObserverIds((prev) =>
+      prev.includes(user.id)
+        ? prev.filter((id) => id !== user.id)
+        : [...prev, user.id],
+    );
+  };
+
+  const handleToggleChair = (chairId: string) => {
+    setSelectedChairId(chairId);
   };
 
   const { mutate: createCommittee, loading: createLoading } =
@@ -113,7 +107,14 @@ export default function NewCommittee() {
       return;
     }
 
-    createCommittee(formData);
+    const payload: CreateCommitteeRequest = {
+      ...formData,
+      memberIds: selectedMemberIds,
+      observerIds: selectedObserverIds,
+      chairId: selectedChairId || undefined,
+    };
+
+    createCommittee(payload);
   };
 
   return (
@@ -153,9 +154,9 @@ export default function NewCommittee() {
             <FriendsSelector
               friends={users}
               loading={loading}
-              selectedIds={formData.memberIds}
+              selectedIds={selectedMemberIds}
               onToggle={handleToggleMember}
-              excludeIds={formData.observerIds || []}
+              excludeIds={selectedObserverIds}
               placeholder='Search friends to add as members...'
               emptyMessage='No friends available'
             />
@@ -168,9 +169,9 @@ export default function NewCommittee() {
             <FriendsSelector
               friends={users}
               loading={loading}
-              selectedIds={formData.observerIds || []}
+              selectedIds={selectedObserverIds}
               onToggle={handleToggleObserver}
-              excludeIds={formData.memberIds}
+              excludeIds={selectedMemberIds}
               placeholder='Search friends to add as observers...'
               emptyMessage='No friends available'
             />
@@ -181,8 +182,8 @@ export default function NewCommittee() {
               Assign Chair
             </label>
             <Select
-              value={formData.chairId}
-              onValueChange={onChairChange}
+              value={selectedChairId}
+              onValueChange={handleToggleChair}
               disabled={selectedMembers.length === 0}
             >
               <SelectTrigger className='w-full font-medium'>

@@ -89,6 +89,7 @@ func SetupRoutes(r *gin.Engine) {
 		chat.POST("/dm/start", handlers.StartDMConversation)
 		chat.GET("/dm/:recipientId/history", handlers.GetDMHistory)
 		chat.GET("/conversations", handlers.GetUserConversations)
+		chat.DELETE("/conversations", handlers.DeleteConversations)
 	}
 
 	committees := r.Group("/committees")
@@ -104,6 +105,13 @@ func SetupRoutes(r *gin.Engine) {
 			committee.DELETE("", handlers.DeleteCommittee)
 			committee.POST("/chat/start", handlers.StartCommitteeChat)
 			committee.GET("/chat/history", handlers.GetCommitteeHistory)
+
+			// Member management routes
+			committee.POST("/members", handlers.AddMember)
+			committee.DELETE("/members/:memberId", handlers.RemoveMember)
+			committee.POST("/observers", handlers.AddObserver)
+			committee.DELETE("/observers/:observerId", handlers.RemoveObserver)
+			committee.PUT("/chair", handlers.ChangeChair)
 
 			// Motion routes
 			committee.GET("/motions", handlers.GetCommitteeMotions)

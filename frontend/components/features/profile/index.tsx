@@ -283,8 +283,7 @@ export function Profile() {
             <CardTitle>Bio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='space-y-2'>
-              <Label htmlFor='bio'>About Me</Label>
+            <div>
               {isEditing ? (
                 <textarea
                   id='bio'

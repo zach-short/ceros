@@ -157,6 +157,35 @@ export function DMChat({
     );
   };
 
+  const handleMessageEdited = (data: {
+    messageId: string;
+    content: string;
+    isEdited: boolean;
+    originalContent: string;
+    editedAt: string;
+  }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === data.messageId) {
+          return {
+            ...msg,
+            content: data.content,
+            isEdited: true,
+            editedAt: data.editedAt,
+            originalContent: data.originalContent,
+          };
+        }
+        return msg;
+      }),
+    );
+  };
+
+  const handleMessageDeleted = (data: { messageId: string }) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((msg) => msg.id !== data.messageId),
+    );
+  };
+
   const handleTypingUpdate = (data: {
     userId: string;
     roomId: string;
@@ -221,6 +250,8 @@ export function DMChat({
   } = useWebSocket({
     onMessage: handleNewMessage,
     onReactionUpdate: handleReactionUpdate,
+    onMessageEdited: handleMessageEdited,
+    onMessageDeleted: handleMessageDeleted,
     onTypingUpdate: handleTypingUpdate,
     onPinToggled: handlePinToggled,
     onUserStatusChanged: handleUserStatusChanged,

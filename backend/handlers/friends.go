@@ -91,13 +91,7 @@ func RequestFriend(c *gin.Context) {
 	err = userCollection.FindOne(ctx, bson.M{"_id": userID}).Decode(&requester)
 	if err != nil {
 		log.Printf("Error fetching requester for notification: %v", err)
-	} else {
-		hub := c.MustGet("hub")
-		notificationService := &NotificationService{Hub: hub.(*ws.Hub)}
-		err = notificationService.CreateFriendRequestNotification(friendship, requester.Name)
-		if err != nil {
-			log.Printf("Error creating friend request notification: %v", err)
-		}
+
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "friend request sent", "friendship": friendship})
