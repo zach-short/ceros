@@ -70,7 +70,10 @@ export default function CommitteeChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleNewMessage = (message: Message) => {
+  const handleNewMessage = (data: any) => {
+    const message = data.message || data;
+    const sender = data.sender;
+
     if (message.roomId === roomId) {
       const transformedMessage = session?.user?.id
         ? transformMessagesWithReactions([message], session.user.id)[0]
@@ -99,18 +102,34 @@ export default function CommitteeChat() {
         return [...prev, transformedMessage];
       });
 
-      setUsers((prevUsers) => {
-        const userExists = prevUsers.some((u) => u.id === message.senderId);
-        if (!userExists && message.senderId !== session?.user?.id) {
-          const placeholderUser: User = {
-            id: message.senderId,
-            name: 'Unknown User',
-            email: '',
-          };
-          return [...prevUsers, placeholderUser];
-        }
-        return prevUsers;
-      });
+      if (sender && message.senderId !== session?.user?.id) {
+        setUsers((prevUsers) => {
+          const userExists = prevUsers.some((u) => u.id === sender.id);
+          if (!userExists) {
+            const newUser: User = {
+              id: sender.id,
+              name: sender.name || 'Unknown User',
+              email: '',
+              picture: sender.picture,
+            };
+            return [...prevUsers, newUser];
+          }
+          return prevUsers;
+        });
+      } else if (!sender && message.senderId !== session?.user?.id) {
+        setUsers((prevUsers) => {
+          const userExists = prevUsers.some((u) => u.id === message.senderId);
+          if (!userExists) {
+            const placeholderUser: User = {
+              id: message.senderId,
+              name: 'Unknown User',
+              email: '',
+            };
+            return [...prevUsers, placeholderUser];
+          }
+          return prevUsers;
+        });
+      }
     }
   };
 

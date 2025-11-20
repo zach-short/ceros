@@ -20,31 +20,27 @@ interface WSMessage {
   payload: any;
 }
 
-interface Notification {
-  id: string;
-  type: string;
-  relatedId?: string;
-  title: string;
-  message: string;
-  urgency: string;
-  href?: string;
-  createdBy: string;
-  recipients: string[];
-  createdAt: string;
-  expiresAt?: string;
-  read: boolean;
-  readAt?: string;
-  dismissed: boolean;
-  dismissedAt?: string;
-}
-
 interface UseWebSocketOptions {
   onMessage?: (message: Message) => void;
   onReactionUpdate?: (data: { messageId: string; reactions: any[] }) => void;
-  onTypingUpdate?: (data: { userId: string; roomId: string; isTyping: boolean; name?: string }) => void;
-  onPinToggled?: (data: { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string }) => void;
-  onUserStatusChanged?: (data: { userId: string; isOnline: boolean; lastSeen: string }) => void;
-  onNotification?: (notification: Notification) => void;
+  onTypingUpdate?: (data: {
+    userId: string;
+    roomId: string;
+    isTyping: boolean;
+    name?: string;
+  }) => void;
+  onPinToggled?: (data: {
+    messageId: string;
+    isPinned: boolean;
+    pinnedBy: string;
+    pinnedAt: string;
+    roomId: string;
+  }) => void;
+  onUserStatusChanged?: (data: {
+    userId: string;
+    isOnline: boolean;
+    lastSeen: string;
+  }) => void;
   onConnect?: () => void;
   onDisconnect?: () => void;
 }
@@ -55,7 +51,6 @@ export function useWebSocket({
   onTypingUpdate,
   onPinToggled,
   onUserStatusChanged,
-  onNotification,
   onConnect,
   onDisconnect,
 }: UseWebSocketOptions) {
@@ -129,18 +124,31 @@ export function useWebSocket({
           );
         } else if (wsMessage.action === 'user_typing') {
           onTypingUpdate?.(
-            wsMessage.payload as { userId: string; roomId: string; isTyping: boolean; name?: string },
+            wsMessage.payload as {
+              userId: string;
+              roomId: string;
+              isTyping: boolean;
+              name?: string;
+            },
           );
         } else if (wsMessage.action === 'message_pin_toggled') {
           onPinToggled?.(
-            wsMessage.payload as { messageId: string; isPinned: boolean; pinnedBy: string; pinnedAt: string; roomId: string },
+            wsMessage.payload as {
+              messageId: string;
+              isPinned: boolean;
+              pinnedBy: string;
+              pinnedAt: string;
+              roomId: string;
+            },
           );
         } else if (wsMessage.action === 'user_status_changed') {
           onUserStatusChanged?.(
-            wsMessage.payload as { userId: string; isOnline: boolean; lastSeen: string },
+            wsMessage.payload as {
+              userId: string;
+              isOnline: boolean;
+              lastSeen: string;
+            },
           );
-        } else if (wsMessage.action === 'new_notification') {
-          onNotification?.(wsMessage.payload as Notification);
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -154,7 +162,6 @@ export function useWebSocket({
     onTypingUpdate,
     onPinToggled,
     onUserStatusChanged,
-    onNotification,
     onConnect,
     onDisconnect,
   ]);

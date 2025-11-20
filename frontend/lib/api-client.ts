@@ -5,6 +5,9 @@ import { toast } from 'sonner';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Flag to prevent multiple simultaneous signouts
+let isSigningOut = false;
+
 class ApiClient {
   private async request<T>(
     endpoint: string,
@@ -26,12 +29,18 @@ class ApiClient {
 
     if (!response.ok) {
       // Handle 401 errors by signing out the user
-      if (response.status === 401) {
+      if (response.status === 401 && !isSigningOut) {
+        isSigningOut = true;
         try {
           await signOut({ redirect: false });
           toast.info('Your session has expired. Please sign in again.');
         } catch (signOutError) {
           console.error('Error signing out user:', signOutError);
+        } finally {
+          // Reset the flag after a delay to allow the signout to complete
+          setTimeout(() => {
+            isSigningOut = false;
+          }, 1000);
         }
       }
 

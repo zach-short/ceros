@@ -32,19 +32,10 @@ export interface PrivacySettings {
   showPicture: boolean;
 }
 
-export interface NotificationSettings {
-  emailNotifications: boolean;
-  committeeInvitations: boolean;
-  motionNotifications: boolean;
-  voteNotifications: boolean;
-  friendRequestNotifications: boolean;
-}
-
 export interface UserSettings {
   theme: string;
   autoAcceptFriendInvitations: boolean;
   privacy: PrivacySettings;
-  notifications: NotificationSettings;
 }
 
 export interface FriendshipStatus {
@@ -55,3 +46,4 @@ export interface FriendshipStatus {
 }
 
 export type UserRole = 'admin' | 'member' | 'user' | 'observer';
+

@@ -53,7 +53,7 @@ export interface CreateCommitteeRequest {
   description?: string;
   type: string;
   ownerId: string;
-  chairId: string;
+  chairId?: string;
   memberIds: string[];
   observerIds?: string[];
 }

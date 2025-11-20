@@ -17,7 +17,7 @@ export default function HomePage() {
     );
   }
 
-  if (status === 'authenticated') {
+  if (session) {
     return <MessagesPage />;
   }
 

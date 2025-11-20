@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FriendsSelector } from '../shared/friends-selector';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/api/friends';
 import {
@@ -29,7 +29,7 @@ export default function NewCommittee() {
     description: '',
     type: 'permanent',
     ownerId: '',
-    chairId: '',
+    chairId: undefined,
     memberIds: [],
     observerIds: [],
   });
@@ -44,12 +44,18 @@ export default function NewCommittee() {
 
   const { data, error, loading } = useFriends();
   const friendships = data?.friendships ?? [];
-  const users = friendships.flatMap((friendship) =>
-    friendship.user ? [friendship.user] : [],
+
+  const users = useMemo(
+    () =>
+      friendships.flatMap((friendship) =>
+        friendship.user ? [friendship.user] : [],
+      ),
+    [friendships],
   );
 
-  const selectedMembers = users.filter((user) =>
-    formData.memberIds.includes(user.id),
+  const selectedMembers = useMemo(
+    () => users.filter((user) => formData.memberIds.includes(user.id)),
+    [users, formData.memberIds],
   );
 
   const onChairChange = (chairId: string) => {
@@ -62,8 +68,7 @@ export default function NewCommittee() {
       setFormData({
         ...formData,
         memberIds: formData.memberIds.filter((id) => id !== user.id),
-        // Clear chair if removing the current chair
-        chairId: formData.chairId === user.id ? '' : formData.chairId,
+        chairId: formData.chairId === user.id ? undefined : formData.chairId,
       });
     } else {
       setFormData({
@@ -178,6 +183,7 @@ export default function NewCommittee() {
             <Select
               value={formData.chairId}
               onValueChange={onChairChange}
+              disabled={selectedMembers.length === 0}
             >
               <SelectTrigger className='w-full font-medium'>
                 <SelectValue placeholder='Select a Member' />
@@ -194,9 +200,13 @@ export default function NewCommittee() {
                     </SelectItem>
                   ))
                 ) : (
-                  <div className='text-muted-foreground px-2 py-1 text-sm italic'>
+                  <SelectItem
+                    value='no-members'
+                    disabled
+                    className='text-muted-foreground text-sm italic'
+                  >
                     No members selected
-                  </div>
+                  </SelectItem>
                 )}
               </SelectContent>
             </Select>

@@ -83,7 +83,6 @@ export const apiDocumentation: RouteSection[] = [
       "theme": "dark",
       "autoAcceptFriendInvitations": false,
       "privacy": {...},
-      "notifications": {...}
     }
   }
 }`,
@@ -240,13 +239,6 @@ export const apiDocumentation: RouteSection[] = [
       "showBio": true,
       "showPicture": true
     },
-    "notifications": {
-      "emailNotifications": true,
-      "committeeInvitations": true,
-      "motionNotifications": true,
-      "voteNotifications": true,
-      "friendRequestNotifications": true
-    }
   }
 }`,
         },
@@ -414,7 +406,7 @@ export const apiDocumentation: RouteSection[] = [
       {
         method: 'PATCH',
         path: '/users/me/settings',
-        description: 'Update user settings (theme, privacy, notifications).',
+        description: 'Update user settings (theme, privacy).',
         requiresAuth: true,
         requestBody: [
           {
@@ -435,12 +427,6 @@ export const apiDocumentation: RouteSection[] = [
             required: false,
             description: 'Privacy settings object',
           },
-          {
-            name: 'notifications',
-            type: 'object',
-            required: false,
-            description: 'Notification preferences object',
-          },
         ],
         response: {
           status: 200,
@@ -452,7 +438,6 @@ export const apiDocumentation: RouteSection[] = [
     "theme": "dark",
     "autoAcceptFriendInvitations": false,
     "privacy": {...},
-    "notifications": {...}
   }
 }`,
         },
@@ -694,178 +679,6 @@ export const apiDocumentation: RouteSection[] = [
           status: 200,
           body: `{
   "message": "user unblocked"
-}`,
-        },
-      },
-    ],
-  },
-  {
-    title: 'Notifications',
-    description: 'Endpoints for managing user notifications.',
-    routes: [
-      {
-        method: 'GET',
-        path: '/users/me/notifications',
-        description: 'Get all notifications for the authenticated user.',
-        requiresAuth: true,
-        response: {
-          status: 200,
-          body: `{
-  "notifications": [
-    {
-      "id": "507f1f77bcf86cd799439020",
-      "type": "friend_request",
-      "title": "New Friend Request",
-      "message": "johndoe sent you a friend request",
-      "urgency": "medium",
-      "createdBy": "507f1f77bcf86cd799439011",
-      "createdAt": "2025-01-16T10:00:00Z",
-      "relatedId": "507f1f77bcf86cd799439021",
-      "href": "/friends",
-      "read": false,
-      "dismissed": false
-    },
-    {
-      "id": "507f1f77bcf86cd799439022",
-      "type": "motion",
-      "title": "New Motion: Budget Approval",
-      "message": "A new motion has been created",
-      "urgency": "high",
-      "createdBy": "507f1f77bcf86cd799439023",
-      "createdAt": "2025-01-16T09:00:00Z",
-      "relatedId": "507f1f77bcf86cd799439024",
-      "href": "/motions/507f1f77bcf86cd799439024",
-      "read": true,
-      "dismissed": false,
-      "readAt": "2025-01-16T09:30:00Z"
-    }
-  ]
-}`,
-        },
-      },
-      {
-        method: 'POST',
-        path: '/users/me/notifications',
-        description: 'Create a new notification.',
-        requiresAuth: true,
-        requestBody: [
-          {
-            name: 'type',
-            type: 'string',
-            required: true,
-            description: 'Notification type',
-          },
-          {
-            name: 'title',
-            type: 'string',
-            required: true,
-            description: 'Notification title',
-          },
-          {
-            name: 'message',
-            type: 'string',
-            required: true,
-            description: 'Notification message',
-          },
-          {
-            name: 'urgency',
-            type: 'string',
-            required: false,
-            description:
-              'Urgency level (low, medium, high) - defaults to medium',
-          },
-          {
-            name: 'recipients',
-            type: 'string[]',
-            required: true,
-            description: 'Array of recipient user IDs',
-          },
-          {
-            name: 'relatedId',
-            type: 'string',
-            required: false,
-            description: 'Related entity ID',
-          },
-          {
-            name: 'href',
-            type: 'string',
-            required: false,
-            description: 'Link to related content',
-          },
-          {
-            name: 'expiresAt',
-            type: 'string',
-            required: false,
-            description: 'Expiration timestamp',
-          },
-        ],
-        response: {
-          status: 201,
-          body: `{
-  "message": "notification created successfully",
-  "notification": {
-    "id": "507f1f77bcf86cd799439025",
-    "type": "custom",
-    "title": "Custom Notification",
-    "message": "This is a custom message",
-    "urgency": "medium",
-    "createdBy": "507f1f77bcf86cd799439011",
-    "recipients": ["507f1f77bcf86cd799439026"],
-    "createdAt": "2025-01-16T11:00:00Z"
-  }
-}`,
-        },
-      },
-      {
-        method: 'PATCH',
-        path: '/users/me/notifications/mark-all-read',
-        description: 'Mark all notifications as read.',
-        requiresAuth: true,
-        response: {
-          status: 200,
-          body: `{
-  "message": "all notifications marked as read",
-  "count": 5
-}`,
-        },
-      },
-      {
-        method: 'PATCH',
-        path: '/users/me/notifications/:notificationId/read',
-        description: 'Mark a notification as read.',
-        requiresAuth: true,
-        parameters: [
-          {
-            name: 'notificationId',
-            type: 'string',
-            required: true,
-            description: 'Notification ID',
-          },
-        ],
-        response: {
-          status: 200,
-          body: `{
-  "message": "notification marked as read"
-}`,
-        },
-      },
-      {
-        method: 'DELETE',
-        path: '/users/me/notifications/:notificationId',
-        description: 'Dismiss a notification.',
-        requiresAuth: true,
-        parameters: [
-          {
-            name: 'notificationId',
-            type: 'string',
-            required: true,
-            description: 'Notification ID',
-          },
-        ],
-        response: {
-          status: 200,
-          body: `{
-  "message": "notification dismissed"
 }`,
         },
       },

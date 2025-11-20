@@ -11,8 +11,6 @@ import { UserSettings } from '@/lib/api/users';
 import { useTheme } from 'next-themes';
 import { AppearanceSettings } from './appearance-settings';
 import { PrivacySettings } from './privacy-settings';
-import { FriendSettings } from './friend-settings';
-import { NotificationSettings } from './notification-settings';
 
 export function Settings() {
   const { data: user, loading: userLoading, refetch } = useUser();
@@ -62,13 +60,6 @@ export function Settings() {
       showFamilyName: true,
       showBio: true,
       showPicture: true,
-    },
-    notifications: {
-      emailNotifications: true,
-      committeeInvitations: true,
-      motionNotifications: true,
-      voteNotifications: true,
-      friendRequestNotifications: true,
     },
   });
 
@@ -136,16 +127,6 @@ export function Settings() {
         />
 
         <PrivacySettings
-          settings={workingSettings}
-          onSettingChange={updateSetting}
-        />
-
-        <FriendSettings
-          settings={workingSettings}
-          onSettingChange={updateSetting}
-        />
-
-        <NotificationSettings
           settings={workingSettings}
           onSettingChange={updateSetting}
         />
