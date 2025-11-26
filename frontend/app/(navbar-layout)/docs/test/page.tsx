@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
+
 
 export default function Demo() {
   return (
@@ -13,7 +15,7 @@ export default function Demo() {
 
         <div className="relative z-10 flex flex-col">
 
-          <section className="min-h-[80vh] flex flex-col items-center justify-center px-4 pt-8 text-center">
+          <section className="min-h-[80vh] flex flex-col items-center justify-center px-4 pt-8 text-center text-black">
             <img src="/images/logo.png" alt="Ceros Logo" className="mx-auto mb-4 max-w-[150px] md:max-w-none" />
             
             <div className="text-5xl md:text-8xl font-semibold">Ceros</div>
@@ -22,27 +24,29 @@ export default function Demo() {
               The chat-based solution for RONR meetings
             </div>
 
-            {/* Stack buttons on mobile (flex-col), side-by-side on desktop (md:flex-row) */}
             <div className="flex flex-col md:flex-row justify-center items-center mt-10 gap-4 md:gap-6 w-full">
-              <Button className="h-16 md:h-20 w-full md:w-48 text-xl md:text-2xl bg-green-200 hover:bg-green-300 text-black rounded-3xl shadow-lg">
-                Get Started
-              </Button>
-              <Button className="h-16 md:h-20 w-full md:w-52 text-xl md:text-2xl bg-gray-300 hover:bg-gray-400 text-black rounded-3xl shadow-lg">
-                Documentation
-              </Button>
+              <Link href={`/`}>
+                <Button className="h-16 md:h-20 w-full md:w-48 text-xl md:text-2xl bg-green-200 hover:bg-green-300 text-black rounded-3xl shadow-lg">
+                  Get Started
+                </Button>
+              </Link>
+              <Link href={`/docs/api`}>
+                <Button className="h-16 md:h-20 w-full md:w-52 text-xl md:text-2xl bg-gray-300 hover:bg-gray-400 text-black rounded-3xl shadow-lg">
+                  Documentation
+                </Button>
+              </Link>
             </div>
           </section>
 
-          <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center py-10">
+          <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center py-10 text-black">
             <h1 className="text-3xl md:text-5xl mb-8 md:mb-12 font-medium px-2">
               Add friends and create committees for online meetings.
             </h1>
             
-            <div className="w-full md:w-[80%] max-w-6xl bg-white/70 backdrop-blur-md border border-black rounded-3xl shadow-lg flex flex-col md:flex-row items-center justify-center overflow-hidden p-6 md:p-0">
-              
+            <div className="min-w-full md:min-w-[80%] max-w-7xl backdrop-blur-md border rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-center md:p-0">
+      
               <img src="/images/construction.png" className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
               
-              {/* Text Wrapper: Full width on mobile, 40% on desktop */}
               <div className="flex flex-col justify-center w-full md:w-[40%] md:mr-4 md:ml-auto text-center md:text-left">
                 <h2 className="text-xl md:text-3xl font-medium">
                   Connect with friends, bring your team together, and effortlessly create committees…
@@ -51,12 +55,11 @@ export default function Demo() {
             </div>
           </section>
 
-          {/* --- Feature Section 2 --- */}
-          <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center py-10">
+          <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center py-10 text-black">
             <h1 className="text-3xl md:text-5xl mb-8 md:mb-12 font-medium px-2">
               Collaboration Tools for Every Kind of Discussion
             </h1>
-            <div className="w-full md:w-[80%] max-w-6xl bg-white/70 backdrop-blur-md border border-black rounded-3xl shadow-lg flex flex-col md:flex-row items-center justify-center overflow-hidden p-6 md:p-0">
+            <div className="min-w-full md:min-w-[80%] max-w-7xl backdrop-blur-md border rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-center md:p-0">
               <img src="/images/construction.png" className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
               <div className="flex flex-col justify-center w-full md:w-[40%] md:mr-4 md:ml-auto text-center md:text-left">
                 <h2 className="text-xl md:text-3xl font-medium">
@@ -66,12 +69,11 @@ export default function Demo() {
             </div>
           </section>
 
-          {/* --- Feature Section 3 --- */}
-          <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center py-10">
+          <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center py-10 text-black">
             <h1 className="text-3xl md:text-5xl mb-8 md:mb-12 font-medium px-2">
               Join the Ceros Community!
             </h1>
-            <div className="w-full md:w-[80%] max-w-6xl bg-white/70 backdrop-blur-md border border-black rounded-3xl shadow-lg flex flex-col md:flex-row items-center justify-center overflow-hidden p-6 md:p-0">
+            <div className="min-w-full md:min-w-[80%] max-w-7xl backdrop-blur-md border rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-center md:p-0">
               <img src="/images/construction.png" className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
               <div className="flex flex-col justify-center w-full md:w-[40%] md:mr-4 md:ml-auto text-center md:text-left">
                 <h2 className="text-xl md:text-3xl font-medium">
