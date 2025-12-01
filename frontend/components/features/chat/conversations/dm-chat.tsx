@@ -66,6 +66,7 @@ export function DMChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const roomIdRef = useRef<string | null>(null);
 
   const {
     mutate: startDM,
@@ -94,7 +95,7 @@ export function DMChat({
     const sender = data.sender;
 
     if (
-      message.roomId === roomId ||
+      message.roomId === roomIdRef.current ||
       (recipientId &&
         session?.user?.id &&
         (message.senderId === session.user.id ||
@@ -194,7 +195,7 @@ export function DMChat({
     isTyping: boolean;
     name?: string;
   }) => {
-    if (data.roomId !== roomId) return;
+    if (data.roomId !== roomIdRef.current) return;
 
     setTypingUsers((prev) => {
       if (data.isTyping) {
@@ -215,7 +216,7 @@ export function DMChat({
     pinnedAt: string;
     roomId: string;
   }) => {
-    if (data.roomId !== roomId) return;
+    if (data.roomId !== roomIdRef.current) return;
 
     setMessages((prev) =>
       prev.map((msg) => {
@@ -260,6 +261,11 @@ export function DMChat({
     onConnect: () => {},
     onDisconnect: () => {},
   });
+
+  // Keep roomIdRef in sync with roomId state
+  useEffect(() => {
+    roomIdRef.current = roomId;
+  }, [roomId]);
 
   useEffect(() => {
     const shouldInitialize =

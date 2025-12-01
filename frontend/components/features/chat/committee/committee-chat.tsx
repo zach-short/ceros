@@ -49,6 +49,7 @@ export default function CommitteeChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initializationAttempted = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const roomIdRef = useRef<string | null>(null);
 
   const {
     mutate: startCommitteeChat,
@@ -76,14 +77,7 @@ export default function CommitteeChat() {
     const message = data.message || data;
     const sender = data.sender;
 
-    console.log('[Committee Chat] Received message:', {
-      messageRoomId: message.roomId,
-      currentRoomId: roomId,
-      matches: message.roomId === roomId,
-      data,
-    });
-
-    if (message.roomId === roomId) {
+    if (message.roomId === roomIdRef.current) {
       const transformedMessage = session?.user?.id
         ? transformMessagesWithReactions([message], session.user.id)[0]
         : message;
@@ -162,7 +156,7 @@ export default function CommitteeChat() {
     isTyping: boolean;
     name?: string;
   }) => {
-    if (data.roomId !== roomId) return;
+    if (data.roomId !== roomIdRef.current) return;
 
     setTypingUsers((prev) => {
       if (data.isTyping) {
@@ -212,7 +206,7 @@ export default function CommitteeChat() {
     pinnedAt: string;
     roomId: string;
   }) => {
-    if (data.roomId !== roomId) return;
+    if (data.roomId !== roomIdRef.current) return;
 
     setMessages((prev) =>
       prev.map((msg) => {
@@ -316,6 +310,11 @@ export default function CommitteeChat() {
     onDisconnect: () => {},
   });
 
+  // Keep roomIdRef in sync with roomId state
+  useEffect(() => {
+    roomIdRef.current = roomId;
+  }, [roomId]);
+
   useEffect(() => {
     const shouldInitialize =
       committeeId &&
@@ -384,13 +383,7 @@ export default function CommitteeChat() {
 
   useEffect(() => {
     if (roomId && isConnected) {
-      console.log('[Committee Chat] Joining room:', roomId);
       joinRoom(roomId);
-    } else {
-      console.log('[Committee Chat] Not joining room yet:', {
-        roomId,
-        isConnected,
-      });
     }
   }, [roomId, isConnected, joinRoom]);
 
@@ -405,13 +398,6 @@ export default function CommitteeChat() {
   }, [messages]);
 
   const handleSendMessage = (content: string) => {
-    console.log('[Committee Chat] Attempting to send message:', {
-      roomId,
-      isConnected,
-      hasSession: !!session?.user?.id,
-      content,
-    });
-
     if (!roomId || !isConnected || !session?.user?.id) return;
 
     if (replyState) {
@@ -428,7 +414,6 @@ export default function CommitteeChat() {
       };
 
       setMessages((prev) => [...prev, tempMessage]);
-      console.log('[Committee Chat] Sending message to room:', roomId);
       sendMessage(roomId, content, 'group');
     }
   };
