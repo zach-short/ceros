@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 
 /**
  * 1. REUSABLE ANIMATION COMPONENT
@@ -13,7 +13,7 @@ const RevealOnScroll = ({
   delay = 0,
   className = '',
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   delay?: number;
   className?: string;
 }) => {
@@ -25,18 +25,19 @@ const RevealOnScroll = ({
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.unobserve(entry.target); // Only animate once
+          observer.unobserve(entry.target);
         }
       },
-      { threshold: 0.1 }, // Trigger when 10% is visible
+      { threshold: 0.1 },
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    const currentRef = ref.current;
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
     return () => {
-      if (ref.current) observer.unobserve(ref.current);
+      if (currentRef) observer.unobserve(currentRef);
     };
   }, []);
 
@@ -61,7 +62,6 @@ export default function LandingPage({
   return (
     <div className='min-h-screen w-full'>
       <div className='relative w-full min-h-screen bg-gradient-to-br from-blue-600 via-orange-500 via-yellow-100 to-yellow-300 overflow-hidden'>
-        {/* ANIMATED BACKGROUND ELEMENTS */}
         <div className='absolute inset-0 pointer-events-none overflow-hidden'>
           <span
             className='absolute top-0 left-0 h-96 w-96 rounded-full bg-blue-400 opacity-20 blur-3xl animate-pulse'
@@ -293,7 +293,6 @@ export default function LandingPage({
                 </div>
               </RevealOnScroll>
 
-              {/* CHAT SHOWCASE */}
               <RevealOnScroll>
                 <div className='bg-white/40 backdrop-blur-lg rounded-3xl p-8 md:p-12 border border-white/50 shadow-2xl'>
                   <div className='grid grid-cols-1 lg:grid-cols-2 gap-12 items-center'>
@@ -342,7 +341,6 @@ export default function LandingPage({
             </div>
           </section>
 
-          {/* FINAL CTA SECTION */}
           <section className='bg-gradient-to-b from-white/20 to-white/40 py-24 px-4'>
             <RevealOnScroll>
               <div className='max-w-4xl mx-auto text-center'>

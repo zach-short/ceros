@@ -106,12 +106,15 @@ export function MotionCardCompact({
           </h3>
 
           <p className='text-xs opacity-75 mb-2 truncate'>
-            Proposed by <span className='font-medium'>{getUserDisplayName(mover)}</span>
+            Proposed by{' '}
+            <span className='font-medium'>{getUserDisplayName(mover)}</span>
             {seconder && (
               <>
                 {' '}
                 • Seconded by{' '}
-                <span className='font-medium'>{getUserDisplayName(seconder)}</span>
+                <span className='font-medium'>
+                  {getUserDisplayName(seconder)}
+                </span>
               </>
             )}
           </p>
@@ -141,7 +144,7 @@ export function MotionCardCompact({
               <div className='h-2 w-full rounded-full overflow-hidden flex bg-gray-200 dark:bg-gray-700'>
                 {ayeCount > 0 && (
                   <div
-                    className='bg-white dark:bg-black h-full'
+                    className='bg-green-500 h-full'
                     style={{ width: `${ayePercentage}%` }}
                   />
                 )}
@@ -153,7 +156,7 @@ export function MotionCardCompact({
                 )}
                 {nayCount > 0 && (
                   <div
-                    className='bg-black dark:bg-white h-full'
+                    className='bg-red-500 h-full'
                     style={{ width: `${nayPercentage}%` }}
                   />
                 )}

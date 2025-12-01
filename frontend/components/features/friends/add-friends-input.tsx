@@ -1,51 +1,45 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SearchIcon, UserPlus, UserCheck, Clock, UserX } from 'lucide-react';
 import {
-  useState,
-  useEffect,
-  useCallback,
-} from 'react';
+  SearchIcon,
+  UserPlus,
+  UserCheck,
+  Clock,
+  UserX,
+  Loader2,
+} from 'lucide-react';
+import { useState } from 'react';
 import { friendsApi } from '@/lib/api/friends';
 import { User } from '@/models';
 import { toast } from 'sonner';
 import { UserName } from '@/components/shared/user';
 import { getDisplayEmail } from '@/lib/user-privacy';
+import { usePaginatedSearch } from '@/hooks/use-paginated-search';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export function AddFriendsInput() {
-  const [value, setValue] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
-  const searchUsers = useCallback(async (searchTerm: string) => {
-    if (!searchTerm.trim()) {
-      setUsers([]);
-      return;
-    }
+  const {
+    query,
+    setQuery,
+    items: users,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    loadMore,
+  } = usePaginatedSearch<User>({
+    fetchFn: friendsApi.searchUsers,
+    pageSize: 100,
+    debounceMs: 300,
+  });
 
-    setIsSearching(true);
-    try {
-      const response = await friendsApi.searchUsers(searchTerm);
-      if (response.success) {
-        setUsers(response.data.users || []);
-      }
-    } catch (error) {
-      console.error('Error searching users:', error);
-      setUsers([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      searchUsers(value);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [value, searchUsers]);
+  const loadMoreRef = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading: isLoadingMore,
+  });
 
   const handleUserAction = async (user: User) => {
     if (user.isCurrentUser) {
@@ -81,7 +75,8 @@ export function AddFriendsInput() {
       const response = await friendsApi.requestFriend({ addresseeId: user.id });
       if (response.success) {
         toast.success(`Friend request sent to ${user.name || user.email}`);
-        searchUsers(value);
+
+        setQuery(query);
       } else {
         toast.error('Failed to send friend request');
       }
@@ -96,21 +91,24 @@ export function AddFriendsInput() {
       <div className={`relative `}>
         <Input
           placeholder='Find Friends'
-          value={value}
+          value={query}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => {
-            setValue('');
+            setQuery('');
             setTimeout(() => setShowSuggestions(false), 150);
           }}
           onChange={(e) => {
-            setValue(e.target.value);
+            setQuery(e.target.value);
           }}
         />
         <SearchIcon className={`absolute top-2 right-3`} size={20} />
         {showSuggestions && (
           <Suggestions
             users={users}
-            isSearching={isSearching}
+            isSearching={isLoading}
+            isLoadingMore={isLoadingMore}
+            hasMore={hasMore}
+            loadMoreRef={loadMoreRef}
             onUserAction={(user) => handleUserAction(user)}
           />
         )}
@@ -122,10 +120,16 @@ export function AddFriendsInput() {
 function Suggestions({
   users,
   isSearching,
+  isLoadingMore,
+  hasMore,
+  loadMoreRef,
   onUserAction,
 }: {
   users: User[];
   isSearching: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  loadMoreRef: React.RefObject<HTMLDivElement | null>;
   onUserAction: (user: User) => void;
 }) {
   if (isSearching) {
@@ -133,7 +137,8 @@ function Suggestions({
       <div
         className={`min-h-60 flex flex-col items-center justify-center mt-1`}
       >
-        <p className='text-gray-500'>Searching...</p>
+        <Loader2 className='animate-spin text-gray-500' size={20} />
+        <p className='text-gray-500 mt-2'>Searching...</p>
       </div>
     );
   }
@@ -177,7 +182,9 @@ function Suggestions({
   };
 
   return (
-    <div className={`min-h-60 flex flex-col items-start mt-1`}>
+    <div
+      className={`min-h-60 max-h-96 overflow-y-auto flex flex-col items-start mt-1`}
+    >
       {users.map((user: User) => {
         const { icon: Icon, color, disabled } = getIconAndColor(user);
         return (
@@ -198,14 +205,17 @@ function Suggestions({
                 {user.isCurrentUser && ' (You)'}
               </p>
               <p className='text-sm text-gray-500'>
-                <UserName
-                  user={user}
-                  showFullName={true}
-                />
+                <UserName user={user} showFullName={true} />
               </p>
-              {getDisplayEmail(user, { user, isOwnProfile: user.isCurrentUser }) && (
+              {getDisplayEmail(user, {
+                user,
+                isOwnProfile: user.isCurrentUser,
+              }) && (
                 <p className='text-xs text-gray-400'>
-                  {getDisplayEmail(user, { user, isOwnProfile: user.isCurrentUser })}
+                  {getDisplayEmail(user, {
+                    user,
+                    isOwnProfile: user.isCurrentUser,
+                  })}
                 </p>
               )}
             </div>
@@ -213,6 +223,19 @@ function Suggestions({
           </button>
         );
       })}
+      {/* Infinite scroll sentinel */}
+      <div ref={loadMoreRef} className='w-full py-2'>
+        {isLoadingMore && (
+          <div className='flex justify-center'>
+            <Loader2 className='animate-spin text-gray-500' size={16} />
+          </div>
+        )}
+      </div>
+      {!hasMore && users.length > 0 && (
+        <p className='text-xs text-gray-400 text-center w-full py-2'>
+          End of results
+        </p>
+      )}
     </div>
   );
 }

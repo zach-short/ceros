@@ -23,11 +23,9 @@ export function ChatHeader({
   recipientPicture,
   isConnected,
   isLoading,
-  onToggleMotions,
   onOpenSearch,
   chatType = 'dm',
   isOnline,
-  activeMotionCount = 0,
 }: ChatHeaderProps) {
   const isCommittee = chatType === 'committee';
   const profileLink = isCommittee

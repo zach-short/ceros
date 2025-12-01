@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function LandingPage() {
   return (
@@ -15,7 +16,7 @@ export default function LandingPage() {
         <div className="relative z-10 flex flex-col">
 
           <section className="min-h-[80vh] flex flex-col items-center justify-center px-4 pt-8 text-center text-black">
-            <img src="/images/logo.png" alt="Ceros Logo" className="mx-auto mb-4 max-w-[150px] md:max-w-none" />
+            <Image src="/images/logo.png" alt="Ceros Logo" width={400} height={400} className="mx-auto mb-4 max-w-[150px] md:max-w-none" priority />
             
             <div className="text-5xl md:text-8xl font-semibold">Ceros</div>
             
@@ -43,8 +44,8 @@ export default function LandingPage() {
             </h1>
             
             <div className="min-w-full md:min-w-[80%] max-w-7xl backdrop-blur-md border rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-center md:p-0">
-      
-              <img src="/images/construction.png" className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
+
+              <Image src="/images/construction.png" width={600} height={600} className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
               
               <div className="flex flex-col justify-center w-full md:w-[40%] md:mr-4 md:ml-auto text-center md:text-left">
                 <h2 className="text-xl md:text-3xl font-medium">
@@ -59,7 +60,7 @@ export default function LandingPage() {
               Collaboration Tools for Every Kind of Discussion
             </h1>
             <div className="min-w-full md:min-w-[80%] max-w-7xl backdrop-blur-md border rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-center md:p-0">
-              <img src="/images/construction.png" className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
+              <Image src="/images/construction.png" width={600} height={600} className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
               <div className="flex flex-col justify-center w-full md:w-[40%] md:mr-4 md:ml-auto text-center md:text-left">
                 <h2 className="text-xl md:text-3xl font-medium">
                   Streamline your committee work with motion creation, discussions, and voting…
@@ -73,7 +74,7 @@ export default function LandingPage() {
               Join the Ceros Community!
             </h1>
             <div className="min-w-full md:min-w-[80%] max-w-7xl backdrop-blur-md border rounded-3xl shadow-2xl flex flex-col md:flex-row items-center justify-center md:p-0">
-              <img src="/images/construction.png" className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
+              <Image src="/images/construction.png" width={600} height={600} className="w-full max-w-[200px] md:max-w-none md:max-h-[70%] md:ml-auto mb-6 md:mb-0 object-contain" alt="Construction" />
               <div className="flex flex-col justify-center w-full md:w-[40%] md:mr-4 md:ml-auto text-center md:text-left">
                 <h2 className="text-xl md:text-3xl font-medium">
                   Connect instantly with friends through fast, private direct messaging…

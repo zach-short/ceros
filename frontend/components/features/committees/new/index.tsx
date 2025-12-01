@@ -5,10 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { useCallback, useState, useEffect, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@/lib/api/friends';
-import { useFriends } from '@/hooks/api/use-friends';
 import { toast } from 'sonner';
 import { useCreateCommittee } from '@/hooks/api/use-commitee';
 import { CreateCommitteeRequest } from '@/lib/api/committee';
@@ -28,20 +27,16 @@ export default function NewCommittee() {
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [selectedObserverIds, setSelectedObserverIds] = useState<string[]>([]);
   const [selectedChairId, setSelectedChairId] = useState<string>('');
-
-  const { data, error, loading } = useFriends();
-  const friendships = data?.friendships ?? [];
-  const users = useMemo(
-    () =>
-      friendships.flatMap((friendship) =>
-        friendship.user ? [friendship.user] : [],
-      ),
-    [friendships],
-  );
+  const [selectedMembersMap, setSelectedMembersMap] = useState<
+    Map<string, User>
+  >(new Map());
 
   const selectedMembers = useMemo(
-    () => users.filter((user) => selectedMemberIds.includes(user.id)),
-    [users, selectedMemberIds],
+    () =>
+      Array.from(selectedMembersMap.values()).filter((user) =>
+        selectedMemberIds.includes(user.id),
+      ),
+    [selectedMembersMap, selectedMemberIds],
   );
 
   const handleToggleMember = useCallback((clickedMember: User) => {
@@ -50,6 +45,16 @@ export default function NewCommittee() {
         ? prev.filter((id) => id !== clickedMember.id)
         : [...prev, clickedMember.id],
     );
+
+    setSelectedMembersMap((prev) => {
+      const newMap = new Map(prev);
+      if (newMap.has(clickedMember.id)) {
+        newMap.delete(clickedMember.id);
+      } else {
+        newMap.set(clickedMember.id, clickedMember);
+      }
+      return newMap;
+    });
   }, []);
 
   const handleToggleObserver = useCallback((clickedMember: User) => {
@@ -147,8 +152,6 @@ export default function NewCommittee() {
               Add Members
             </label>
             <AddMemberInput
-              users={users}
-              loading={loading}
               onToggleAction={handleToggleMember}
               isCheckedAction={isMemberChecked}
               excludeIds={selectedObserverIds}
@@ -162,8 +165,6 @@ export default function NewCommittee() {
               Add Observers (Optional)
             </label>
             <AddMemberInput
-              users={users}
-              loading={loading}
               onToggleAction={handleToggleObserver}
               isCheckedAction={isObserverChecked}
               excludeIds={selectedMemberIds}

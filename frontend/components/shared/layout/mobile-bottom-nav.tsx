@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { MessagesSquareIcon, User, Users, MenuIcon, Bell } from 'lucide-react';
+import { MessagesSquareIcon, User, Users, MenuIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 interface NavItem {

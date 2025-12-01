@@ -8,7 +8,11 @@ import type {
 export type { User, Friendship };
 
 export const friendsApi = {
-  getAll: (): Promise<any> => apiRequest('get', '/users/me/friends'),
+  getAll: (cursor?: string, limit: number = 100): Promise<any> =>
+    apiRequest('get', '/users/me/friends', null, {
+      ...(cursor && { cursor }),
+      limit: limit.toString(),
+    }),
 
   getPending: (): Promise<any> =>
     apiRequest('get', '/users/me/friends/pending'),
@@ -36,6 +40,14 @@ export const friendsApi = {
   unblockUser: (friendshipId: string): Promise<any> =>
     apiRequest('delete', `/users/me/friends/${friendshipId}/unblock`),
 
-  searchUsers: (searchTerm: string): Promise<any> =>
-    apiRequest('get', '/users/search', null, { search: searchTerm }),
+  searchUsers: (
+    searchTerm: string,
+    cursor?: string,
+    limit: number = 100
+  ): Promise<any> =>
+    apiRequest('get', '/users/search', null, {
+      search: searchTerm,
+      ...(cursor && { cursor }),
+      limit: limit.toString(),
+    }),
 };
