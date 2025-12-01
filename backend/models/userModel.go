@@ -21,35 +21,28 @@ type PrivacySettings struct {
 	ShowPicture     bool `bson:"showPicture" json:"showPicture"`
 }
 
-type NotificationSettings struct {
-	EmailNotifications         bool `bson:"emailNotifications" json:"emailNotifications"`
-	CommitteeInvitations       bool `bson:"committeeInvitations" json:"committeeInvitations"`
-	MotionNotifications        bool `bson:"motionNotifications" json:"motionNotifications"`
-	VoteNotifications          bool `bson:"voteNotifications" json:"voteNotifications"`
-	FriendRequestNotifications bool `bson:"friendRequestNotifications" json:"friendRequestNotifications"`
-}
-
 type UserSettings struct {
-	Theme                       string               `bson:"theme" json:"theme"` // "light", "dark", "system"
-	AutoAcceptFriendInvitations bool                 `bson:"autoAcceptFriendInvitations" json:"autoAcceptFriendInvitations"`
-	Privacy                     PrivacySettings      `bson:"privacy" json:"privacy"`
-	Notifications               NotificationSettings `bson:"notifications" json:"notifications"`
+	Theme                       string          `bson:"theme" json:"theme"` // "light", "dark", "system"
+	AutoAcceptFriendInvitations bool            `bson:"autoAcceptFriendInvitations" json:"autoAcceptFriendInvitations"`
+	Privacy                     PrivacySettings `bson:"privacy" json:"privacy"`
 }
 
 type User struct {
-	ID           primitive.ObjectID `bson:"_id" json:"id"`
-	Email        string             `bson:"email" json:"email"`
-	Name         string             `bson:"name,omitempty" json:"name,omitempty"`
-	GivenName    string             `bson:"givenName,omitempty" json:"givenName,omitempty"`
-	FamilyName   string             `bson:"familyName,omitempty" json:"familyName,omitempty"`
-	PasswordHash string             `bson:"passwordHash,omitempty" json:"passwordHash,omitempty"`
-	Bio          string             `bson:"bio,omitempty" json:"bio,omitempty"`
-	Picture      string             `bson:"picture,omitempty" json:"picture,omitempty"`
-	PhoneNumber  string             `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
-	Address      Address            `bson:"address,omitempty" json:"address,omitempty"`
-	Settings     UserSettings       `bson:"settings,omitempty" json:"settings,omitempty"`
-	IsOnline     bool               `bson:"isOnline" json:"isOnline"`
-	LastSeen     primitive.DateTime `bson:"lastSeen,omitempty" json:"lastSeen,omitempty"`
+	ID           primitive.ObjectID  `bson:"_id" json:"id"`
+	Email        string              `bson:"email" json:"email"`
+	Name         string              `bson:"name,omitempty" json:"name,omitempty"`
+	GivenName    string              `bson:"givenName,omitempty" json:"givenName,omitempty"`
+	FamilyName   string              `bson:"familyName,omitempty" json:"familyName,omitempty"`
+	PasswordHash string              `bson:"passwordHash,omitempty" json:"passwordHash,omitempty"`
+	Bio          string              `bson:"bio,omitempty" json:"bio,omitempty"`
+	Picture      string              `bson:"picture,omitempty" json:"picture,omitempty"`
+	PhoneNumber  string              `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
+	Address      Address             `bson:"address,omitempty" json:"address,omitempty"`
+	Settings     UserSettings        `bson:"settings,omitempty" json:"settings,omitempty"`
+	IsOnline     bool                `bson:"isOnline" json:"isOnline"`
+	LastSeen     primitive.DateTime  `bson:"lastSeen,omitempty" json:"lastSeen,omitempty"`
+	IsDeleted    bool                `bson:"isDeleted" json:"isDeleted"`
+	DeletedAt    *primitive.DateTime `bson:"deletedAt,omitempty" json:"deletedAt,omitempty"`
 }
 
 func GetDefaultUserSettings() UserSettings {
@@ -64,13 +57,6 @@ func GetDefaultUserSettings() UserSettings {
 			ShowFamilyName:  true,
 			ShowBio:         true,
 			ShowPicture:     true,
-		},
-		Notifications: NotificationSettings{
-			EmailNotifications:         true,
-			CommitteeInvitations:       true,
-			MotionNotifications:        true,
-			VoteNotifications:          true,
-			FriendRequestNotifications: true,
 		},
 	}
 }

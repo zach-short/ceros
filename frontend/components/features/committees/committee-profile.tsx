@@ -17,8 +17,6 @@ import { CenteredDiv } from '@/components/shared/layout/centered-div';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { useCommittee } from '@/hooks/api/use-commitee';
 import { useCommitteeHistory } from '@/hooks/api/use-committee-chat';
-import { Committee } from '@/models/committee';
-import { User } from '@/components/features/chat/ui/types';
 import { Users, Settings, MessageSquare, FileText } from 'lucide-react';
 import { CommitteeSettingsSheet } from './committee-settings-sheet';
 import { CommitteeMembersSheet } from '../chat/committee/sheets/committee-members-sheet';
@@ -114,9 +112,7 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
   }
 
   const memberCount =
-    (committee.ownerId ? 1 : 0) +
-    (committee.chairId ? 1 : 0) +
-    (committee.memberIds?.length || 0);
+    (committee.chairId ? 1 : 0) + (committee.memberIds?.length || 0);
 
   const typeDisplay = getCommitteeTypeDisplay(committee.type);
 
@@ -151,7 +147,11 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
                 <ShareButton
                   title={`${committee.name}`}
                   text={`View ${committee.name} on Ceros`}
-                  url={typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL}/committees/${committeeId}/profile`}
+                  url={
+                    typeof window !== 'undefined'
+                      ? window.location.href
+                      : `${process.env.NEXT_PUBLIC_APP_URL}/committees/${committeeId}/profile`
+                  }
                 />
               </div>
               <div className='flex items-start gap-4'>
@@ -196,14 +196,16 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
                         {memberCount} member{memberCount !== 1 ? 's' : ''}
                       </span>
                     </button>
-                    •
-                    {committee.observerIds &&
-                      committee.observerIds.length > 0 && (
+
+                    {committee.observerIds && (
+                      <>
+                        •
                         <span>
                           {committee.observerIds.length} observer
                           {committee.observerIds.length !== 1 ? 's' : ''}
                         </span>
-                      )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

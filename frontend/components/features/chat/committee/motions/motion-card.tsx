@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User } from '@/models';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 interface MotionCardProps {
   motion: Motion;
@@ -134,12 +135,12 @@ export function MotionCard({
               {getStatusBadge()}
             </div>
             <p className='text-xs opacity-75'>
-              Proposed by <span className='font-medium'>{mover.name}</span>
+              Proposed by <span className='font-medium'>{getUserDisplayName(mover)}</span>
               {seconder && (
                 <>
                   {' '}
                   • Seconded by{' '}
-                  <span className='font-medium'>{seconder.name}</span>
+                  <span className='font-medium'>{getUserDisplayName(seconder)}</span>
                 </>
               )}
             </p>
@@ -147,14 +148,12 @@ export function MotionCard({
         </div>
       </div>
 
-      {/* Content */}
       <div className='px-4 py-3 space-y-3'>
         <div>
           <h3 className='font-semibold mb-1'>{motion.title}</h3>
           <p className='text-sm opacity-90'>{motion.description}</p>
         </div>
 
-        {/* Voting Status / Results */}
         {motion.status === 'open' ||
         motion.status === 'passed' ||
         motion.status === 'failed' ? (
@@ -176,7 +175,6 @@ export function MotionCard({
               )}
             </div>
 
-            {/* Vote bar */}
             {totalCastVotes > 0 && (
               <div className='h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden flex'>
                 <div
@@ -190,7 +188,6 @@ export function MotionCard({
               </div>
             )}
 
-            {/* Vote breakdown */}
             <div className='grid grid-cols-3 gap-2 text-xs'>
               <div className='flex items-center gap-1'>
                 <CheckCircle2

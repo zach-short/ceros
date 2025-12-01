@@ -24,19 +24,10 @@ export interface PrivacySettings {
   showPicture: boolean;
 }
 
-export interface NotificationSettings {
-  emailNotifications: boolean;
-  committeeInvitations: boolean;
-  motionNotifications: boolean;
-  voteNotifications: boolean;
-  friendRequestNotifications: boolean;
-}
-
 export interface UserSettings {
   theme: 'light' | 'dark' | 'system';
   autoAcceptFriendInvitations: boolean;
   privacy: PrivacySettings;
-  notifications: NotificationSettings;
 }
 
 export interface User {
@@ -83,7 +74,6 @@ export interface UpdateUserSettingsRequest {
   theme?: 'light' | 'dark' | 'system';
   autoAcceptFriendInvitations?: boolean;
   privacy?: Partial<PrivacySettings>;
-  notifications?: Partial<NotificationSettings>;
 }
 
 export interface CheckUsernameResponse {
@@ -104,4 +94,6 @@ export const usersApi = {
 
   checkUsername: (name: string): Promise<any> =>
     apiRequest('get', '/users/check-username', null, { name }),
+
+  deleteAccount: (_?: void): Promise<any> => apiRequest('patch', '/users/me/delete'),
 };

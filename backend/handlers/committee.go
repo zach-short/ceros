@@ -224,8 +224,13 @@ func CreateCommittee(c *gin.Context) {
 		ChairID:     chairIDHex,
 		MemberIDs:   memberIDsHex,
 		ObserverIDs: observerIDsHex,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		VotingRules: models.VotingRules{
+			QuorumPercentage: 50,
+			DefaultThreshold: models.VoteThresholdSimpleMajority,
+			AllowAbstentions: true,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
@@ -352,4 +357,399 @@ func DeleteCommittee(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Committee deleted successfully"})
+}
+
+type AddMemberReq struct {
+	UserID string `json:"userId" binding:"required"`
+}
+
+func AddMember(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	var req AddMemberReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	newMemberID, err := primitive.ObjectIDFromHex(req.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID && committee.ChairID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner or chair can add members"})
+		return
+	}
+
+	if committee.OwnerID == newMemberID || committee.ChairID == newMemberID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user is already owner or chair"})
+		return
+	}
+
+	for _, memberID := range committee.MemberIDs {
+		if memberID == newMemberID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user is already a member"})
+			return
+		}
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	update := bson.M{
+		"$addToSet": bson.M{"memberIds": newMemberID},
+		"$set":      bson.M{"updatedAt": time.Now()},
+		"$pull":     bson.M{"observerIds": newMemberID},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add member"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Member added successfully"})
+}
+
+func RemoveMember(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	memberIdToRemove := c.Param("memberId")
+	memberID, err := primitive.ObjectIDFromHex(memberIdToRemove)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid member ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID && committee.ChairID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner or chair can remove members"})
+		return
+	}
+
+	if committee.OwnerID == memberID || committee.ChairID == memberID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot remove owner or chair as member"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	update := bson.M{
+		"$pull": bson.M{"memberIds": memberID},
+		"$set":  bson.M{"updatedAt": time.Now()},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove member"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Member removed successfully"})
+}
+
+type AddObserverReq struct {
+	UserID string `json:"userId" binding:"required"`
+}
+
+func AddObserver(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	var req AddObserverReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	newObserverID, err := primitive.ObjectIDFromHex(req.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID format"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID && committee.ChairID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner or chair can add observers"})
+		return
+	}
+
+	if committee.OwnerID == newObserverID || committee.ChairID == newObserverID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user is already owner or chair"})
+		return
+	}
+
+	for _, memberID := range committee.MemberIDs {
+		if memberID == newObserverID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user is already a member"})
+			return
+		}
+	}
+
+	for _, observerID := range committee.ObserverIDs {
+		if observerID == newObserverID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user is already an observer"})
+			return
+		}
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	update := bson.M{
+		"$addToSet": bson.M{"observerIds": newObserverID},
+		"$set":      bson.M{"updatedAt": time.Now()},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add observer"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Observer added successfully"})
+}
+
+func RemoveObserver(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	observerIdToRemove := c.Param("observerId")
+	observerID, err := primitive.ObjectIDFromHex(observerIdToRemove)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid observer ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID && committee.ChairID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner or chair can remove observers"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	update := bson.M{
+		"$pull": bson.M{"observerIds": observerID},
+		"$set":  bson.M{"updatedAt": time.Now()},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove observer"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Observer removed successfully"})
+}
+
+type ChangeChairReq struct {
+	NewChairID string `json:"newChairId" binding:"required"`
+}
+
+func ChangeChair(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	committeeId := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid committee ID"})
+		return
+	}
+
+	var req ChangeChairReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	newChairID, err := primitive.ObjectIDFromHex(req.NewChairID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid new chair ID format"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	committee, err := userHasCommitteeAccess(ctx, committeeID, userID)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	if committee.OwnerID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only the owner can change the chair"})
+		return
+	}
+
+	if committee.OwnerID == newChairID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "owner is already in a leadership role"})
+		return
+	}
+
+	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+
+	oldChairID := committee.ChairID
+
+	var update bson.M
+
+	if oldChairID != newChairID {
+		update = bson.M{
+			"$set": bson.M{
+				"chairId":   newChairID,
+				"updatedAt": time.Now(),
+			},
+			"$pull": bson.M{
+				"memberIds":   newChairID,
+				"observerIds": newChairID,
+			},
+		}
+
+		result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change chair"})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+			return
+		}
+
+		addOldChairUpdate := bson.M{
+			"$addToSet": bson.M{"memberIds": oldChairID},
+		}
+
+		_, err = collection.UpdateOne(ctx, bson.M{"_id": committeeID}, addOldChairUpdate)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update old chair membership"})
+			return
+		}
+	} else {
+		update = bson.M{
+			"$set": bson.M{
+				"chairId":   newChairID,
+				"updatedAt": time.Now(),
+			},
+			"$pull": bson.M{"observerIds": newChairID},
+		}
+
+		result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change chair"})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Chair changed successfully"})
 }

@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { UnifiedAuth } from '@/components/auth/unified-auth';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { CenteredDiv } from '@/components/shared/layout/centered-div';
-import LandingPage  from '@/components/landing-page/landing-page'
+import LandingPage from '@/components/landing-page/landing-page';
 import MessagesPage from '@/components/features/chat/pages/messages-page';
 import { useState } from 'react';
 
@@ -20,13 +20,13 @@ export default function HomePage() {
     );
   }
 
-  if (status === 'authenticated') {
+  if (session) {
     return <MessagesPage />;
   }
 
   if (showAuth) {
-    return <UnifiedAuth />
+    return <UnifiedAuth />;
   }
 
-  return <LandingPage onLoginClick={()=> setShowAuth(true)}/>;
+  return <LandingPage onLoginClick={() => setShowAuth(true)} />;
 }

@@ -129,7 +129,7 @@ export function ConversationItem({
       <ContextMenuTrigger>
         <div
           onClick={handleClick}
-          className='p-4 cursor-pointer transition-colors hover:bg-accent'
+          className='p-4 cursor-pointer transition-colors hover:bg-accent rounded-lg'
         >
           <div className='flex items-center space-x-3'>
             {isEditMode && (

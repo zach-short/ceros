@@ -3,24 +3,25 @@
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MessagesSquareIcon, User, Users, Bell, Settings } from 'lucide-react';
+import {
+  MessagesSquareIcon,
+  User,
+  Users,
+  Bell,
+  Settings,
+  Plus,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SignoutButton } from '../button/signout';
-import { NotificationBadge } from '../notification-badge';
 import { useUser } from '@/hooks/api/use-users';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { title: 'Messages', href: '/', icon: MessagesSquareIcon },
-  {
-    title: 'Notifications',
-    href: '/notifications',
-    icon: Bell,
-    showBadge: true,
-  },
   { title: 'Friends', href: '/friends', icon: Users },
   { title: 'Profile', href: '/profile', icon: User },
   { title: 'Settings', href: '/profile/settings', icon: Settings },
+  { title: 'Create Committee', href: '/committees/new', icon: Plus },
 ];
 
 function ProfileCard() {
@@ -56,14 +57,12 @@ function MenuItem({
   title,
   icon: Icon,
   onClick,
-  showBadge = false,
   isActive = false,
 }: {
   href: string;
   title: string;
   icon: React.ComponentType<{ size?: number }>;
   onClick?: () => void;
-  showBadge?: boolean;
   isActive?: boolean;
 }) {
   return (
@@ -77,9 +76,6 @@ function MenuItem({
     >
       <div className='relative'>
         <Icon size={20} />
-        {showBadge && (
-          <NotificationBadge className='absolute -top-2 -right-2 min-w-[16px] h-4 text-[10px] px-1' />
-        )}
       </div>
       {title}
     </Link>
@@ -130,7 +126,6 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
             href={menuItem.href}
             icon={menuItem.icon}
             onClick={onItemClick}
-            showBadge={menuItem.showBadge}
             isActive={isActive(menuItem.href)}
           />
         ))}

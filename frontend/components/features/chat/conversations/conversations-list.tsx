@@ -49,7 +49,9 @@ export function ConversationsList({
       },
     }));
     toast.success(
-      conversationStates[roomId]?.isPinned ? 'Conversation unpinned' : 'Conversation pinned'
+      conversationStates[roomId]?.isPinned
+        ? 'Conversation unpinned'
+        : 'Conversation pinned',
     );
   };
 
@@ -62,7 +64,9 @@ export function ConversationsList({
       },
     }));
     toast.success(
-      conversationStates[roomId]?.isMuted ? 'Conversation unmuted' : 'Conversation muted'
+      conversationStates[roomId]?.isMuted
+        ? 'Conversation unmuted'
+        : 'Conversation muted',
     );
   };
 
@@ -131,7 +135,7 @@ export function ConversationsList({
   }
 
   return (
-    <div className='rounded-lg border'>
+    <div className='rounded-lg '>
       <div className='gap-y-2'>
         {conversations.map((conversation: ConversationSummary) => (
           <ConversationItem

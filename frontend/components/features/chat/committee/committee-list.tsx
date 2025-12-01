@@ -39,7 +39,7 @@ export function CommitteeList({
               onClick={() => router.push(`/committees/${committee.id}`)}
               className='flex items-center gap-3 p-3 rounded-lg hover:bg-accent cursor-pointer'
             >
-              <Avatar>
+              <Avatar className={`h-12 w-12`}>
                 <AvatarImage src={getCommitteePicture(committee)} />
                 <AvatarFallback>
                   {committee.name

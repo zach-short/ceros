@@ -30,10 +30,9 @@ type CheckUsernameRequest struct {
 }
 
 type UpdateUserSettingsRequest struct {
-	Theme                       *string                      `json:"theme,omitempty"`
-	AutoAcceptFriendInvitations *bool                        `json:"autoAcceptFriendInvitations,omitempty"`
-	Privacy                     *models.PrivacySettings      `json:"privacy,omitempty"`
-	Notifications               *models.NotificationSettings `json:"notifications,omitempty"`
+	Theme                       *string                 `json:"theme,omitempty"`
+	AutoAcceptFriendInvitations *bool                   `json:"autoAcceptFriendInvitations,omitempty"`
+	Privacy                     *models.PrivacySettings `json:"privacy,omitempty"`
 }
 
 func GetPublicProfile(c *gin.Context) {
@@ -267,8 +266,9 @@ func CheckUsername(c *gin.Context) {
 	collection := config.GetCollection("users")
 	var existingUser models.User
 	err = collection.FindOne(ctx, bson.M{
-		"name": name,
-		"_id":  bson.M{"$ne": userID},
+		"name":      name,
+		"_id":       bson.M{"$ne": userID},
+		"isDeleted": bson.M{"$ne": true},
 	}).Decode(&existingUser)
 
 	available := err == mongo.ErrNoDocuments
@@ -329,13 +329,6 @@ func UpdateUserSettings(c *gin.Context) {
 		settings.Privacy.ShowFamilyName = req.Privacy.ShowFamilyName
 		settings.Privacy.ShowBio = req.Privacy.ShowBio
 		settings.Privacy.ShowPicture = req.Privacy.ShowPicture
-	}
-	if req.Notifications != nil {
-		settings.Notifications.EmailNotifications = req.Notifications.EmailNotifications
-		settings.Notifications.CommitteeInvitations = req.Notifications.CommitteeInvitations
-		settings.Notifications.MotionNotifications = req.Notifications.MotionNotifications
-		settings.Notifications.VoteNotifications = req.Notifications.VoteNotifications
-		settings.Notifications.FriendRequestNotifications = req.Notifications.FriendRequestNotifications
 	}
 
 	update := bson.M{"$set": bson.M{"settings": settings}}
@@ -490,4 +483,39 @@ func getMutualFriendsCount(ctx context.Context, user1ID, user2ID primitive.Objec
 	}
 
 	return mutualCount, nil
+}
+
+func DeleteAccount(c *gin.Context) {
+	userId := c.GetString("userID")
+	userID, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := config.GetCollection("users")
+
+	now := primitive.NewDateTimeFromTime(time.Now())
+	update := bson.M{
+		"$set": bson.M{
+			"isDeleted": true,
+			"deletedAt": now,
+		},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": userID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete account"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Account deleted successfully"})
 }

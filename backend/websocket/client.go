@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/zach-short/final-web-programming/config"
 	"github.com/zach-short/final-web-programming/models"
+	"github.com/zach-short/final-web-programming/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -359,36 +360,56 @@ func (c *Client) handleProposeMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Check if there's already an active motion for this committee (following Robert's Rules - only one motion at a time)
-	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
+	committeesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	var committee models.Committee
+	err = committeesCollection.FindOne(ctx, bson.M{"_id": committeeID}).Decode(&committee)
+	if err != nil {
+		log.Printf("Failed to fetch committee: %v", err)
+		c.send <- []byte(`{"action":"error","payload":{"message":"Committee not found"}}`)
+		return
+	}
+
+	voteThreshold := committee.VotingRules.DefaultThreshold
+	if voteThresholdStr, ok := payload["voteThreshold"].(string); ok && voteThresholdStr != "" {
+		voteThreshold = models.VoteThreshold(voteThresholdStr)
+	}
+
+	requiresQuorum := true
+	if requiresQuorumVal, ok := payload["requiresQuorum"].(bool); ok {
+		requiresQuorum = requiresQuorumVal
+	}
+
+	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
 
 	var existingMotion models.Motion
 	err = motionsCollection.FindOne(ctx, bson.M{
 		"committee_id": committeeID,
-		"status": bson.M{"$in": []string{"proposed", "seconded", "open"}},
+		"status":       bson.M{"$in": []string{"proposed", "seconded", "open"}},
 	}).Decode(&existingMotion)
 
 	if err == nil {
-		// There's already an active motion
+
 		c.send <- []byte(`{"action":"error","payload":{"message":"There is already an active motion. Only one motion can be on the floor at a time per Robert's Rules of Order."}}`)
 		return
 	}
 
-	// Create new motion in database
 	motion := models.Motion{
-		ID:          primitive.NewObjectID(),
-		CommitteeID: committeeID,
-		MoverID:     c.userID,
-		Title:       title,
-		Description: description,
-		Status:      models.MotionStatusProposed,
-		Votes:       []models.Vote{},
-		Comments:    []models.Comment{},
-		IsSpecial:   false,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:             primitive.NewObjectID(),
+		CommitteeID:    committeeID,
+		MoverID:        c.userID,
+		Title:          title,
+		Description:    description,
+		Status:         models.MotionStatusProposed,
+		VoteThreshold:  voteThreshold,
+		RequiresQuorum: requiresQuorum,
+		Votes:          []models.Vote{},
+		Comments:       []models.Comment{},
+		IsSpecial:      false,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	_, err = motionsCollection.InsertOne(ctx, motion)
@@ -398,7 +419,6 @@ func (c *Client) handleProposeMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Fetch mover user data
 	usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
 	var mover struct {
 		ID      primitive.ObjectID `bson:"_id" json:"id"`
@@ -412,7 +432,6 @@ func (c *Client) handleProposeMotion(wsMsg models.WSMessage) {
 		log.Printf("Failed to fetch mover user data: %v", err)
 	}
 
-	// Create a special motion message in the chat
 	message := models.Message{
 		ID:        primitive.NewObjectID(),
 		Type:      models.TypeMotion,
@@ -467,12 +486,10 @@ func (c *Client) handleSecondMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Update motion in database with seconder and change status to "open" for voting
 	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Check if motion exists and is in "proposed" status
 	var motion models.Motion
 	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
 	if err != nil {
@@ -486,13 +503,11 @@ func (c *Client) handleSecondMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Cannot second your own motion
 	if motion.MoverID == c.userID {
 		c.send <- []byte(`{"action":"error","payload":{"message":"You cannot second your own motion"}}`)
 		return
 	}
 
-	// Update motion with seconder and open status
 	update := bson.M{
 		"$set": bson.M{
 			"seconder_id": c.userID,
@@ -508,14 +523,12 @@ func (c *Client) handleSecondMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Fetch updated motion
 	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
 	if err != nil {
 		log.Printf("Failed to fetch updated motion: %v", err)
 		return
 	}
 
-	// Fetch seconder user data
 	usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
 	var seconder struct {
 		ID      primitive.ObjectID `bson:"_id" json:"id"`
@@ -566,7 +579,6 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Validate vote result
 	if voteResult != "aye" && voteResult != "nay" && voteResult != "abstain" {
 		c.send <- []byte(`{"action":"error","payload":{"message":"Invalid vote. Must be 'aye', 'nay', or 'abstain'"}}`)
 		return
@@ -582,7 +594,6 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Check if motion exists and is open for voting
 	var motion models.Motion
 	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
 	if err != nil {
@@ -596,7 +607,6 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Check if user has already voted
 	hasVoted := false
 	voteIndex := -1
 	for i, vote := range motion.Votes {
@@ -607,7 +617,6 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 		}
 	}
 
-	// Create vote
 	vote := models.Vote{
 		ID:        primitive.NewObjectID(),
 		MotionID:  motionID,
@@ -618,15 +627,15 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 
 	var update bson.M
 	if hasVoted {
-		// Update existing vote
+
 		update = bson.M{
 			"$set": bson.M{
 				fmt.Sprintf("votes.%d", voteIndex): vote,
-				"updated_at":                        time.Now(),
+				"updated_at":                       time.Now(),
 			},
 		}
 	} else {
-		// Add new vote
+
 		update = bson.M{
 			"$push": bson.M{"votes": vote},
 			"$set":  bson.M{"updated_at": time.Now()},
@@ -640,14 +649,24 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 		return
 	}
 
-	// Fetch updated motion with all votes
 	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
 	if err != nil {
 		log.Printf("Failed to fetch updated motion: %v", err)
 		return
 	}
 
-	// Fetch voter user data
+	committeesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+	var committee models.Committee
+	err = committeesCollection.FindOne(ctx, bson.M{"_id": motion.CommitteeID}).Decode(&committee)
+	if err != nil {
+		log.Printf("Failed to fetch committee: %v", err)
+		return
+	}
+
+	tally := utils.CalculateVoteTally(&motion, &committee)
+
+	resolved, passed := utils.CheckMotionResolution(&motion, tally, &committee)
+
 	usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
 	var voter struct {
 		ID      primitive.ObjectID `bson:"_id" json:"id"`
@@ -668,10 +687,54 @@ func (c *Client) handleVoteMotion(wsMsg models.WSMessage) {
 			"motion": motion,
 			"vote":   vote,
 			"voter":  voter,
+			"tally":  tally,
 		},
 	}
 
 	c.hub.BroadcastToRoom(roomID, broadcastMsg)
+
+	if resolved {
+		now := time.Now()
+		tally.TalliedAt = &now
+		tally.Passed = &passed
+
+		newStatus := models.MotionStatusFailed
+		if passed {
+			newStatus = models.MotionStatusPassed
+		}
+
+		updateResolution := bson.M{
+			"$set": bson.M{
+				"status":     newStatus,
+				"vote_tally": tally,
+				"updated_at": now,
+			},
+		}
+
+		_, err = motionsCollection.UpdateOne(ctx, bson.M{"_id": motionID}, updateResolution)
+		if err != nil {
+			log.Printf("Failed to update motion resolution: %v", err)
+			return
+		}
+
+		err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
+		if err != nil {
+			log.Printf("Failed to fetch resolved motion: %v", err)
+			return
+		}
+
+		resolvedMsg := models.WSMessage{
+			Action: "motion_resolved",
+			Type:   models.TypeMotion,
+			Payload: map[string]any{
+				"motion": motion,
+				"passed": passed,
+				"tally":  tally,
+			},
+		}
+
+		c.hub.BroadcastToRoom(roomID, resolvedMsg)
+	}
 }
 
 func (c *Client) handleTypingStart(wsMsg models.WSMessage) {

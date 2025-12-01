@@ -70,7 +70,10 @@ export default function CommitteeChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleNewMessage = (message: Message) => {
+  const handleNewMessage = (data: any) => {
+    const message = data.message || data;
+    const sender = data.sender;
+
     if (message.roomId === roomId) {
       const transformedMessage = session?.user?.id
         ? transformMessagesWithReactions([message], session.user.id)[0]
@@ -99,19 +102,49 @@ export default function CommitteeChat() {
         return [...prev, transformedMessage];
       });
 
-      setUsers((prevUsers) => {
-        const userExists = prevUsers.some((u) => u.id === message.senderId);
-        if (!userExists && message.senderId !== session?.user?.id) {
-          const placeholderUser: User = {
-            id: message.senderId,
-            name: 'Unknown User',
-            email: '',
-          };
-          return [...prevUsers, placeholderUser];
-        }
-        return prevUsers;
-      });
+      if (sender && message.senderId !== session?.user?.id) {
+        setUsers((prevUsers) => {
+          const userExists = prevUsers.some((u) => u.id === sender.id);
+          if (!userExists) {
+            const newUser: User = {
+              id: sender.id,
+              name: sender.name || 'Unknown User',
+              email: '',
+              picture: sender.picture,
+            };
+            return [...prevUsers, newUser];
+          }
+          return prevUsers;
+        });
+      } else if (!sender && message.senderId !== session?.user?.id) {
+        setUsers((prevUsers) => {
+          const userExists = prevUsers.some((u) => u.id === message.senderId);
+          if (!userExists) {
+            const placeholderUser: User = {
+              id: message.senderId,
+              name: 'Unknown User',
+              email: '',
+            };
+            return [...prevUsers, placeholderUser];
+          }
+          return prevUsers;
+        });
+      }
     }
+  };
+
+  const handleReactionUpdate = (data: {
+    messageId: string;
+    reactions: any[];
+  }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === data.messageId) {
+          return { ...msg, reactions: data.reactions };
+        }
+        return msg;
+      }),
+    );
   };
 
   const handleTypingUpdate = (data: {
@@ -132,6 +165,59 @@ export default function CommitteeChat() {
       }
       return prev;
     });
+  };
+
+  const handleMessageEdited = (data: {
+    messageId: string;
+    content: string;
+    isEdited: boolean;
+    originalContent: string;
+    editedAt: string;
+  }) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) => {
+        if (msg.id === data.messageId) {
+          return {
+            ...msg,
+            content: data.content,
+            isEdited: true,
+            editedAt: data.editedAt,
+            originalContent: data.originalContent,
+          };
+        }
+        return msg;
+      }),
+    );
+  };
+
+  const handleMessageDeleted = (data: { messageId: string }) => {
+    setMessages((prevMessages) =>
+      prevMessages.filter((msg) => msg.id !== data.messageId),
+    );
+  };
+
+  const handlePinToggled = (data: {
+    messageId: string;
+    isPinned: boolean;
+    pinnedBy: string;
+    pinnedAt: string;
+    roomId: string;
+  }) => {
+    if (data.roomId !== roomId) return;
+
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id === data.messageId) {
+          return {
+            ...msg,
+            isPinned: data.isPinned,
+            pinnedBy: data.pinnedBy,
+            pinnedAt: data.pinnedAt,
+          };
+        }
+        return msg;
+      }),
+    );
   };
 
   const transformMotion = (motion: any) => ({
@@ -212,7 +298,11 @@ export default function CommitteeChat() {
         handleNewMessage(payload);
       }
     },
+    onReactionUpdate: handleReactionUpdate,
+    onMessageEdited: handleMessageEdited,
+    onMessageDeleted: handleMessageDeleted,
     onTypingUpdate: handleTypingUpdate,
+    onPinToggled: handlePinToggled,
     onConnect: () => {},
     onDisconnect: () => {},
   });

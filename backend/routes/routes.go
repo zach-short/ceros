@@ -27,6 +27,8 @@ func SetupRoutes(r *gin.Engine) {
 			me.GET("", handlers.GetMe)
 			me.PATCH("", handlers.UpdateProfile)
 			me.PATCH("/settings", handlers.UpdateUserSettings)
+			me.PATCH("/delete", handlers.DeleteAccount)
+			me.DELETE("", handlers.DeleteAccount)
 
 			friends := me.Group("/friends")
 			{
@@ -43,19 +45,6 @@ func SetupRoutes(r *gin.Engine) {
 					friend.POST("/reject", handlers.RejectFriend)
 					friend.DELETE("/unblock", handlers.UnblockUser)
 					friend.DELETE("", handlers.RemoveFriend)
-				}
-			}
-
-			notifications := me.Group("/notifications")
-			{
-				notifications.GET("", handlers.GetNotifications)
-				notifications.PATCH("/mark-all-read", handlers.MarkAllNotificationsRead)
-				notifications.POST("", handlers.CreateNotification)
-
-				notification := notifications.Group("/:notificationId")
-				{
-					notification.PATCH("/read", handlers.MarkNotificationRead)
-					notification.DELETE("", handlers.DismissNotification)
 				}
 			}
 
@@ -89,6 +78,7 @@ func SetupRoutes(r *gin.Engine) {
 		chat.POST("/dm/start", handlers.StartDMConversation)
 		chat.GET("/dm/:recipientId/history", handlers.GetDMHistory)
 		chat.GET("/conversations", handlers.GetUserConversations)
+		chat.DELETE("/conversations", handlers.DeleteConversations)
 	}
 
 	committees := r.Group("/committees")
@@ -105,7 +95,12 @@ func SetupRoutes(r *gin.Engine) {
 			committee.POST("/chat/start", handlers.StartCommitteeChat)
 			committee.GET("/chat/history", handlers.GetCommitteeHistory)
 
-			// Motion routes
+			committee.POST("/members", handlers.AddMember)
+			committee.DELETE("/members/:memberId", handlers.RemoveMember)
+			committee.POST("/observers", handlers.AddObserver)
+			committee.DELETE("/observers/:observerId", handlers.RemoveObserver)
+			committee.PUT("/chair", handlers.ChangeChair)
+
 			committee.GET("/motions", handlers.GetCommitteeMotions)
 			committee.POST("/motions", handlers.CreateMotion)
 
@@ -116,6 +111,7 @@ func SetupRoutes(r *gin.Engine) {
 					motion.GET("", handlers.GetMotion)
 					motion.PATCH("", handlers.UpdateMotion)
 					motion.DELETE("", handlers.DeleteMotion)
+					motion.POST("/close", handlers.CloseMotion)
 				}
 			}
 		}

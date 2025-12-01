@@ -52,3 +52,17 @@ export function useUpdateUserSettings(options?: {
     },
   });
 }
+
+export function useDeleteAccount(options?: {
+  onSuccess?: (data: { message: string }) => void;
+  onError?: (error: any) => void;
+}) {
+  return useMutation(usersApi.deleteAccount, {
+    onSuccess: (data: { message: string }) => {
+      options?.onSuccess?.(data);
+    },
+    onError: (error) => {
+      options?.onError?.(error);
+    },
+  });
+}

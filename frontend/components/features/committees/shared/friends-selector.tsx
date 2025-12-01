@@ -8,6 +8,7 @@ import { SearchIcon } from 'lucide-react';
 import { User } from '@/lib/api/friends';
 import Fuse from 'fuse.js';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 interface FriendsSelectorProps {
   friends: User[];
@@ -30,12 +31,10 @@ export function FriendsSelector({
 }: FriendsSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter out excluded users (like owner, chair, already added members)
   const availableFriends = useMemo(() => {
     return friends.filter((friend) => !excludeIds.includes(friend.id));
   }, [friends, excludeIds]);
 
-  // Setup Fuse.js for fuzzy searching
   const fuse = useMemo(() => {
     return new Fuse(availableFriends, {
       keys: ['name', 'email', 'givenName', 'familyName'],
@@ -44,7 +43,6 @@ export function FriendsSelector({
     });
   }, [availableFriends]);
 
-  // Filter friends based on search query
   const filteredFriends = useMemo(() => {
     if (!searchQuery.trim()) {
       return availableFriends;
@@ -73,7 +71,10 @@ export function FriendsSelector({
           onChange={(e) => setSearchQuery(e.target.value)}
           className='pr-10'
         />
-        <SearchIcon className='absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground' size={18} />
+        <SearchIcon
+          className='absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground'
+          size={18}
+        />
       </div>
 
       <div className='border rounded-md max-h-60 overflow-y-auto'>
@@ -100,34 +101,28 @@ export function FriendsSelector({
               >
                 <Checkbox
                   checked={isChecked(user)}
-                  onCheckedChange={() => onToggle(user)}
-                  onClick={(e) => e.stopPropagation()}
+                  onCheckedChange={() => {}}
                 />
                 <Avatar className='w-10 h-10'>
                   <AvatarImage src={user.picture || undefined} />
                   <AvatarFallback>
-                    {user.name
-                      ?.split(' ')
+                    {getUserDisplayName(user)
+                      .split(' ')
                       .map((n) => n[0])
                       .join('')
                       .toUpperCase()
-                      .slice(0, 2) || 'U'}
+                      .slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div className='flex-1 min-w-0'>
                   <p className='font-medium truncate'>
-                    {user.name || 'Unnamed User'}
+                    {getUserDisplayName(user)}
                   </p>
                   {(user.givenName || user.familyName) && (
                     <p className='text-sm text-muted-foreground truncate'>
                       {user.givenName && user.familyName
                         ? `${user.givenName} ${user.familyName}`
                         : user.givenName || user.familyName}
-                    </p>
-                  )}
-                  {user.email && (
-                    <p className='text-xs text-muted-foreground truncate'>
-                      {user.email}
                     </p>
                   )}
                 </div>
@@ -139,7 +134,8 @@ export function FriendsSelector({
 
       {selectedIds.length > 0 && (
         <div className='text-sm text-muted-foreground'>
-          {selectedIds.length} friend{selectedIds.length !== 1 ? 's' : ''} selected
+          {selectedIds.length} friend{selectedIds.length !== 1 ? 's' : ''}{' '}
+          selected
         </div>
       )}
     </div>

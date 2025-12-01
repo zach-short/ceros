@@ -1,5 +1,5 @@
-import NewCommittee from "@/components/features/committees/new"
+import NewCommittee from '@/components/features/committees/new';
 
 export default function CreateCommittee() {
-    return <NewCommittee/>
+  return <NewCommittee />;
 }

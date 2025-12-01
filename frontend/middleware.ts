@@ -5,7 +5,14 @@ export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
-  const protectedRoutes = ['/committees', '/chat', '/profile', '/menu', '/friends', '/notifications'];
+  const protectedRoutes = [
+    '/committees',
+    '/committees/new',
+    '/chat',
+    '/profile',
+    '/menu',
+    '/friends',
+  ];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     nextUrl.pathname.startsWith(route),
