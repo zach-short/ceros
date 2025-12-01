@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,7 @@ import (
 	"github.com/zach-short/final-web-programming/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 /* RequestFriend */
@@ -69,12 +71,34 @@ func RequestFriend(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	friendship := models.Friendship{
-		ID:          primitive.NewObjectID(),
-		RequesterID: userID,
-		AddresseeID: addresseeID,
-		Status:      models.FriendStatusPending,
-		RequestedAt: time.Now(),
+	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+	var addressee models.User
+	err = userCollection.FindOne(ctx, bson.M{"_id": addresseeID}).Decode(&addressee)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "addressee user not found"})
+		return
+	}
+
+	var friendship models.Friendship
+	now := time.Now()
+
+	if addressee.Settings.AutoAcceptFriendInvitations {
+		friendship = models.Friendship{
+			ID:          primitive.NewObjectID(),
+			RequesterID: userID,
+			AddresseeID: addresseeID,
+			Status:      models.FriendStatusAccepted,
+			RequestedAt: now,
+			RespondedAt: &now,
+		}
+	} else {
+		friendship = models.Friendship{
+			ID:          primitive.NewObjectID(),
+			RequesterID: userID,
+			AddresseeID: addresseeID,
+			Status:      models.FriendStatusPending,
+			RequestedAt: now,
+		}
 	}
 
 	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
@@ -84,7 +108,12 @@ func RequestFriend(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "friend request sent", "friendship": friendship})
+	message := "friend request sent"
+	if addressee.Settings.AutoAcceptFriendInvitations {
+		message = "friend request automatically accepted"
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": message, "friendship": friendship})
 }
 
 func AddFriend(c *gin.Context) {
@@ -125,7 +154,6 @@ func AddFriend(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pending friend request not found"})
 		return
 	}
-
 
 	c.JSON(http.StatusOK, gin.H{"message": "friend request accepted"})
 }
@@ -432,6 +460,18 @@ func GetFriendships(c *gin.Context) {
 		return
 	}
 
+	// Parse pagination parameters
+	cursorStr := c.Query("cursor")
+	limitStr := c.DefaultQuery("limit", "100")
+	limit := 100
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 200 {
+		limit = l
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Build query with pagination
 	query := bson.M{
 		"$and": []bson.M{
 			{"status": models.FriendStatusAccepted},
@@ -444,32 +484,89 @@ func GetFriendships(c *gin.Context) {
 		},
 	}
 
-	friendships, err := utils.FetchItems(query, "friendships")
+	// Add cursor for pagination
+	if cursorStr != "" {
+		cursorID, err := primitive.ObjectIDFromHex(cursorStr)
+		if err == nil {
+			query["_id"] = bson.M{"$gt": cursorID}
+		}
+	}
+
+	friendshipCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
+
+	// Fetch limit+1 to determine if there are more results
+	findOptions := options.Find().
+		SetLimit(int64(limit + 1)).
+		SetSort(bson.D{{Key: "_id", Value: 1}})
+
+	cursor, err := friendshipCollection.Find(ctx, query, findOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding friendships"})
 		return
 	}
+	defer cursor.Close(ctx)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	var friendships []models.Friendship
+	if err = cursor.All(ctx, &friendships); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "decoding friendships"})
+		return
+	}
 
+	// Check if there are more results
+	hasMore := len(friendships) > limit
+	if hasMore {
+		friendships = friendships[:limit]
+	}
+
+	// Determine next cursor
+	var nextCursor string
+	if hasMore && len(friendships) > 0 {
+		nextCursor = friendships[len(friendships)-1].ID.Hex()
+	}
+
+	// Collect user IDs for batch fetch
+	var userIDs []primitive.ObjectID
+	for _, friendship := range friendships {
+		if friendship.RequesterID == userID {
+			userIDs = append(userIDs, friendship.AddresseeID)
+		} else {
+			userIDs = append(userIDs, friendship.RequesterID)
+		}
+	}
+
+	// Batch fetch all users
 	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+	userCursor, err := userCollection.Find(ctx, bson.M{"_id": bson.M{"$in": userIDs}})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "finding users"})
+		return
+	}
+	defer userCursor.Close(ctx)
 
+	var users []models.User
+	if err = userCursor.All(ctx, &users); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "decoding users"})
+		return
+	}
+
+	// Build user map for O(1) lookup
+	userMap := make(map[primitive.ObjectID]models.User)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+
+	// Enrich friendships with user info
 	var enrichedFriendships []map[string]any
 	for _, friendship := range friendships {
 		var otherUserID primitive.ObjectID
-		requesterID := friendship["requesterId"].(primitive.ObjectID)
-		addresseeID := friendship["addresseeId"].(primitive.ObjectID)
-
-		if requesterID == userID {
-			otherUserID = addresseeID
+		if friendship.RequesterID == userID {
+			otherUserID = friendship.AddresseeID
 		} else {
-			otherUserID = requesterID
+			otherUserID = friendship.RequesterID
 		}
 
-		var user models.User
-		err := userCollection.FindOne(ctx, bson.M{"_id": otherUserID}).Decode(&user)
-		if err != nil {
+		user, exists := userMap[otherUserID]
+		if !exists {
 			continue
 		}
 
@@ -497,19 +594,23 @@ func GetFriendships(c *gin.Context) {
 		}
 
 		enrichedFriendship := map[string]any{
-			"id":          friendship["_id"],
-			"requesterId": friendship["requesterId"],
-			"addresseeId": friendship["addresseeId"],
-			"status":      friendship["status"],
-			"requestedAt": friendship["requestedAt"],
-			"respondedAt": friendship["respondedAt"],
+			"id":          friendship.ID.Hex(),
+			"requesterId": friendship.RequesterID.Hex(),
+			"addresseeId": friendship.AddresseeID.Hex(),
+			"status":      friendship.Status,
+			"requestedAt": friendship.RequestedAt,
+			"respondedAt": friendship.RespondedAt,
 			"user":        userInfo,
 		}
 
 		enrichedFriendships = append(enrichedFriendships, enrichedFriendship)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"friendships": enrichedFriendships})
+	c.JSON(http.StatusOK, gin.H{
+		"friendships": enrichedFriendships,
+		"nextCursor":  nextCursor,
+		"hasMore":     hasMore,
+	})
 }
 
 func SearchUsers(c *gin.Context) {
@@ -526,18 +627,42 @@ func SearchUsers(c *gin.Context) {
 		return
 	}
 
+	// Parse pagination parameters
+	cursorStr := c.Query("cursor")
+	limitStr := c.DefaultQuery("limit", "100")
+	limit := 100
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 200 {
+		limit = l
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Build search query with text search
 	query := bson.M{
-		"name": bson.M{
-			"$regex":   searchTerm,
-			"$options": "i",
+		"$text": bson.M{
+			"$search": searchTerm,
 		},
+		"isDeleted": bson.M{"$ne": true},
+	}
+
+	// Add cursor for pagination
+	if cursorStr != "" {
+		cursorID, err := primitive.ObjectIDFromHex(cursorStr)
+		if err == nil {
+			query["_id"] = bson.M{"$gt": cursorID}
+		}
 	}
 
 	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
-	cursor, err := userCollection.Find(ctx, query)
+
+	// Fetch limit+1 to determine if there are more results
+	findOptions := options.Find().
+		SetLimit(int64(limit + 1)).
+		SetSort(bson.D{{Key: "score", Value: bson.M{"$meta": "textScore"}}, {Key: "_id", Value: 1}}).
+		SetProjection(bson.M{"score": bson.M{"$meta": "textScore"}})
+
+	cursor, err := userCollection.Find(ctx, query, findOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search users"})
 		return
@@ -550,11 +675,24 @@ func SearchUsers(c *gin.Context) {
 		return
 	}
 
+	// Check if there are more results
+	hasMore := len(users) > limit
+	if hasMore {
+		users = users[:limit]
+	}
+
+	// Determine next cursor
+	var nextCursor string
+	if hasMore && len(users) > 0 {
+		nextCursor = users[len(users)-1].ID.Hex()
+	}
+
 	var userIDs []primitive.ObjectID
 	for _, user := range users {
 		userIDs = append(userIDs, user.ID)
 	}
 
+	// Fetch friendship statuses
 	friendshipQuery := bson.M{
 		"$or": []bson.M{
 			{
@@ -616,6 +754,7 @@ func SearchUsers(c *gin.Context) {
 			"id":            user.ID.Hex(),
 			"name":          user.Name,
 			"isCurrentUser": user.ID == currentUserID,
+			"isFriend":      isFriend,
 		}
 
 		if settings.Privacy.ShowPicture || isFriend {
@@ -637,5 +776,9 @@ func SearchUsers(c *gin.Context) {
 		usersWithStatus = append(usersWithStatus, userMap)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"users": usersWithStatus})
+	c.JSON(http.StatusOK, gin.H{
+		"users":      usersWithStatus,
+		"nextCursor": nextCursor,
+		"hasMore":    hasMore,
+	})
 }

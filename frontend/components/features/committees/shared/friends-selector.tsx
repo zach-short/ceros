@@ -4,15 +4,16 @@ import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SearchIcon } from 'lucide-react';
-import { User } from '@/lib/api/friends';
-import Fuse from 'fuse.js';
+import { Badge } from '@/components/ui/badge';
+import { SearchIcon, Loader2 } from 'lucide-react';
+import { User, friendsApi } from '@/lib/api/friends';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { getUserDisplayName } from '@/lib/user-utils';
+import { useFriendsPaginated } from '@/hooks/api/use-friends-paginated';
+import { usePaginatedSearch } from '@/hooks/use-paginated-search';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 interface FriendsSelectorProps {
-  friends: User[];
-  loading: boolean;
   selectedIds: string[];
   onToggle: (user: User) => void;
   excludeIds?: string[];
@@ -21,39 +22,59 @@ interface FriendsSelectorProps {
 }
 
 export function FriendsSelector({
-  friends,
-  loading,
   selectedIds,
   onToggle,
   excludeIds = [],
-  placeholder = 'Search friends by name or email...',
+  placeholder = 'Search all users by name...',
   emptyMessage = 'No friends found',
 }: FriendsSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const isSearching = searchQuery.trim().length > 0;
 
-  const availableFriends = useMemo(() => {
-    return friends.filter((friend) => !excludeIds.includes(friend.id));
-  }, [friends, excludeIds]);
+  const {
+    friends,
+    hasMore: friendsHasMore,
+    isLoading: friendsLoading,
+    isLoadingMore: friendsLoadingMore,
+    loadMore: loadMoreFriends,
+  } = useFriendsPaginated();
 
-  const fuse = useMemo(() => {
-    return new Fuse(availableFriends, {
-      keys: ['name', 'email', 'givenName', 'familyName'],
-      threshold: 0.3,
-      includeScore: true,
-    });
-  }, [availableFriends]);
+  const {
+    items: searchResults,
+    hasMore: searchHasMore,
+    isLoading: searchLoading,
+    isLoadingMore: searchLoadingMore,
+    loadMore: loadMoreSearch,
+  } = usePaginatedSearch<User>({
+    fetchFn: friendsApi.searchUsers,
+    pageSize: 100,
+    debounceMs: 300,
+  });
 
-  const filteredFriends = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return availableFriends;
-    }
-    const results = fuse.search(searchQuery);
-    return results.map((result) => result.item);
-  }, [searchQuery, fuse, availableFriends]);
+  const friendIds = useMemo(() => {
+    return new Set(friends.map((f) => f.id));
+  }, [friends]);
+
+  const displayUsers = isSearching ? searchResults : friends;
+  const hasMore = isSearching ? searchHasMore : friendsHasMore;
+  const isLoading = isSearching ? searchLoading : friendsLoading;
+  const isLoadingMore = isSearching ? searchLoadingMore : friendsLoadingMore;
+  const loadMore = isSearching ? loadMoreSearch : loadMoreFriends;
+
+  const availableUsers = useMemo(() => {
+    return displayUsers.filter((user) => !excludeIds.includes(user.id));
+  }, [displayUsers, excludeIds]);
+
+  const loadMoreRef = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading: isLoadingMore,
+  });
 
   const isChecked = (user: User) => selectedIds.includes(user.id);
+  const isFriend = (user: User) => friendIds.has(user.id);
 
-  if (loading) {
+  if (friendsLoading && !isSearching) {
     return (
       <div className='min-h-60 flex flex-col items-center justify-center border rounded-md p-4'>
         <DefaultLoader />
@@ -78,22 +99,27 @@ export function FriendsSelector({
       </div>
 
       <div className='border rounded-md max-h-60 overflow-y-auto'>
-        {availableFriends.length === 0 ? (
+        {isLoading ? (
           <div className='min-h-40 flex flex-col items-center justify-center p-4'>
-            <p className='text-muted-foreground text-sm'>{emptyMessage}</p>
-            <p className='text-xs text-muted-foreground mt-1'>
-              Add friends to include them in committees
+            <Loader2 className='animate-spin text-muted-foreground' size={20} />
+            <p className='text-muted-foreground mt-2 text-sm'>
+              {isSearching ? 'Searching...' : 'Loading friends...'}
             </p>
           </div>
-        ) : filteredFriends.length === 0 ? (
+        ) : availableUsers.length === 0 ? (
           <div className='min-h-40 flex flex-col items-center justify-center p-4'>
             <p className='text-muted-foreground text-sm'>
-              No friends match &quot;{searchQuery}&quot;
+              {isSearching ? `No users match "${searchQuery}"` : emptyMessage}
             </p>
+            {!isSearching && (
+              <p className='text-xs text-muted-foreground mt-1'>
+                Add friends to include them in committees
+              </p>
+            )}
           </div>
         ) : (
           <div className='divide-y'>
-            {filteredFriends.map((user) => (
+            {availableUsers.map((user) => (
               <div
                 key={user.id}
                 className='flex items-center gap-3 p-3 hover:bg-accent cursor-pointer transition-colors'
@@ -115,9 +141,19 @@ export function FriendsSelector({
                   </AvatarFallback>
                 </Avatar>
                 <div className='flex-1 min-w-0'>
-                  <p className='font-medium truncate'>
-                    {getUserDisplayName(user)}
-                  </p>
+                  <div className='flex items-center gap-2'>
+                    <p className='font-medium truncate'>
+                      {getUserDisplayName(user)}
+                    </p>
+                    {isSearching && isFriend(user) && (
+                      <Badge
+                        variant='secondary'
+                        className='text-xs px-1.5 py-0'
+                      >
+                        Friend
+                      </Badge>
+                    )}
+                  </div>
                   {(user.givenName || user.familyName) && (
                     <p className='text-sm text-muted-foreground truncate'>
                       {user.givenName && user.familyName
@@ -128,14 +164,30 @@ export function FriendsSelector({
                 </div>
               </div>
             ))}
+            {/* Infinite scroll sentinel */}
+            <div ref={loadMoreRef} className='py-2'>
+              {isLoadingMore && (
+                <div className='flex justify-center'>
+                  <Loader2
+                    className='animate-spin text-muted-foreground'
+                    size={16}
+                  />
+                </div>
+              )}
+            </div>
+            {!hasMore && availableUsers.length > 0 && (
+              <p className='text-xs text-muted-foreground text-center py-2'>
+                {isSearching ? 'End of search results' : 'All friends loaded'}
+              </p>
+            )}
           </div>
         )}
       </div>
 
       {selectedIds.length > 0 && (
         <div className='text-sm text-muted-foreground'>
-          {selectedIds.length} friend{selectedIds.length !== 1 ? 's' : ''}{' '}
-          selected
+          {selectedIds.length} {isSearching ? 'user' : 'friend'}
+          {selectedIds.length !== 1 ? 's' : ''} selected
         </div>
       )}
     </div>

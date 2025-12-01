@@ -10,6 +10,7 @@ import { useUser, useUpdateUserSettings } from '@/hooks/api/use-users';
 import { UserSettings } from '@/lib/api/users';
 import { useTheme } from 'next-themes';
 import { AppearanceSettings } from './appearance-settings';
+import { FriendsSettings } from './friends-settings';
 import { PrivacySettings } from './privacy-settings';
 import { DangerZone } from './danger-zone';
 
@@ -123,6 +124,11 @@ export function Settings() {
 
       <div className='space-y-6'>
         <AppearanceSettings
+          settings={workingSettings}
+          onSettingChange={updateSetting}
+        />
+
+        <FriendsSettings
           settings={workingSettings}
           onSettingChange={updateSetting}
         />

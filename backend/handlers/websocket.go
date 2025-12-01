@@ -225,9 +225,16 @@ func GetUserConversations(c *gin.Context) {
 	pipeline := []bson.M{
 		{
 			"$match": bson.M{
-				"$or": []bson.M{
-					{"senderId": userID},
-					{"roomId": bson.M{"$regex": userID.Hex()}},
+				"$and": []bson.M{
+					{
+						"$or": []bson.M{
+							{"senderId": userID},
+							{"roomId": bson.M{"$regex": userID.Hex()}},
+						},
+					},
+					{
+						"roomId": bson.M{"$not": bson.M{"$regex": "^committee_"}},
+					},
 				},
 			},
 		},

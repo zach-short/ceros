@@ -17,7 +17,6 @@ export function useMediaQuery(query: string): boolean {
     return () => mediaQuery.removeEventListener('change', handler);
   }, [query]);
 
-  // Return false on server-side render to avoid hydration mismatch
   if (!mounted) {
     return false;
   }

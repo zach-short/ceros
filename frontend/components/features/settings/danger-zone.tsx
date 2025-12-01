@@ -19,13 +19,11 @@ import {
 } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
 import { useDeleteAccount } from '@/hooks/api/use-users';
 import { signOut } from 'next-auth/react';
 
 export function DangerZone() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const router = useRouter();
 
   const { mutate: deleteAccount, loading } = useDeleteAccount({
     onSuccess: () => {

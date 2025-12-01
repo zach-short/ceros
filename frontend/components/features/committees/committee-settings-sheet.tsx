@@ -46,7 +46,6 @@ import {
   useChangeChair,
 } from '@/hooks/api/use-commitee';
 import { UpdateCommitteeRequest } from '@/lib/api/committee';
-import { useFriends } from '@/hooks/api/use-friends';
 import { toast } from 'sonner';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { AvatarPicker } from '@/components/shared/button/avatar-picker';
@@ -91,12 +90,6 @@ export function CommitteeSettingsSheet({
   const [selectedObserverIds, setSelectedObserverIds] = useState<string[]>([]);
   const [selectedChairId, setSelectedChairId] = useState<string>('');
   const [activeTab, setActiveTab] = useState('general');
-
-  const { data: friendsData, loading: friendsLoading } = useFriends();
-  const friendships = friendsData?.friendships ?? [];
-  const allFriends = friendships.flatMap((friendship) =>
-    friendship.user ? [friendship.user] : [],
-  );
 
   const isOwner = committee?.ownerId === session?.user?.id;
   const isChair = committee?.chairId === session?.user?.id;
@@ -735,8 +728,6 @@ export function CommitteeSettingsSheet({
           </DialogHeader>
           <div className='py-4'>
             <FriendsSelector
-              friends={allFriends}
-              loading={friendsLoading}
               selectedIds={selectedMemberIds}
               onToggle={handleToggleMember}
               excludeIds={existingUserIds}
@@ -781,12 +772,10 @@ export function CommitteeSettingsSheet({
           </DialogHeader>
           <div className='py-4'>
             <FriendsSelector
-              friends={allFriends}
-              loading={friendsLoading}
               selectedIds={selectedObserverIds}
               onToggle={handleToggleObserver}
               excludeIds={existingUserIds}
-              placeholder='Search friends to add as observers...'
+              placeholder='Search all users to add as observers...'
               emptyMessage='No friends available to add'
             />
           </div>

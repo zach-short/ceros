@@ -43,6 +43,10 @@ func main() {
 
 	config.ConnectDB()
 
+	if err := config.EnsureIndexes(); err != nil {
+		panic("Failed to create database indexes: " + err.Error())
+	}
+
 	routes.SetupRoutes(r)
 
 	port := os.Getenv("PORT")

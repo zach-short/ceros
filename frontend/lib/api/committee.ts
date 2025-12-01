@@ -1,4 +1,3 @@
-import { Committee } from '@/models/committee';
 import { apiRequest } from '../api';
 
 export interface CommitteeRoom {

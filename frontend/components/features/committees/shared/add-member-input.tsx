@@ -1,25 +1,23 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SearchIcon } from 'lucide-react';
+import { SearchIcon, Loader2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { User } from '@/lib/api/friends';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Fuse from 'fuse.js';
 import { DefaultLoader } from '@/components/shared/layout/loader';
 import { getUserDisplayName } from '@/lib/user-utils';
+import { useFriendsPaginated } from '@/hooks/api/use-friends-paginated';
+import { useInfiniteScroll } from '@/hooks/use-infinite-scroll';
 
 export function AddMemberInput({
-  users,
-  loading,
   onToggleAction,
   isCheckedAction,
   excludeIds = [],
   placeholder = 'Search friends to add...',
   emptyMessage = 'No friends available',
 }: {
-  users: User[];
-  loading: boolean;
   onToggleAction: (clickedMember: User) => void;
   isCheckedAction: (member: User) => boolean;
   excludeIds?: string[];
@@ -28,9 +26,17 @@ export function AddMemberInput({
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
+  const {
+    friends,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    loadMore,
+  } = useFriendsPaginated();
+
   const availableUsers = useMemo(() => {
-    return users.filter((user) => !excludeIds.includes(user.id));
-  }, [users, excludeIds]);
+    return friends.filter((user) => !excludeIds.includes(user.id));
+  }, [friends, excludeIds]);
 
   const fuse = useMemo(() => {
     return new Fuse(availableUsers, {
@@ -47,6 +53,12 @@ export function AddMemberInput({
     const results = fuse.search(searchQuery);
     return results.map((result) => result.item);
   }, [searchQuery, fuse, availableUsers]);
+
+  const loadMoreRef = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading: isLoadingMore,
+  });
 
   return (
     <div className='space-y-2'>
@@ -66,7 +78,10 @@ export function AddMemberInput({
       <Suggestions
         users={filteredUsers}
         allUsers={availableUsers}
-        isLoading={loading}
+        isLoading={isLoading}
+        isLoadingMore={isLoadingMore}
+        hasMore={hasMore}
+        loadMoreRef={loadMoreRef}
         onToggleAction={onToggleAction}
         isCheckedAction={isCheckedAction}
         emptyMessage={emptyMessage}
@@ -80,6 +95,9 @@ function Suggestions({
   users,
   allUsers,
   isLoading,
+  isLoadingMore,
+  hasMore,
+  loadMoreRef,
   onToggleAction,
   isCheckedAction,
   emptyMessage,
@@ -88,6 +106,9 @@ function Suggestions({
   users: User[];
   allUsers: User[];
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  loadMoreRef: React.RefObject<HTMLDivElement | null>;
   onToggleAction: (clickedMember: User) => void;
   isCheckedAction: (member: User) => boolean;
   emptyMessage: string;
@@ -178,6 +199,19 @@ function Suggestions({
             </div>
           </div>
         ))}
+        {/* Infinite scroll sentinel */}
+        <div ref={loadMoreRef} className='py-2'>
+          {isLoadingMore && (
+            <div className='flex justify-center'>
+              <Loader2 className='animate-spin text-muted-foreground' size={16} />
+            </div>
+          )}
+        </div>
+        {!hasMore && users.length > 0 && (
+          <p className='text-xs text-muted-foreground text-center py-2'>
+            All friends loaded
+          </p>
+        )}
       </div>
     </div>
   );

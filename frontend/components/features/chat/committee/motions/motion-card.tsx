@@ -65,7 +65,7 @@ export function MotionCard({
     if (!canVote) return;
     setLocalIsSubmitting(true);
     try {
-      await onVote(motion.id, vote);
+      onVote(motion.id, vote);
     } finally {
       setLocalIsSubmitting(false);
     }
@@ -75,7 +75,7 @@ export function MotionCard({
     if (!canSecond || !onSecond) return;
     setLocalIsSubmitting(true);
     try {
-      await onSecond(motion.id);
+      onSecond(motion.id);
     } finally {
       setLocalIsSubmitting(false);
     }
@@ -126,7 +126,6 @@ export function MotionCard({
 
   return (
     <div className='border rounded-lg bg-card shadow-sm overflow-hidden max-w-xl'>
-      {/* Header */}
       <div className='px-4 py-3 border-b bg-muted/30'>
         <div className='flex items-start justify-between gap-2'>
           <div className='flex-1'>
@@ -135,12 +134,15 @@ export function MotionCard({
               {getStatusBadge()}
             </div>
             <p className='text-xs opacity-75'>
-              Proposed by <span className='font-medium'>{getUserDisplayName(mover)}</span>
+              Proposed by{' '}
+              <span className='font-medium'>{getUserDisplayName(mover)}</span>
               {seconder && (
                 <>
                   {' '}
                   • Seconded by{' '}
-                  <span className='font-medium'>{getUserDisplayName(seconder)}</span>
+                  <span className='font-medium'>
+                    {getUserDisplayName(seconder)}
+                  </span>
                 </>
               )}
             </p>

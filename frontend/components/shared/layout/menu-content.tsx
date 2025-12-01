@@ -7,7 +7,6 @@ import {
   MessagesSquareIcon,
   User,
   Users,
-  Bell,
   Settings,
   Plus,
 } from 'lucide-react';
