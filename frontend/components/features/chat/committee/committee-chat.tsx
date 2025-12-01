@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useWebSocket } from '@/hooks/use-web-socket';
 import { useSession } from 'next-auth/react';
+import { useUser } from '@/hooks/api/use-users';
 import { ChatHeader } from '../ui/chat-header';
 import { MessagesList } from '../ui/messages-list';
 import { MessageInput } from '../ui/message-input';
@@ -28,6 +29,7 @@ export default function CommitteeChat() {
   const params = useParams();
   const committeeId = params.id as string;
   const { data: session } = useSession();
+  const { data: currentUser } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -73,6 +75,13 @@ export default function CommitteeChat() {
   const handleNewMessage = (data: any) => {
     const message = data.message || data;
     const sender = data.sender;
+
+    console.log('[Committee Chat] Received message:', {
+      messageRoomId: message.roomId,
+      currentRoomId: roomId,
+      matches: message.roomId === roomId,
+      data,
+    });
 
     if (message.roomId === roomId) {
       const transformedMessage = session?.user?.id
@@ -348,9 +357,40 @@ export default function CommitteeChat() {
     }
   }, [historyData, session?.user?.id]);
 
+  // Ensure current user is always in the users array
+  useEffect(() => {
+    if (currentUser && session?.user?.id) {
+      setUsers((prevUsers) => {
+        const currentUserExists = prevUsers.some(
+          (u) => u.id === session.user.id,
+        );
+        if (!currentUserExists) {
+          return [
+            ...prevUsers,
+            {
+              id: currentUser.id,
+              name: currentUser.name,
+              email: currentUser.email,
+              picture: currentUser.picture,
+              givenName: currentUser.givenName,
+              familyName: currentUser.familyName,
+            } as User,
+          ];
+        }
+        return prevUsers;
+      });
+    }
+  }, [currentUser, session?.user?.id]);
+
   useEffect(() => {
     if (roomId && isConnected) {
+      console.log('[Committee Chat] Joining room:', roomId);
       joinRoom(roomId);
+    } else {
+      console.log('[Committee Chat] Not joining room yet:', {
+        roomId,
+        isConnected,
+      });
     }
   }, [roomId, isConnected, joinRoom]);
 
@@ -365,6 +405,13 @@ export default function CommitteeChat() {
   }, [messages]);
 
   const handleSendMessage = (content: string) => {
+    console.log('[Committee Chat] Attempting to send message:', {
+      roomId,
+      isConnected,
+      hasSession: !!session?.user?.id,
+      content,
+    });
+
     if (!roomId || !isConnected || !session?.user?.id) return;
 
     if (replyState) {
@@ -381,6 +428,7 @@ export default function CommitteeChat() {
       };
 
       setMessages((prev) => [...prev, tempMessage]);
+      console.log('[Committee Chat] Sending message to room:', roomId);
       sendMessage(roomId, content, 'group');
     }
   };
