@@ -9,7 +9,7 @@ export interface UserPrivacyContext {
 
 export function canViewField(
   field: keyof PrivacySettings,
-  context: UserPrivacyContext
+  context: UserPrivacyContext,
 ): boolean {
   const { user, viewerUserId, friendship, isOwnProfile } = context;
 
@@ -26,7 +26,14 @@ export function canViewField(
   return Boolean(isFriend);
 }
 
-export function getDisplayName(user: User, context: UserPrivacyContext): string {
+export function getDisplayName(
+  user: User,
+  context: UserPrivacyContext,
+): string {
+  if (user.isDeleted) {
+    return '(Deleted User)';
+  }
+
   const canSeeGiven = canViewField('showGivenName', context);
   const canSeeFamily = canViewField('showFamilyName', context);
 
@@ -40,27 +47,43 @@ export function getDisplayName(user: User, context: UserPrivacyContext): string 
   return user.name || 'Unknown User';
 }
 
-export function getDisplayPicture(user: User, context: UserPrivacyContext): string | null {
+export function getDisplayPicture(
+  user: User,
+  context: UserPrivacyContext,
+): string | null {
   const canSeePicture = canViewField('showPicture', context);
-  return canSeePicture ? (user.picture || null) : null;
+  return canSeePicture ? user.picture || null : null;
 }
 
-export function getDisplayEmail(user: User, context: UserPrivacyContext): string | null {
+export function getDisplayEmail(
+  user: User,
+  context: UserPrivacyContext,
+): string | null {
   const canSeeEmail = canViewField('showEmail', context);
-  return canSeeEmail ? (user.email || null) : null;
+  return canSeeEmail ? user.email || null : null;
 }
 
-export function getDisplayPhone(user: User, context: UserPrivacyContext): string | null {
+export function getDisplayPhone(
+  user: User,
+  context: UserPrivacyContext,
+): string | null {
   const canSeePhone = canViewField('showPhoneNumber', context);
-  return canSeePhone ? (user.phoneNumber || null) : null;
+  return canSeePhone ? user.phoneNumber || null : null;
 }
 
-export function getDisplayBio(user: User, context: UserPrivacyContext): string | null {
+export function getDisplayBio(
+  user: User,
+  context: UserPrivacyContext,
+): string | null {
   const canSeeBio = canViewField('showBio', context);
-  return canSeeBio ? (user.bio || null) : null;
+  return canSeeBio ? user.bio || null : null;
 }
 
-export function getDisplayAddress(user: User, context: UserPrivacyContext): User['address'] | null {
+export function getDisplayAddress(
+  user: User,
+  context: UserPrivacyContext,
+): User['address'] | null {
   const canSeeAddress = canViewField('showAddress', context);
-  return canSeeAddress ? (user.address || null) : null;
+  return canSeeAddress ? user.address || null : null;
 }
+

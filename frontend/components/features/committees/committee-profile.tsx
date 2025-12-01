@@ -196,14 +196,16 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
                         {memberCount} member{memberCount !== 1 ? 's' : ''}
                       </span>
                     </button>
-                    •
-                    {committee.observerIds &&
-                      committee.observerIds.length > 0 && (
+
+                    {committee.observerIds && (
+                      <>
+                        •
                         <span>
                           {committee.observerIds.length} observer
                           {committee.observerIds.length !== 1 ? 's' : ''}
                         </span>
-                      )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

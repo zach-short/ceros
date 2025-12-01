@@ -865,26 +865,6 @@ export const apiDocumentation: RouteSection[] = [
 }`,
         },
       },
-      // {
-      //   method: 'GET',
-      //   path: '/users/me/comittees/:comitteeId/motions/:motionId',
-      //   description: 'Get details of a specific motion.',
-      //   requiresAuth: true,
-      //   parameters: [
-      //     {
-      //       name: 'comitteeId',
-      //       type: 'string',
-      //       required: true,
-      //       description: 'Committee ID',
-      //     },
-      //     {
-      //       name: 'motionId',
-      //       type: 'string',
-      //       required: true,
-      //       description: 'Motion ID',
-      //     },
-      //   ],
-      // },
       {
         method: 'POST',
         path: '/committees/:id/chat/start',

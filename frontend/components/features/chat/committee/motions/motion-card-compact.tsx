@@ -10,6 +10,7 @@ import {
   CheckCheck,
 } from 'lucide-react';
 import Image from 'next/image';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 interface MotionCardCompactProps {
   motion: Motion;
@@ -105,12 +106,12 @@ export function MotionCardCompact({
           </h3>
 
           <p className='text-xs opacity-75 mb-2 truncate'>
-            Proposed by <span className='font-medium'>{mover.name}</span>
+            Proposed by <span className='font-medium'>{getUserDisplayName(mover)}</span>
             {seconder && (
               <>
                 {' '}
                 • Seconded by{' '}
-                <span className='font-medium'>{seconder.name}</span>
+                <span className='font-medium'>{getUserDisplayName(seconder)}</span>
               </>
             )}
           </p>

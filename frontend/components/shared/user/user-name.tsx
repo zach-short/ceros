@@ -30,7 +30,9 @@ export function UserName({
     isOwnProfile,
   };
 
-  const displayName = showFullName ? getDisplayName(user, context) : (user.name || fallback);
+  const displayName = showFullName
+    ? getDisplayName(user, context)
+    : (user.isDeleted ? '(Deleted User)' : (user.name || fallback));
 
   return <span className={cn(className)}>{displayName}</span>;
 }

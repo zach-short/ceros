@@ -159,9 +159,9 @@ export function MessageBubble({
       )}
 
       <div className='flex'>
-        <div className=''>
-          {showAvatar && isFirstInGroup && sender && !isMotion && (
-            <div className={`pr-2 pb-2`}>
+        <div className='flex-shrink-0'>
+          {showAvatar && isFirstInGroup && sender && !isMotion ? (
+            <div className='pr-2 pb-2'>
               <UserAvatar
                 user={sender}
                 viewerUserId={currentUserId}
@@ -169,7 +169,9 @@ export function MessageBubble({
                 size='md'
               />
             </div>
-          )}
+          ) : showAvatar && !isMotion ? (
+            <div className='w-12 pr-2' />
+          ) : null}
         </div>
 
         <div className='flex-1 w-full min-w-0'>

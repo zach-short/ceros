@@ -104,18 +104,13 @@ export function CommitteeMotionsSheet({
             ) : (
               <div className='space-y-3 pb-4'>
                 {motions.map((motion) => (
-                  <div
-                    key={motion.id}
-                    className='p-4 border rounded-lg hover:bg-accent cursor-pointer'
-                  >
+                  <div key={motion.id} className='p-4 border rounded-lg '>
                     <h4 className='font-medium mb-1'>{motion.title}</h4>
                     <p className='text-sm opacity-60 line-clamp-2'>
                       {motion.description}
                     </p>
                     <div className='flex items-center gap-4 mt-2 text-xs opacity-60'>
                       <span>{motion.status}</span>
-                      <span>•</span>
-                      <span>{motion.createdAt}</span>
                     </div>
                   </div>
                 ))}

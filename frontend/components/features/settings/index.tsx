@@ -11,6 +11,7 @@ import { UserSettings } from '@/lib/api/users';
 import { useTheme } from 'next-themes';
 import { AppearanceSettings } from './appearance-settings';
 import { PrivacySettings } from './privacy-settings';
+import { DangerZone } from './danger-zone';
 
 export function Settings() {
   const { data: user, loading: userLoading, refetch } = useUser();
@@ -130,6 +131,8 @@ export function Settings() {
           settings={workingSettings}
           onSettingChange={updateSetting}
         />
+
+        <DangerZone />
       </div>
     </div>
   );

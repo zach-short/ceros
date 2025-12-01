@@ -13,6 +13,8 @@ export interface User {
   friendshipStatus?: FriendshipStatus | null;
   isOnline?: boolean;
   lastSeen?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface Address {

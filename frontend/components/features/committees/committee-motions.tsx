@@ -129,7 +129,6 @@ export default function CommitteeMotions() {
             <EmptyMotions onCreateClick={() => setIsCreateDialogOpen(true)} />
           ) : (
             <div className='p-4 space-y-4'>
-              {/* Motion list will go here */}
               <p className='text-sm opacity-75'>Motion list coming soon...</p>
             </div>
           )}
@@ -145,4 +144,3 @@ export default function CommitteeMotions() {
     </>
   );
 }
-

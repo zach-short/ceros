@@ -22,15 +22,18 @@ export function Navbar({
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  if (!session && pathname !== '/') {
-    return (
-      <Link
-        href='/'
-        className={`fixed lg:absolute top-4 lg:top-6 right-4 lg:right-6 z-50 text-neutral-400 hover:text-white transition-colors ${buttonClassName}`}
-      >
-        <Home className={`text-blue-500`} strokeWidth={2} size={32} />
-      </Link>
-    );
+  if (!session) {
+    if (pathname !== '/') {
+      return (
+        <Link
+          href='/'
+          className={`fixed lg:absolute top-4 lg:top-6 right-4 lg:right-6 z-50 text-neutral-400 hover:text-white transition-colors ${buttonClassName}`}
+        >
+          <Home className={`text-blue-500`} strokeWidth={2} size={32} />
+        </Link>
+      );
+    }
+    return null;
   }
 
   return (

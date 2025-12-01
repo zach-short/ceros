@@ -8,6 +8,7 @@ import { SearchIcon } from 'lucide-react';
 import { User } from '@/lib/api/friends';
 import Fuse from 'fuse.js';
 import { DefaultLoader } from '@/components/shared/layout/loader';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 interface FriendsSelectorProps {
   friends: User[];
@@ -100,22 +101,22 @@ export function FriendsSelector({
               >
                 <Checkbox
                   checked={isChecked(user)}
-                  onClick={(e) => e.stopPropagation()}
+                  onCheckedChange={() => {}}
                 />
                 <Avatar className='w-10 h-10'>
                   <AvatarImage src={user.picture || undefined} />
                   <AvatarFallback>
-                    {user.name
-                      ?.split(' ')
+                    {getUserDisplayName(user)
+                      .split(' ')
                       .map((n) => n[0])
                       .join('')
                       .toUpperCase()
-                      .slice(0, 2) || 'U'}
+                      .slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 <div className='flex-1 min-w-0'>
                   <p className='font-medium truncate'>
-                    {user.name || 'Unnamed User'}
+                    {getUserDisplayName(user)}
                   </p>
                   {(user.givenName || user.familyName) && (
                     <p className='text-sm text-muted-foreground truncate'>

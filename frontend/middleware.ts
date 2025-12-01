@@ -7,6 +7,7 @@ export default auth((req) => {
 
   const protectedRoutes = [
     '/committees',
+    '/committees/new',
     '/chat',
     '/profile',
     '/menu',

@@ -120,7 +120,6 @@ func AddFriend(c *gin.Context) {
 	}
 
 	friendCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
-	var updatedFriendship models.Friendship
 	result := friendCollection.FindOneAndUpdate(ctx, query, update)
 	if result.Err() != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "pending friend request not found"})
