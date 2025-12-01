@@ -126,7 +126,6 @@ export function MenuContent({ onItemClick, className = '' }: MenuContentProps) {
             href={menuItem.href}
             icon={menuItem.icon}
             onClick={onItemClick}
-            showBadge={menuItem.showBadge}
             isActive={isActive(menuItem.href)}
           />
         ))}

@@ -95,5 +95,5 @@ export const usersApi = {
   checkUsername: (name: string): Promise<any> =>
     apiRequest('get', '/users/check-username', null, { name }),
 
-  deleteAccount: (): Promise<any> => apiRequest('patch', '/users/me/delete'),
+  deleteAccount: (_?: void): Promise<any> => apiRequest('patch', '/users/me/delete'),
 };

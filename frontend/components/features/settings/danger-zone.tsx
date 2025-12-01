@@ -39,7 +39,7 @@ export function DangerZone() {
   });
 
   const handleDeleteAccount = () => {
-    deleteAccount();
+    deleteAccount(undefined);
   };
 
   return (
