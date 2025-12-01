@@ -442,6 +442,18 @@ export const apiDocumentation: RouteSection[] = [
 }`,
         },
       },
+      {
+        method: 'DELETE',
+        path: '/users/me',
+        description: 'Delete the authenticated user account and all associated data.',
+        requiresAuth: true,
+        response: {
+          status: 200,
+          body: `{
+  "message": "Account deleted successfully"
+}`,
+        },
+      },
     ],
   },
   {
@@ -1447,6 +1459,37 @@ export const apiDocumentation: RouteSection[] = [
           status: 200,
           body: `{
   "message": "Motion deleted successfully"
+}`,
+        },
+      },
+      {
+        method: 'POST',
+        path: '/committees/:id/motions/:motionId/close',
+        description: 'Close a motion and finalize voting',
+        requiresAuth: true,
+        parameters: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            description: 'Committee ID',
+          },
+          {
+            name: 'motionId',
+            type: 'string',
+            required: true,
+            description: 'Motion ID',
+          },
+        ],
+        response: {
+          status: 200,
+          body: `{
+  "message": "Motion closed successfully",
+  "motion": {
+    "id": "507f1f77bcf86cd799439040",
+    "status": "closed",
+    "closedAt": "2025-01-16T15:00:00Z"
+  }
 }`,
         },
       },

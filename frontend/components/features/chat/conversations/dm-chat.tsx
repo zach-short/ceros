@@ -10,6 +10,7 @@ import {
   useEditMessage,
   useDeleteMessage,
 } from '@/hooks/api/use-chat';
+import { useUser } from '@/hooks/api/use-users';
 import { ChatHeader } from '../ui/chat-header';
 import { MessageInput } from '../ui/message-input';
 import { TypingIndicator } from '../ui/typing-indicator';
@@ -33,6 +34,7 @@ export function DMChat({
   recipientPicture,
 }: DMChatProps) {
   const { data: session } = useSession();
+  const { data: currentUser } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -293,6 +295,31 @@ export function DMChat({
       setUsers(historyData.users);
     }
   }, [historyData, session?.user?.id]);
+
+  // Ensure current user is always in the users array
+  useEffect(() => {
+    if (currentUser && session?.user?.id) {
+      setUsers((prevUsers) => {
+        const currentUserExists = prevUsers.some(
+          (u) => u.id === session.user.id,
+        );
+        if (!currentUserExists) {
+          return [
+            ...prevUsers,
+            {
+              id: currentUser.id,
+              name: currentUser.name,
+              email: currentUser.email,
+              picture: currentUser.picture,
+              givenName: currentUser.givenName,
+              familyName: currentUser.familyName,
+            } as User,
+          ];
+        }
+        return prevUsers;
+      });
+    }
+  }, [currentUser, session?.user?.id]);
 
   useEffect(() => {
     if (roomId && isConnected) {

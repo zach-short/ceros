@@ -38,13 +38,60 @@ export function MotionCardCompact({
 
   const motionAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(motion.id)}`;
 
+  const getStatusColors = () => {
+    switch (motion.status) {
+      case 'proposed':
+        return {
+          bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+          border: 'border-yellow-300 dark:border-yellow-700',
+          hoverBorder: 'hover:border-yellow-400 dark:hover:border-yellow-600',
+          avatarBorder: 'border-yellow-400 dark:border-yellow-600',
+        };
+      case 'seconded':
+      case 'open':
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-950/30',
+          border: 'border-blue-300 dark:border-blue-700',
+          hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-600',
+          avatarBorder: 'border-blue-400 dark:border-blue-600',
+        };
+      case 'passed':
+        return {
+          bg: 'bg-green-50 dark:bg-green-950/30',
+          border: 'border-green-300 dark:border-green-700',
+          hoverBorder: 'hover:border-green-400 dark:hover:border-green-600',
+          avatarBorder: 'border-green-400 dark:border-green-600',
+        };
+      case 'failed':
+        return {
+          bg: 'bg-red-50 dark:bg-red-950/30',
+          border: 'border-red-300 dark:border-red-700',
+          hoverBorder: 'hover:border-red-400 dark:hover:border-red-600',
+          avatarBorder: 'border-red-400 dark:border-red-600',
+        };
+      case 'tabled':
+        return {
+          bg: 'bg-gray-50 dark:bg-gray-950/30',
+          border: 'border-gray-300 dark:border-gray-700',
+          hoverBorder: 'hover:border-gray-400 dark:hover:border-gray-600',
+          avatarBorder: 'border-gray-400 dark:border-gray-600',
+        };
+      default:
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-950/30',
+          border: 'border-blue-300 dark:border-blue-700',
+          hoverBorder: 'hover:border-blue-400 dark:hover:border-blue-600',
+          avatarBorder: 'border-blue-400 dark:border-blue-600',
+        };
+    }
+  };
+
   const getStatusBadge = () => {
     switch (motion.status) {
       case 'proposed':
         return (
           <span className='inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'>
             <Clock size={12} />
-            Awaiting Second
           </span>
         );
       case 'seconded':
@@ -52,28 +99,24 @@ export function MotionCardCompact({
         return (
           <span className='inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'>
             <Clock size={12} />
-            Open for Voting
           </span>
         );
       case 'passed':
         return (
           <span className='inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'>
             <CheckCheck size={12} />
-            Passed
           </span>
         );
       case 'failed':
         return (
           <span className='inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'>
             <XCircle size={12} />
-            Failed
           </span>
         );
       case 'tabled':
         return (
           <span className='inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'>
             <MinusCircle size={12} />
-            Tabled
           </span>
         );
       default:
@@ -81,14 +124,16 @@ export function MotionCardCompact({
     }
   };
 
+  const statusColors = getStatusColors();
+
   return (
     <button
       onClick={onClick}
-      className='w-full text-left border-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 shadow-md  hover:border-blue-400 dark:hover:border-blue-600 transition-all overflow-hidden max-w-xl group'
+      className={`w-full text-left border-2 rounded-lg shadow-md transition-all overflow-hidden max-w-full group ${statusColors.bg} ${statusColors.border} ${statusColors.hoverBorder}`}
     >
       <div className='flex gap-3 p-4 w-full'>
         <div className='flex-shrink-4'>
-          <div className='w-12 h-12 rounded-full overflow-hidden bg-white dark:bg-gray-800 border-2 border-blue-400 dark:border-blue-600'>
+          <div className={`w-12 h-12 rounded-full overflow-hidden bg-white dark:bg-gray-800 border-2 ${statusColors.avatarBorder}`}>
             <Image
               src={motionAvatar}
               alt='Motion avatar'
@@ -110,8 +155,8 @@ export function MotionCardCompact({
             <span className='font-medium'>{getUserDisplayName(mover)}</span>
             {seconder && (
               <>
-                {' '}
-                • Seconded by{' '}
+                <br />
+                Seconded by{' '}
                 <span className='font-medium'>
                   {getUserDisplayName(seconder)}
                 </span>
@@ -141,7 +186,7 @@ export function MotionCardCompact({
                 </div>
               </div>
 
-              <div className='h-2 w-full rounded-full overflow-hidden flex bg-gray-200 dark:bg-gray-700'>
+              <div className='h-2 w-full  rounded-full overflow-hidden flex bg-gray-200 dark:bg-gray-700'>
                 {ayeCount > 0 && (
                   <div
                     className='bg-green-500 h-full'

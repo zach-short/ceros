@@ -125,7 +125,7 @@ export function MotionCard({
   };
 
   return (
-    <div className='border rounded-lg bg-card shadow-sm overflow-hidden max-w-xl'>
+    <div className='border rounded-lg bg-card shadow-sm overflow-hidden max-w-full'>
       <div className='px-4 py-3 border-b bg-muted/30'>
         <div className='flex items-start justify-between gap-2'>
           <div className='flex-1'>

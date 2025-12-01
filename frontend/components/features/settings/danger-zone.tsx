@@ -26,9 +26,12 @@ export function DangerZone() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutate: deleteAccount, loading } = useDeleteAccount({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Account deleted successfully');
-      signOut({ callbackUrl: '/' });
+      // Sign out without redirect first to clear session
+      await signOut({ redirect: false });
+      // Then manually redirect to avoid race conditions
+      window.location.href = '/';
     },
     onError: (error) => {
       console.error('Account deletion failed:', error);

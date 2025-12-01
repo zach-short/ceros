@@ -13,22 +13,26 @@ This CLI tool seeds your database with test users for development and testing pu
 ## Usage
 
 ### Seed 10 Users (default)
+
 ```bash
 cd backend
 go run cmd/seed/main.go
 ```
 
 ### Seed Custom Number of Users
+
 ```bash
 go run cmd/seed/main.go -count 50
 ```
 
 ### Clear Existing Test Users Before Seeding
+
 ```bash
 go run cmd/seed/main.go -count 20 -clear
 ```
 
 ### Clear All Test Users Only (no seeding)
+
 ```bash
 go run cmd/seed/main.go -clear-only
 ```
@@ -37,13 +41,13 @@ go run cmd/seed/main.go -clear-only
 
 After seeding, you can log in with:
 
-| Email | Password |
-|-------|----------|
-| test@test.com | password |
+| Email          | Password  |
+| -------------- | --------- |
+| test@test.com  | password  |
 | test2@test.com | password2 |
 | test3@test.com | password3 |
 | test4@test.com | password4 |
-| ... | ... |
+| ...            | ...       |
 
 ## Example Output
 
