@@ -27,6 +27,8 @@ func SetupRoutes(r *gin.Engine) {
 			me.GET("", handlers.GetMe)
 			me.PATCH("", handlers.UpdateProfile)
 			me.PATCH("/settings", handlers.UpdateUserSettings)
+			me.PATCH("/delete", handlers.DeleteAccount)
+			me.DELETE("", handlers.DeleteAccount)
 
 			friends := me.Group("/friends")
 			{
@@ -93,14 +95,12 @@ func SetupRoutes(r *gin.Engine) {
 			committee.POST("/chat/start", handlers.StartCommitteeChat)
 			committee.GET("/chat/history", handlers.GetCommitteeHistory)
 
-			// Member management routes
 			committee.POST("/members", handlers.AddMember)
 			committee.DELETE("/members/:memberId", handlers.RemoveMember)
 			committee.POST("/observers", handlers.AddObserver)
 			committee.DELETE("/observers/:observerId", handlers.RemoveObserver)
 			committee.PUT("/chair", handlers.ChangeChair)
 
-			// Motion routes
 			committee.GET("/motions", handlers.GetCommitteeMotions)
 			committee.POST("/motions", handlers.CreateMotion)
 
@@ -111,6 +111,7 @@ func SetupRoutes(r *gin.Engine) {
 					motion.GET("", handlers.GetMotion)
 					motion.PATCH("", handlers.UpdateMotion)
 					motion.DELETE("", handlers.DeleteMotion)
+					motion.POST("/close", handlers.CloseMotion)
 				}
 			}
 		}

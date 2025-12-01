@@ -28,19 +28,21 @@ type UserSettings struct {
 }
 
 type User struct {
-	ID           primitive.ObjectID `bson:"_id" json:"id"`
-	Email        string             `bson:"email" json:"email"`
-	Name         string             `bson:"name,omitempty" json:"name,omitempty"`
-	GivenName    string             `bson:"givenName,omitempty" json:"givenName,omitempty"`
-	FamilyName   string             `bson:"familyName,omitempty" json:"familyName,omitempty"`
-	PasswordHash string             `bson:"passwordHash,omitempty" json:"passwordHash,omitempty"`
-	Bio          string             `bson:"bio,omitempty" json:"bio,omitempty"`
-	Picture      string             `bson:"picture,omitempty" json:"picture,omitempty"`
-	PhoneNumber  string             `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
-	Address      Address            `bson:"address,omitempty" json:"address,omitempty"`
-	Settings     UserSettings       `bson:"settings,omitempty" json:"settings,omitempty"`
-	IsOnline     bool               `bson:"isOnline" json:"isOnline"`
-	LastSeen     primitive.DateTime `bson:"lastSeen,omitempty" json:"lastSeen,omitempty"`
+	ID           primitive.ObjectID  `bson:"_id" json:"id"`
+	Email        string              `bson:"email" json:"email"`
+	Name         string              `bson:"name,omitempty" json:"name,omitempty"`
+	GivenName    string              `bson:"givenName,omitempty" json:"givenName,omitempty"`
+	FamilyName   string              `bson:"familyName,omitempty" json:"familyName,omitempty"`
+	PasswordHash string              `bson:"passwordHash,omitempty" json:"passwordHash,omitempty"`
+	Bio          string              `bson:"bio,omitempty" json:"bio,omitempty"`
+	Picture      string              `bson:"picture,omitempty" json:"picture,omitempty"`
+	PhoneNumber  string              `bson:"phoneNumber,omitempty" json:"phoneNumber,omitempty"`
+	Address      Address             `bson:"address,omitempty" json:"address,omitempty"`
+	Settings     UserSettings        `bson:"settings,omitempty" json:"settings,omitempty"`
+	IsOnline     bool                `bson:"isOnline" json:"isOnline"`
+	LastSeen     primitive.DateTime  `bson:"lastSeen,omitempty" json:"lastSeen,omitempty"`
+	IsDeleted    bool                `bson:"isDeleted" json:"isDeleted"`
+	DeletedAt    *primitive.DateTime `bson:"deletedAt,omitempty" json:"deletedAt,omitempty"`
 }
 
 func GetDefaultUserSettings() UserSettings {

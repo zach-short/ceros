@@ -51,7 +51,10 @@ func Login(c *gin.Context) {
 
 	collection := config.GetCollection("users")
 	var user models.User
-	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
+	err := collection.FindOne(context.Background(), bson.M{
+		"email":     req.Email,
+		"isDeleted": bson.M{"$ne": true},
+	}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -86,7 +89,10 @@ func Register(c *gin.Context) {
 	collection := config.GetCollection("users")
 
 	var existingUser models.User
-	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&existingUser)
+	err := collection.FindOne(context.Background(), bson.M{
+		"email":     req.Email,
+		"isDeleted": bson.M{"$ne": true},
+	}).Decode(&existingUser)
 	if err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Email already exists"})
 		return
@@ -143,7 +149,10 @@ func SocialAuth(c *gin.Context) {
 
 	collection := config.GetCollection("users")
 	var user models.User
-	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
+	err := collection.FindOne(context.Background(), bson.M{
+		"email":     req.Email,
+		"isDeleted": bson.M{"$ne": true},
+	}).Decode(&user)
 
 	if err == mongo.ErrNoDocuments {
 		username := req.Name
@@ -192,7 +201,10 @@ func CheckEmail(c *gin.Context) {
 
 	collection := config.GetCollection("users")
 	var user models.User
-	err := collection.FindOne(context.Background(), bson.M{"email": req.Email}).Decode(&user)
+	err := collection.FindOne(context.Background(), bson.M{
+		"email":     req.Email,
+		"isDeleted": bson.M{"$ne": true},
+	}).Decode(&user)
 
 	if err == nil {
 		hasPassword := user.PasswordHash != ""

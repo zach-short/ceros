@@ -467,7 +467,6 @@ func GetCommitteeHistory(c *gin.Context) {
 		}
 	}
 
-	// Fetch motions for this committee
 	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
 	motionFilter := bson.M{"committee_id": committeeOID}
 	motionOpts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
@@ -485,7 +484,6 @@ func GetCommitteeHistory(c *gin.Context) {
 		}
 	}
 
-	// Ensure motions is never nil
 	if motions == nil {
 		motions = []models.Motion{}
 	}
@@ -967,20 +965,18 @@ func DeleteConversations(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Verify user is participant in each conversation
 	userIDHex := userID.Hex()
 	for _, roomID := range req.RoomIds {
 		if strings.HasPrefix(roomID, "dm_") {
-			// For DM rooms, verify user ID is in the room ID
+
 			if !strings.Contains(roomID, userIDHex) {
 				c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to delete this conversation"})
 				return
 			}
 		}
-		// For committee/group rooms, we could add additional checks here
+
 	}
 
-	// Delete all messages for the given room IDs
 	filter := bson.M{
 		"roomId": bson.M{"$in": req.RoomIds},
 	}

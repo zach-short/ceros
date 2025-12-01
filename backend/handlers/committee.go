@@ -224,8 +224,13 @@ func CreateCommittee(c *gin.Context) {
 		ChairID:     chairIDHex,
 		MemberIDs:   memberIDsHex,
 		ObserverIDs: observerIDsHex,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		VotingRules: models.VotingRules{
+			QuorumPercentage: 50,
+			DefaultThreshold: models.VoteThresholdSimpleMajority,
+			AllowAbstentions: true,
+		},
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	collection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
@@ -691,28 +696,59 @@ func ChangeChair(c *gin.Context) {
 
 	oldChairID := committee.ChairID
 
-	update := bson.M{
-		"$set": bson.M{
-			"chairId":   newChairID,
-			"updatedAt": time.Now(),
-		},
-		"$addToSet": bson.M{"memberIds": oldChairID},
-		"$pull":     bson.M{"observerIds": newChairID},
-	}
+	var update bson.M
 
 	if oldChairID != newChairID {
-		update["$pull"].(bson.M)["memberIds"] = newChairID
-	}
+		update = bson.M{
+			"$set": bson.M{
+				"chairId":   newChairID,
+				"updatedAt": time.Now(),
+			},
+			"$pull": bson.M{
+				"memberIds":   newChairID,
+				"observerIds": newChairID,
+			},
+		}
 
-	result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change chair"})
-		return
-	}
+		result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change chair"})
+			return
+		}
 
-	if result.MatchedCount == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
-		return
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+			return
+		}
+
+		addOldChairUpdate := bson.M{
+			"$addToSet": bson.M{"memberIds": oldChairID},
+		}
+
+		_, err = collection.UpdateOne(ctx, bson.M{"_id": committeeID}, addOldChairUpdate)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update old chair membership"})
+			return
+		}
+	} else {
+		update = bson.M{
+			"$set": bson.M{
+				"chairId":   newChairID,
+				"updatedAt": time.Now(),
+			},
+			"$pull": bson.M{"observerIds": newChairID},
+		}
+
+		result, err := collection.UpdateOne(ctx, bson.M{"_id": committeeID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to change chair"})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "committee not found"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Chair changed successfully"})
