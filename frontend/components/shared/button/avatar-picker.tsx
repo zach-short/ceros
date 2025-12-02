@@ -22,12 +22,12 @@ import {
 import { cn } from '@/lib/utils';
 
 const USER_DICEBEAR_STYLES = [
-  { name: 'Avataaars', value: 'avataaars' },
-  { name: 'Big Smile', value: 'big-smile' },
-  { name: 'Personas', value: 'personas' },
-  { name: 'Lorelei', value: 'lorelei' },
-  { name: 'Fun Emoji', value: 'fun-emoji' },
-  { name: 'Adventurer', value: 'adventurer' },
+  { name: '', value: 'avataaars' },
+  { name: '', value: 'big-smile' },
+  { name: '', value: 'personas' },
+  { name: '', value: 'lorelei' },
+  { name: '', value: 'fun-emoji' },
+  { name: '', value: 'adventurer' },
 ];
 
 const COMMITTEE_DICEBEAR_STYLES = [
