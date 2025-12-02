@@ -55,7 +55,7 @@ export default function MessagesPage() {
     <div className='h-[calc(100vh-4rem)] lg:h-screen flex flex-col'>
       <div className='flex-1 overflow-hidden'>
         <div className='max-w-4xl mx-auto h-full flex flex-col'>
-          <div className='p-6 border-b'>
+          <div className='p-6 pt-4 border-b'>
             <div className='mb-4'>
               <h1 className='text-2xl font-bold'>Messages</h1>
             </div>

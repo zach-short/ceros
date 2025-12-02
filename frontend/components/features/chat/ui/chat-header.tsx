@@ -33,12 +33,12 @@ export function ChatHeader({
     : `/profile/${recipientId}`;
 
   return (
-    <div className='p-4 border-b flex flex-row items-center justify-between'>
+    <div className='p-4 border-b flex flex-row items-center lg:justify-between'>
       <Link
         href={profileLink}
         className='hover:pointer flex flex-row items-center gap-x-2'
       >
-        <Avatar>
+        <Avatar className={`h-12 w-12`}>
           <AvatarImage src={recipientPicture as string | undefined} />
           <AvatarFallback>
             {isCommittee
@@ -52,7 +52,7 @@ export function ChatHeader({
           </AvatarFallback>
         </Avatar>
         <div>
-          <h2 className='font-semibold'>{recipientName}</h2>
+          <h2 className='font-semibold text-2xl'>{recipientName}</h2>
           <div className='flex items-center gap-2 text-xs opacity-75'>
             {!isLoading && !isConnected && (
               <span className='text-red-500'>🔴 Disconnected</span>
