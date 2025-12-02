@@ -5,7 +5,10 @@ interface TypingIndicatorProps {
   chatType?: 'dm' | 'committee';
 }
 
-export function TypingIndicator({ typingUsers, chatType }: TypingIndicatorProps) {
+export function TypingIndicator({
+  typingUsers,
+  chatType,
+}: TypingIndicatorProps) {
   if (typingUsers.length === 0) return null;
 
   const getMessage = () => {
@@ -24,7 +27,7 @@ export function TypingIndicator({ typingUsers, chatType }: TypingIndicatorProps)
 
   return (
     <div className='px-4 py-2 text-sm text-gray-500 flex items-center gap-2'>
-      <span>{getMessage()}</span>
+      <span className={`h-2`}>{getMessage()}</span>
       <div className='flex gap-1'>
         <span className='animate-bounce' style={{ animationDelay: '0ms' }}>
           •
@@ -39,3 +42,4 @@ export function TypingIndicator({ typingUsers, chatType }: TypingIndicatorProps)
     </div>
   );
 }
+

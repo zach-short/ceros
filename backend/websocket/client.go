@@ -199,6 +199,8 @@ func (c *Client) handleSendMessage(wsMsg models.WSMessage) {
 
 	log.Printf("Message saved: %s in room %s", content, roomID)
 
+	c.linkMessageToActiveMotion(ctx, &message, roomID)
+
 	usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
 	var sender struct {
 		ID      primitive.ObjectID `bson:"_id" json:"id"`
@@ -281,6 +283,8 @@ func (c *Client) handleReplyToMessage(wsMsg models.WSMessage) {
 		log.Printf("Failed to save reply to database: %v", err)
 		return
 	}
+
+	c.linkMessageToActiveMotion(ctx, &message, roomID)
 
 	parentCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
 	_, err = parentCollection.UpdateOne(ctx,
@@ -408,6 +412,7 @@ func (c *Client) handleProposeMotion(wsMsg models.WSMessage) {
 		Votes:          []models.Vote{},
 		Comments:       []models.Comment{},
 		IsSpecial:      false,
+		MotionType:     models.MotionTypeMain,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -805,6 +810,51 @@ func (c *Client) handleTypingStop(wsMsg models.WSMessage) {
 	}
 
 	c.hub.BroadcastToRoomExcept(roomID, broadcastMsg, c)
+}
+
+func (c *Client) linkMessageToActiveMotion(ctx context.Context, message *models.Message, roomID string) {
+	if len(roomID) < 11 || roomID[:10] != "committee_" {
+		return
+	}
+
+	committeeIDStr := roomID[10:]
+	committeeID, err := primitive.ObjectIDFromHex(committeeIDStr)
+	if err != nil {
+		return
+	}
+
+	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
+
+	var activeMotion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{
+		"committee_id": committeeID,
+		"status": bson.M{"$in": []string{
+			string(models.MotionStatusProposed),
+			string(models.MotionStatusSeconded),
+			string(models.MotionStatusOpen),
+		}},
+	}).Decode(&activeMotion)
+
+	if err != nil {
+		return
+	}
+
+	discussionEntry := models.DiscussionEntry{
+		MessageID: message.ID,
+		UserID:    message.SenderID,
+		Content:   message.Content,
+		CreatedAt: message.Timestamp,
+	}
+
+	_, err = motionsCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": activeMotion.ID},
+		bson.M{"$push": bson.M{"discussion": discussionEntry}},
+	)
+
+	if err != nil {
+		log.Printf("Failed to link message to motion: %v", err)
+	}
 }
 
 func UpgradeConnection(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {

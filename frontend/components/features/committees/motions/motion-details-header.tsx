@@ -2,15 +2,22 @@
 
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Motion } from '@/models/motion';
+import { User } from '@/models';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 interface MotionDetailsHeaderProps {
-  motion: any;
+  motion: Motion;
   committeeId: string;
+  mover?: User;
+  seconder?: User;
 }
 
 export function MotionDetailsHeader({
   motion,
   committeeId,
+  mover,
+  seconder,
 }: MotionDetailsHeaderProps) {
   const router = useRouter();
 
@@ -41,11 +48,11 @@ export function MotionDetailsHeader({
                 : motion.status}
           </span>
           <span>•</span>
-          <span>Moved by {motion.mover}</span>
-          {motion.seconder && (
+          <span>Moved by {mover ? getUserDisplayName(mover) : `User ${motion.mover_id.slice(0, 8)}`}</span>
+          {seconder && (
             <>
               <span>•</span>
-              <span>Seconded by {motion.seconder}</span>
+              <span>Seconded by {getUserDisplayName(seconder)}</span>
             </>
           )}
         </div>

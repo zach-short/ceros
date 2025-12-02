@@ -43,7 +43,7 @@ export function UserAvatar({
     isOwnProfile,
   };
 
-  const displayPicture = getDisplayPicture(user, context);
+  const displayPicture = getDisplayPicture(user);
   const displayName = getDisplayName(user, context);
 
   return (

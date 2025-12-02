@@ -127,9 +127,9 @@ export function MessageBubble({
       ? motions.find((m) => m.id === message.motionId)
       : undefined;
 
-  const mover = motion ? users.find((u) => u.id === motion.moverId) : undefined;
-  const seconder = motion?.seconderId
-    ? users.find((u) => u.id === motion.seconderId)
+  const mover = motion ? users.find((u) => u.id === motion.mover_id) : undefined;
+  const seconder = motion?.seconder_id
+    ? users.find((u) => u.id === motion.seconder_id)
     : undefined;
 
   const handleVote = (motionId: string, vote: 'aye' | 'nay' | 'abstain') => {

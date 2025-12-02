@@ -47,20 +47,17 @@ export function getDisplayName(
   return user.name || 'Unknown User';
 }
 
-export function getDisplayPicture(
-  user: User,
-  context: UserPrivacyContext,
-): string | null {
-  const canSeePicture = canViewField('showPicture', context);
-  return canSeePicture ? user.picture || null : null;
+export function getDisplayPicture(user: User): string {
+  if (user.isDeleted) {
+    return '';
+  }
+
+  return user.picture || '';
 }
 
-export function getDisplayEmail(
-  user: User,
-  context: UserPrivacyContext,
-): string | null {
-  const canSeeEmail = canViewField('showEmail', context);
-  return canSeeEmail ? user.email || null : null;
+export function getDisplayEmail(user: User): string | null {
+  /* const canSeeEmail = canViewField('showEmail', context); */
+  return user.email || null;
 }
 
 export function getDisplayPhone(
@@ -86,4 +83,3 @@ export function getDisplayAddress(
   const canSeeAddress = canViewField('showAddress', context);
   return canSeeAddress ? user.address || null : null;
 }
-

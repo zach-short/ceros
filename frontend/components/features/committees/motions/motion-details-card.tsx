@@ -1,7 +1,9 @@
 'use client';
 
+import { Motion } from '@/models/motion';
+
 interface MotionDetailsCardProps {
-  motion: any;
+  motion: Motion;
 }
 
 export function MotionDetailsCard({ motion }: MotionDetailsCardProps) {

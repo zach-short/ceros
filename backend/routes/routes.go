@@ -112,6 +112,8 @@ func SetupRoutes(r *gin.Engine) {
 					motion.PATCH("", handlers.UpdateMotion)
 					motion.DELETE("", handlers.DeleteMotion)
 					motion.POST("/close", handlers.CloseMotion)
+					motion.POST("/table", handlers.CreateMotionToTable)
+					motion.POST("/untable", handlers.UntableMotion)
 				}
 			}
 		}

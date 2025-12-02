@@ -8,4 +8,3 @@ export default async function CommitteeMotionsPage({
   await params;
   return <CommitteeMotions />;
 }
-
