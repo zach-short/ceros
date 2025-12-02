@@ -12,7 +12,6 @@ import { MotionDetailsHeader } from './motion-details-header';
 import { MotionDetailsCard } from './motion-details-card';
 import { MotionVotingResults } from './motion-voting-results';
 import { MotionVotingActions } from './motion-voting-actions';
-import { MotionSubmotions } from './motion-submotions';
 import { MotionComments } from './motion-comments';
 import { User } from 'next-auth';
 import { Motion as MotionType } from '@/models/motion';
@@ -190,7 +189,6 @@ export default function MotionDetails() {
           onVote={handleVoteMotion}
           onSecond={handleSecondMotion}
         />
-        <MotionSubmotions motion={motion} />
         <MotionComments
           motion={motion}
           users={users}

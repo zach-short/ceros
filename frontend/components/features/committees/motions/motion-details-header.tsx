@@ -48,7 +48,12 @@ export function MotionDetailsHeader({
                 : motion.status}
           </span>
           <span>•</span>
-          <span>Moved by {mover ? getUserDisplayName(mover) : `User ${motion.mover_id.slice(0, 8)}`}</span>
+          <span>
+            Moved by{' '}
+            {mover
+              ? getUserDisplayName(mover)
+              : `User ${motion.mover_id.slice(0, 8)}`}
+          </span>
           {seconder && (
             <>
               <span>•</span>
@@ -60,4 +65,3 @@ export function MotionDetailsHeader({
     </header>
   );
 }
-
