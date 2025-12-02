@@ -184,7 +184,6 @@ export function PublicProfile({ userId }: PublicProfileProps) {
 
   const displayEmail = getDisplayEmail(user);
   const displayPhone = getDisplayPhone(user, context);
-  const displayBio = getDisplayBio(user, context);
   const displayAddress = getDisplayAddress(user, context);
 
   const isFriend = user?.friendshipStatus?.status === 'accepted';
@@ -219,7 +218,11 @@ export function PublicProfile({ userId }: PublicProfileProps) {
               <ShareButton
                 title={`${user.name || user.email}'s Profile`}
                 text={`View ${user.name || user.email}'s Profile on Ceros`}
-                url={typeof window !== 'undefined' ? window.location.href : `${process.env.NEXT_PUBLIC_APP_URL}/profile/${userId}`}
+                url={
+                  typeof window !== 'undefined'
+                    ? window.location.href
+                    : `${process.env.NEXT_PUBLIC_APP_URL}/profile/${userId}`
+                }
               />
             </div>
             <div className='flex items-center space-x-2'>
@@ -267,19 +270,9 @@ export function PublicProfile({ userId }: PublicProfileProps) {
             </div>
 
             <div className='mt-6 ml-1'>
-              {displayBio ? (
-                <p className='text-sm text-muted-foreground whitespace-pre-wrap'>
-                  {displayBio}
-                </p>
-              ) : (
-                <div className='flex items-center gap-2 text-sm text-muted-foreground bg-muted p-3 rounded-lg'>
-                  <Lock className='h-4 w-4' />
-                  <span>
-                    Bio is private
-                    {isFriend ? '' : ' • Become friends to see more'}
-                  </span>
-                </div>
-              )}
+              <p className='text-sm text-muted-foreground whitespace-pre-wrap'>
+                {user.bio}
+              </p>
             </div>
           </CardContent>
         </Card>
