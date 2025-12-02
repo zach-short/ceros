@@ -172,7 +172,7 @@ export default function MotionDetails() {
     : undefined;
 
   return (
-    <div className='h-[calc(100vh-4rem)] lg:h-screen flex flex-col'>
+    <div className='h-[calc(100vh-4rem)] lg:h-screen flex flex-col w-full max-w-4xl mx-auto'>
       <MotionDetailsHeader
         motion={motion}
         committeeId={committeeId}

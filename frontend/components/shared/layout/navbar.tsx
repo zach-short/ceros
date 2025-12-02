@@ -10,6 +10,7 @@ import { MenuContent } from './menu-content';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 export function Navbar({
   buttonClassName,
@@ -37,21 +38,29 @@ export function Navbar({
   }
 
   return (
-    <Popover open={open} onOpenChange={() => setOpen(!open)}>
-      <PopoverTrigger
-        asChild
-        className={`hidden lg:block absolute lg:top-6 right-6 z-50 ${buttonClassName}`}
+    <>
+      <Link
+        href='/'
+        className={`fixed h-12 w-12 lg:absolute top-4 lg:top-6 right-4 lg:left-6 z-50 text-neutral-400 hover:text-white transition-colors ${buttonClassName}`}
       >
-        <button>
-          <MenuIcon size={32} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        className={`flex flex-col mr-6 mt-[-12] lg:mt-[-4] lg:w-72 w-[calc(100vw-3rem)] px-6 lg:px-4 h-[calc(100vh-6rem)] sm:h-128 ${contentClassName}`}
-        onClick={() => setOpen(!open)}
-      >
-        <MenuContent onItemClick={() => setOpen(false)} className='h-full' />
-      </PopoverContent>
-    </Popover>
+        <Image alt='logo' fill src='/images/logo.png' />
+      </Link>
+      <Popover open={open} onOpenChange={() => setOpen(!open)}>
+        <PopoverTrigger
+          asChild
+          className={`hidden lg:block absolute lg:top-6 right-6 z-50 ${buttonClassName}`}
+        >
+          <button>
+            <MenuIcon size={32} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          className={`flex flex-col mr-6 mt-[-12] lg:mt-[-4] lg:w-72 w-[calc(100vw-3rem)] px-6 lg:px-4 h-[calc(100vh-6rem)] sm:h-128 ${contentClassName}`}
+          onClick={() => setOpen(!open)}
+        >
+          <MenuContent onItemClick={() => setOpen(false)} className='h-full' />
+        </PopoverContent>
+      </Popover>
+    </>
   );
 }
