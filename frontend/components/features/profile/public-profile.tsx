@@ -22,7 +22,6 @@ import {
 import {
   getDisplayEmail,
   getDisplayPhone,
-  getDisplayBio,
   getDisplayAddress,
   UserPrivacyContext,
 } from '@/lib/user-privacy';

@@ -165,10 +165,9 @@ export function CommitteeMotionsSheet({
                         )}
                     </div>
 
-                    {motion.motion_type === 'main' &&
-                      (motion.status === 'proposed' ||
-                        motion.status === 'seconded' ||
-                        motion.status === 'open') &&
+                    {(motion.status === 'proposed' ||
+                      motion.status === 'seconded' ||
+                      motion.status === 'open') &&
                       currentUserId &&
                       committee &&
                       (committee.ownerId === currentUserId ||
