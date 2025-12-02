@@ -7,7 +7,8 @@ import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-interface AvatarProps extends React.ComponentProps<typeof AvatarPrimitive.Root> {
+interface AvatarProps
+  extends React.ComponentProps<typeof AvatarPrimitive.Root> {
   clickable?: boolean;
   imageSrc?: string;
   imageAlt?: string;
@@ -36,7 +37,9 @@ function Avatar({
         data-slot='avatar'
         className={cn(
           'relative flex size-4 shrink-0 overflow-hidden rounded-full',
-          clickable && imageSrc && 'cursor-pointer hover:opacity-80 transition-opacity',
+          clickable &&
+            imageSrc &&
+            'cursor-pointer hover:opacity-80 transition-opacity',
           className,
         )}
         onClick={handleClick}
@@ -82,7 +85,7 @@ function AvatarImage({
   return (
     <AvatarPrimitive.Image
       data-slot='avatar-image'
-      className={cn('aspect-square size-full', className)}
+      className={cn('aspect-square size-full object-cover', className)}
       {...props}
     />
   );
