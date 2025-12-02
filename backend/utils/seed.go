@@ -53,20 +53,16 @@ var usernameVariants = []string{
 }
 
 var usernameSuffixes = []string{
-	"", "love", "cool", "star", "pro", "king", "queen", "real", "official", "the",
+	"", "love", "happy", "kind", "cool", "star", "pro", "king", "queen", "real", "official", "the",
 	"boss", "legend", "master", "super", "ultra", "mega", "elite", "prime", "ace",
 }
 
-// GenerateUsername creates a unique username based on first and last name
 func GenerateUsername(firstName, lastName string, existingUsernames map[string]bool) string {
-	// Convert to lowercase and clean
 	first := strings.ToLower(firstName)
 	last := strings.ToLower(lastName)
 
-	// Random seed
 	rand.Seed(time.Now().UnixNano())
 
-	// Try different patterns
 	patterns := []string{
 		// Pattern 1: first initial + last name + number
 		fmt.Sprintf("%s%s%s", string(first[0]), last, usernameVariants[rand.Intn(len(usernameVariants))]),
@@ -78,11 +74,10 @@ func GenerateUsername(firstName, lastName string, existingUsernames map[string]b
 		fmt.Sprintf("%s%s%s", last, usernameSuffixes[rand.Intn(len(usernameSuffixes))], usernameVariants[rand.Intn(len(usernameVariants))]),
 		// Pattern 5: first initial + last + suffix + number
 		fmt.Sprintf("%s%s%s%s", string(first[0]), last, usernameSuffixes[rand.Intn(len(usernameSuffixes))], usernameVariants[rand.Intn(len(usernameVariants))]),
-		// Pattern 6: full name concatenated + number
+
 		fmt.Sprintf("%s%s%s", first, last, usernameVariants[rand.Intn(len(usernameVariants))]),
 	}
 
-	// Try patterns until we find a unique one
 	for _, pattern := range patterns {
 		if pattern != "" && !existingUsernames[pattern] {
 			existingUsernames[pattern] = true
@@ -90,7 +85,6 @@ func GenerateUsername(firstName, lastName string, existingUsernames map[string]b
 		}
 	}
 
-	// Fallback: add random number to make it unique
 	for {
 		username := fmt.Sprintf("%s%s%d", string(first[0]), last, rand.Intn(10000))
 		if !existingUsernames[username] {
@@ -100,23 +94,16 @@ func GenerateUsername(firstName, lastName string, existingUsernames map[string]b
 	}
 }
 
-// GenerateDicebearAvatar creates a dicebear avatar URL with gender
 func GenerateDicebearAvatar(seed string, gender string) string {
-	// Using the "avataaars" style with gender parameter
-	// Gender can be "male" or "female"
-	// You can change to other styles like: "bottts", "identicon", "pixel-art", etc.
 	return fmt.Sprintf("https://api.dicebear.com/7.x/avataaars/svg?seed=%s&gender=%s", seed, gender)
 }
 
-// SeedUsers creates a specified number of test users
 func SeedUsers(count int) error {
 	collection := config.GetCollection("users")
 	ctx := context.Background()
 
-	// Track existing usernames to ensure uniqueness
 	existingUsernames := make(map[string]bool)
 
-	// Random seed
 	rand.Seed(time.Now().UnixNano())
 
 	fmt.Printf("🌱 Seeding %d users...\n", count)
@@ -135,10 +122,8 @@ func SeedUsers(count int) error {
 
 		lastName := lastNames[rand.Intn(len(lastNames))]
 
-		// Generate unique username
 		username := GenerateUsername(firstName, lastName, existingUsernames)
 
-		// Generate email (test@test.com, test2@test.com, etc.)
 		email := fmt.Sprintf("test%s@test.com", func() string {
 			if i == 1 {
 				return ""
@@ -146,7 +131,6 @@ func SeedUsers(count int) error {
 			return fmt.Sprintf("%d", i)
 		}())
 
-		// Generate password (password, password2, password3, etc.)
 		plainPassword := fmt.Sprintf("password%s", func() string {
 			if i == 1 {
 				return ""
@@ -154,13 +138,11 @@ func SeedUsers(count int) error {
 			return fmt.Sprintf("%d", i)
 		}())
 
-		// Hash password with bcrypt
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("failed to hash password for user %d: %v", i, err)
 		}
 
-		// Check if user already exists
 		var existingUser models.User
 		err = collection.FindOne(ctx, bson.M{"email": email, "isDeleted": bson.M{"$ne": true}}).Decode(&existingUser)
 		if err == nil {
@@ -168,10 +150,8 @@ func SeedUsers(count int) error {
 			continue
 		}
 
-		// Generate dicebear avatar URL with gender
 		avatarURL := GenerateDicebearAvatar(username, gender)
 
-		// Create user
 		user := models.User{
 			ID:           primitive.NewObjectID(),
 			Email:        email,
@@ -180,23 +160,21 @@ func SeedUsers(count int) error {
 			FamilyName:   lastName,
 			PasswordHash: string(hashedPassword),
 			Picture:      avatarURL,
-			Settings:     func() models.UserSettings {
-			s := models.GetDefaultUserSettings()
-			s.AutoAcceptFriendInvitations = true
-			return s
-		}(),
-			IsOnline:     false,
-			LastSeen:     primitive.NewDateTimeFromTime(time.Now()),
-			IsDeleted:    false,
+			Settings: func() models.UserSettings {
+				s := models.GetDefaultUserSettings()
+				s.AutoAcceptFriendInvitations = true
+				return s
+			}(),
+			IsOnline:  false,
+			LastSeen:  primitive.NewDateTimeFromTime(time.Now()),
+			IsDeleted: false,
 		}
 
-		// Insert into database
 		_, err = collection.InsertOne(ctx, user)
 		if err != nil {
 			return fmt.Errorf("failed to insert user %d: %v", i, err)
 		}
 
-		// Gender emoji for visual clarity
 		genderEmoji := "👨"
 		if gender == "female" {
 			genderEmoji = "👩"
@@ -216,12 +194,10 @@ func SeedUsers(count int) error {
 	return nil
 }
 
-// ClearTestUsers deletes all test users (emails matching test*@test.com)
 func ClearTestUsers() error {
 	collection := config.GetCollection("users")
 	ctx := context.Background()
 
-	// Delete all users with email matching pattern test*@test.com
 	result, err := collection.DeleteMany(ctx, bson.M{
 		"email": bson.M{
 			"$regex": "^test.*@test\\.com$",

@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { User } from '@/models';
 import { getUserDisplayName } from '@/lib/user-utils';
+import Link from 'next/link';
 
 interface MotionCardProps {
   motion: Motion;
@@ -42,7 +43,7 @@ export function MotionCard({
   const totalVotes = ayeCount + nayCount + abstainCount;
   const totalCastVotes = ayeCount + nayCount;
 
-  const userVote = motion.votes?.find((v) => v.userId === currentUserId);
+  const userVote = motion.votes?.find((v) => v.user_id === currentUserId);
   const hasVoted = !!userVote;
 
   const ayePercent = totalCastVotes > 0 ? (ayeCount / totalCastVotes) * 100 : 0;
@@ -57,7 +58,7 @@ export function MotionCard({
     motion.status === 'open' && !isSubmitting && !localIsSubmitting;
   const canSecond =
     motion.status === 'proposed' &&
-    currentUserId !== motion.moverId &&
+    currentUserId !== motion.mover_id &&
     !isSubmitting &&
     !localIsSubmitting;
 
@@ -149,7 +150,6 @@ export function MotionCard({
           </div>
         </div>
       </div>
-
       <div className='px-4 py-3 space-y-3'>
         <div>
           <h3 className='font-semibold mb-1'>{motion.title}</h3>
@@ -226,7 +226,6 @@ export function MotionCard({
           </div>
         ) : null}
       </div>
-
       {/* Actions */}
       <div className='px-4 py-3 border-t bg-muted/30'>
         {motion.status === 'proposed' && canSecond && onSecond && (
@@ -239,21 +238,18 @@ export function MotionCard({
             {localIsSubmitting ? 'Seconding...' : 'Second this Motion'}
           </Button>
         )}
-
-        {motion.status === 'proposed' && currentUserId === motion.moverId && (
+        {motion.status === 'proposed' && currentUserId === motion.mover_id && (
           <p className='text-xs text-center opacity-75 italic'>
             Waiting for another member to second this motion
           </p>
         )}
-
         {motion.status === 'proposed' &&
           !canSecond &&
-          currentUserId !== motion.moverId && (
+          currentUserId !== motion.mover_id && (
             <p className='text-xs text-center opacity-75 italic'>
               Waiting for someone to second this motion
             </p>
           )}
-
         {canVote && (
           <div className='grid grid-cols-3 gap-2'>
             <Button
@@ -297,18 +293,12 @@ export function MotionCard({
             </Button>
           </div>
         )}
-
         {!canVote && motion.status === 'open' && (
           <p className='text-xs text-center opacity-75'>Voting...</p>
         )}
-
-        {(motion.status === 'passed' ||
-          motion.status === 'failed' ||
-          motion.status === 'tabled') && (
-          <p className='text-xs text-center opacity-75'>
-            This motion is {motion.status}
-          </p>
-        )}
+        <Link href={`/committees/${motion.committee_id}/motion/${motion.id}`}>
+          <Button className={` mt-4`}>View Full Details</Button>
+        </Link>
       </div>
     </div>
   );

@@ -207,15 +207,9 @@ function Suggestions({
               <p className='text-sm text-gray-500'>
                 <UserName user={user} showFullName={true} />
               </p>
-              {getDisplayEmail(user, {
-                user,
-                isOwnProfile: user.isCurrentUser,
-              }) && (
+              {getDisplayEmail(user) && (
                 <p className='text-xs text-gray-400'>
-                  {getDisplayEmail(user, {
-                    user,
-                    isOwnProfile: user.isCurrentUser,
-                  })}
+                  {getDisplayEmail(user)}
                 </p>
               )}
             </div>

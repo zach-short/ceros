@@ -18,6 +18,7 @@ import { DefaultLoader } from '@/components/shared/layout/loader';
 import { useCommittee } from '@/hooks/api/use-commitee';
 import { useCommitteeHistory } from '@/hooks/api/use-committee-chat';
 import { Users, Settings, MessageSquare, FileText } from 'lucide-react';
+import Link from 'next/link';
 import { CommitteeSettingsSheet } from './committee-settings-sheet';
 import { CommitteeMembersSheet } from '../chat/committee/sheets/committee-members-sheet';
 import { CommitteeMotionsSheet } from '../chat/committee/sheets/committee-motions-sheet';
@@ -223,15 +224,16 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
           <Card>
             <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3'>
               <CardTitle>Motions</CardTitle>
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={() => setMotionsSheetOpen(true)}
-                className='text-sm'
-              >
-                <FileText size={16} className='mr-2' />
-                View All
-              </Button>
+              <Link href={`/committees/${committeeId}/motions`}>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='text-sm'
+                >
+                  <FileText size={16} className='mr-2' />
+                  View All
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent>
               {motions.length === 0 ? (
@@ -251,21 +253,22 @@ export function CommitteeProfile({ committeeId }: CommitteeProfileProps) {
                     )
                     .slice(0, 3)
                     .map((motion) => (
-                      <div
+                      <Link
                         key={motion.id}
-                        onClick={() => setMotionsSheetOpen(true)}
-                        className='p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors'
+                        href={`/committees/${committeeId}/motion/${motion.id}`}
                       >
-                        <h4 className='font-medium mb-1'>{motion.title}</h4>
-                        <p className='text-sm text-muted-foreground line-clamp-2'>
-                          {motion.description}
-                        </p>
-                        <div className='flex items-center gap-2 mt-2'>
-                          <Badge variant='secondary' className='text-xs'>
-                            {motion.status}
-                          </Badge>
+                        <div className='p-4 border rounded-lg hover:bg-accent cursor-pointer transition-colors'>
+                          <h4 className='font-medium mb-1'>{motion.title}</h4>
+                          <p className='text-sm text-muted-foreground line-clamp-2'>
+                            {motion.description}
+                          </p>
+                          <div className='flex items-center gap-2 mt-2'>
+                            <Badge variant='secondary' className='text-xs'>
+                              {motion.status}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   {motions.filter((m) =>
                     ['proposed', 'seconded', 'open'].includes(m.status),

@@ -64,10 +64,11 @@ export default function CommitteeChat() {
     },
   });
 
-  const { data: historyData, loading: historyLoading } = useCommitteeHistory(
-    committeeId,
-    !!session?.apiToken && !!committeeId,
-  );
+  const {
+    data: historyData,
+    loading: historyLoading,
+    refetch: refetchHistory,
+  } = useCommitteeHistory(committeeId, !!session?.apiToken && !!committeeId);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -231,13 +232,14 @@ export default function CommitteeChat() {
     createdAt: motion.created_at || motion.createdAt,
     updatedAt: motion.updated_at || motion.updatedAt,
     votingEndsAt: motion.voting_ends_at || motion.votingEndsAt,
-    votes: motion.votes?.map((vote: any) => ({
-      ...vote,
-      id: vote._id || vote.id,
-      motionId: vote.motion_id || vote.motionId,
-      userId: vote.user_id || vote.userId,
-      createdAt: vote.created_at || vote.createdAt,
-    })) || [],
+    votes:
+      motion.votes?.map((vote: any) => ({
+        ...vote,
+        id: vote._id || vote.id,
+        motionId: vote.motion_id || vote.motionId,
+        userId: vote.user_id || vote.userId,
+        createdAt: vote.created_at || vote.createdAt,
+      })) || [],
   });
 
   const handleMotionEvent = (payload: any) => {
@@ -295,7 +297,12 @@ export default function CommitteeChat() {
     joinRoom,
   } = useWebSocket({
     onMessage: (payload: any) => {
-      if (payload.action && ['motion_proposed', 'motion_seconded', 'vote_cast'].includes(payload.action)) {
+      if (
+        payload.action &&
+        ['motion_proposed', 'motion_seconded', 'vote_cast'].includes(
+          payload.action,
+        )
+      ) {
         handleMotionEvent(payload);
       } else {
         handleNewMessage(payload);
@@ -490,7 +497,6 @@ export default function CommitteeChat() {
     },
   });
 
-
   const handleReaction = (messageId: string, emoji: string) => {
     toggleReaction({ messageId, emoji });
   };
@@ -607,7 +613,11 @@ export default function CommitteeChat() {
             }
             isConnected={isConnected}
             isLoading={historyLoading || startingChat}
-            onToggleMotions={activeMotionCount > 0 ? () => setMotionsSheetOpen(true) : undefined}
+            onToggleMotions={
+              activeMotionCount > 0
+                ? () => setMotionsSheetOpen(true)
+                : undefined
+            }
             onOpenSearch={() => setSearchOpen(true)}
             chatType='committee'
             activeMotionCount={activeMotionCount}
@@ -687,7 +697,9 @@ export default function CommitteeChat() {
           motions={motions}
           committee={committee}
           onCreateMotion={handleCreateMotion}
+          currentUserId={session?.user?.id}
           isSubmitting={false}
+          onMotionUpdated={refetchHistory}
         />
       )}
     </>

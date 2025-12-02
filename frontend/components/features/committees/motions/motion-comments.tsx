@@ -1,65 +1,71 @@
 'use client';
 
-import { useState } from 'react';
-import { MessageSquare, Clock } from 'lucide-react';
+import { useRef } from 'react';
+import Link from 'next/link';
+import { MessageSquare, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { Motion } from '@/models/motion';
+import { User, Message } from '@/models';
+import { MessagesList } from '@/components/features/chat/ui/messages-list';
 
 interface MotionCommentsProps {
-  motion: any;
+  motion: Motion;
+  users: User[];
+  messages: Message[];
+  currentUserId: string;
+  committeeId: string;
 }
 
-export function MotionComments({ motion }: MotionCommentsProps) {
-  const [comment, setComment] = useState('');
-
-  const handleComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
-    toast.success('Comment added');
-    setComment('');
-  };
+export function MotionComments({
+  motion,
+  users,
+  messages,
+  currentUserId,
+  committeeId,
+}: MotionCommentsProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className='p-4 rounded-lg border'>
-      <h2 className='font-medium mb-3 flex items-center gap-2'>
-        <MessageSquare size={16} />
-        Discussion ({motion.comments.length})
-      </h2>
-
-      <form onSubmit={handleComment} className='mb-4'>
-        <div className='flex gap-2'>
-          <Input
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder='Add a comment...'
-            className='flex-1'
-          />
-          <Button type='submit' size='sm'>
-            Post
+    <div className='rounded-lg border'>
+      <div className='flex items-center justify-between p-4 border-b'>
+        <h2 className='font-medium flex items-center gap-2'>
+          <MessageSquare size={16} />
+          Discussion ({messages.length})
+        </h2>
+        <Link href={`/committees/${committeeId}`}>
+          <Button variant='ghost' size='sm'>
+            <ExternalLink size={14} className='mr-1' />
+            Go to Chat
           </Button>
-        </div>
-      </form>
+        </Link>
+      </div>
 
-      <div className='space-y-3'>
-        {motion.comments.map((comment: any, index: number) => (
-          <div key={index} className='p-3 rounded bg-accent/30'>
-            <div className='flex justify-between items-start mb-1'>
-              <p className='font-medium text-sm'>{comment.user}</p>
-              <span className='text-xs opacity-60 flex items-center gap-1'>
-                <Clock size={12} />
-                {comment.time}
-              </span>
+      <div className='p-4'>
+        <div className='max-h-[500px] overflow-y-auto'>
+          {messages.length === 0 ? (
+            <div className='text-center py-8'>
+              <MessageSquare className='w-12 h-12 mx-auto mb-2 text-muted-foreground/50' />
+              <p className='text-sm text-muted-foreground'>
+                No discussion messages yet.
+              </p>
+              <p className='text-xs text-muted-foreground mt-1'>
+                Discussion from the committee chat will appear here.
+              </p>
             </div>
-            <p className='text-sm'>{comment.text}</p>
-          </div>
-        ))}
-        {motion.comments.length === 0 && (
-          <p className='text-sm opacity-60 text-center py-4'>
-            No comments yet. Be the first to discuss this motion.
-          </p>
-        )}
+          ) : (
+            <MessagesList
+              ref={messagesEndRef}
+              messages={messages}
+              users={users}
+              currentUserId={currentUserId}
+              recipientName={motion.title}
+              isLoading={false}
+              chatType='committee'
+            />
+          )}
+        </div>
       </div>
     </div>
   );
 }
+

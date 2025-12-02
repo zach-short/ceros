@@ -182,7 +182,7 @@ export function PublicProfile({ userId }: PublicProfileProps) {
     isOwnProfile,
   };
 
-  const displayEmail = getDisplayEmail(user, context);
+  const displayEmail = getDisplayEmail(user);
   const displayPhone = getDisplayPhone(user, context);
   const displayBio = getDisplayBio(user, context);
   const displayAddress = getDisplayAddress(user, context);

@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -460,7 +462,6 @@ func GetFriendships(c *gin.Context) {
 		return
 	}
 
-	// Parse pagination parameters
 	cursorStr := c.Query("cursor")
 	limitStr := c.DefaultQuery("limit", "100")
 	limit := 100
@@ -471,7 +472,6 @@ func GetFriendships(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Build query with pagination
 	query := bson.M{
 		"$and": []bson.M{
 			{"status": models.FriendStatusAccepted},
@@ -484,7 +484,6 @@ func GetFriendships(c *gin.Context) {
 		},
 	}
 
-	// Add cursor for pagination
 	if cursorStr != "" {
 		cursorID, err := primitive.ObjectIDFromHex(cursorStr)
 		if err == nil {
@@ -494,7 +493,6 @@ func GetFriendships(c *gin.Context) {
 
 	friendshipCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("friendships")
 
-	// Fetch limit+1 to determine if there are more results
 	findOptions := options.Find().
 		SetLimit(int64(limit + 1)).
 		SetSort(bson.D{{Key: "_id", Value: 1}})
@@ -512,19 +510,16 @@ func GetFriendships(c *gin.Context) {
 		return
 	}
 
-	// Check if there are more results
 	hasMore := len(friendships) > limit
 	if hasMore {
 		friendships = friendships[:limit]
 	}
 
-	// Determine next cursor
 	var nextCursor string
 	if hasMore && len(friendships) > 0 {
 		nextCursor = friendships[len(friendships)-1].ID.Hex()
 	}
 
-	// Collect user IDs for batch fetch
 	var userIDs []primitive.ObjectID
 	for _, friendship := range friendships {
 		if friendship.RequesterID == userID {
@@ -534,7 +529,6 @@ func GetFriendships(c *gin.Context) {
 		}
 	}
 
-	// Batch fetch all users
 	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
 	userCursor, err := userCollection.Find(ctx, bson.M{"_id": bson.M{"$in": userIDs}})
 	if err != nil {
@@ -549,13 +543,11 @@ func GetFriendships(c *gin.Context) {
 		return
 	}
 
-	// Build user map for O(1) lookup
 	userMap := make(map[primitive.ObjectID]models.User)
 	for _, user := range users {
 		userMap[user.ID] = user
 	}
 
-	// Enrich friendships with user info
 	var enrichedFriendships []map[string]any
 	for _, friendship := range friendships {
 		var otherUserID primitive.ObjectID
@@ -627,7 +619,6 @@ func SearchUsers(c *gin.Context) {
 		return
 	}
 
-	// Parse pagination parameters
 	cursorStr := c.Query("cursor")
 	limitStr := c.DefaultQuery("limit", "100")
 	limit := 100
@@ -638,15 +629,16 @@ func SearchUsers(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Build search query with text search
+	regexPattern := primitive.Regex{Pattern: searchTerm, Options: "i"}
 	query := bson.M{
-		"$text": bson.M{
-			"$search": searchTerm,
+		"$or": []bson.M{
+			{"name": regexPattern},
+			{"givenName": regexPattern},
+			{"familyName": regexPattern},
 		},
 		"isDeleted": bson.M{"$ne": true},
 	}
 
-	// Add cursor for pagination
 	if cursorStr != "" {
 		cursorID, err := primitive.ObjectIDFromHex(cursorStr)
 		if err == nil {
@@ -656,11 +648,8 @@ func SearchUsers(c *gin.Context) {
 
 	userCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
 
-	// Fetch limit+1 to determine if there are more results
 	findOptions := options.Find().
-		SetLimit(int64(limit + 1)).
-		SetSort(bson.D{{Key: "score", Value: bson.M{"$meta": "textScore"}}, {Key: "_id", Value: 1}}).
-		SetProjection(bson.M{"score": bson.M{"$meta": "textScore"}})
+		SetLimit(int64(limit * 3))
 
 	cursor, err := userCollection.Find(ctx, query, findOptions)
 	if err != nil {
@@ -675,13 +664,68 @@ func SearchUsers(c *gin.Context) {
 		return
 	}
 
-	// Check if there are more results
-	hasMore := len(users) > limit
-	if hasMore {
-		users = users[:limit]
+	type ScoredUser struct {
+		User  models.User
+		Score int
 	}
 
-	// Determine next cursor
+	scoredUsers := make([]ScoredUser, 0, len(users))
+	searchLower := strings.ToLower(searchTerm)
+
+	for _, user := range users {
+		score := 0
+		nameLower := strings.ToLower(user.Name)
+		givenNameLower := strings.ToLower(user.GivenName)
+		familyNameLower := strings.ToLower(user.FamilyName)
+
+		if nameLower == searchLower {
+			score += 1000
+		} else if givenNameLower == searchLower {
+			score += 950
+		} else if familyNameLower == searchLower {
+			score += 950
+		}
+
+		if strings.HasPrefix(nameLower, searchLower) {
+			score += 500
+		}
+		if strings.HasPrefix(givenNameLower, searchLower) {
+			score += 450
+		}
+		if strings.HasPrefix(familyNameLower, searchLower) {
+			score += 450
+		}
+
+		if strings.Contains(nameLower, searchLower) {
+			score += 100
+		}
+		if strings.Contains(givenNameLower, searchLower) {
+			score += 90
+		}
+		if strings.Contains(familyNameLower, searchLower) {
+			score += 90
+		}
+
+		scoredUsers = append(scoredUsers, ScoredUser{User: user, Score: score})
+	}
+
+	sort.Slice(scoredUsers, func(i, j int) bool {
+		if scoredUsers[i].Score != scoredUsers[j].Score {
+			return scoredUsers[i].Score > scoredUsers[j].Score
+		}
+		return scoredUsers[i].User.ID.Hex() < scoredUsers[j].User.ID.Hex()
+	})
+
+	hasMore := len(scoredUsers) > limit
+	if hasMore {
+		scoredUsers = scoredUsers[:limit]
+	}
+
+	users = make([]models.User, len(scoredUsers))
+	for i, su := range scoredUsers {
+		users[i] = su.User
+	}
+
 	var nextCursor string
 	if hasMore && len(users) > 0 {
 		nextCursor = users[len(users)-1].ID.Hex()
@@ -692,7 +736,6 @@ func SearchUsers(c *gin.Context) {
 		userIDs = append(userIDs, user.ID)
 	}
 
-	// Fetch friendship statuses
 	friendshipQuery := bson.M{
 		"$or": []bson.M{
 			{

@@ -1,4 +1,5 @@
 export type VoteThreshold = 'simple_majority' | 'two_thirds' | 'unanimous';
+export type MotionType = 'main' | 'to_table';
 
 export interface VoteTally {
   aye_count: number;
@@ -10,11 +11,18 @@ export interface VoteTally {
   tallied_at?: string;
 }
 
+export interface DiscussionEntry {
+  message_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}
+
 export interface Motion {
   id: string;
-  committeeId: string;
-  moverId: string;
-  seconderId?: string;
+  committee_id: string;
+  mover_id: string;
+  seconder_id?: string;
   title: string;
   description: string;
   status: 'proposed' | 'seconded' | 'open' | 'passed' | 'failed' | 'tabled';
@@ -22,15 +30,19 @@ export interface Motion {
   requires_quorum: boolean;
   votes: Vote[];
   vote_tally?: VoteTally;
-  createdAt: string;
-  updatedAt: string;
-  votingEndsAt?: string;
+  discussion?: DiscussionEntry[];
+  summary?: string;
+  motion_type: MotionType;
+  parent_motion_id?: string;
+  created_at: string;
+  updated_at: string;
+  voting_ends_at?: string;
 }
 
 export interface Vote {
   id: string;
-  motionId: string;
-  userId: string;
+  motion_id: string;
+  user_id: string;
   result: 'aye' | 'nay' | 'abstain';
-  createdAt: string;
+  created_at: string;
 }

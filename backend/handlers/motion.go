@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -112,10 +115,94 @@ func GetMotion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"motion": motion})
+	roomID := models.CreateCommitteeRoomID(motion.CommitteeID)
+	messagesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+
+	endTime := time.Now()
+	if motion.Status == models.MotionStatusPassed || motion.Status == models.MotionStatusFailed || motion.Status == models.MotionStatusTabled {
+
+		endTime = motion.UpdatedAt
+	}
+
+	messageFilter := bson.M{
+		"roomId": roomID,
+		"timestamp": bson.M{
+			"$gte": motion.CreatedAt,
+			"$lte": endTime,
+		},
+	}
+	messageOpts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}}).SetLimit(100)
+
+	messageCursor, err := messagesCollection.Find(ctx, messageFilter, messageOpts)
+	var messages []models.Message
+	if err != nil {
+		log.Printf("Error fetching discussion messages: %v", err)
+		messages = []models.Message{}
+	} else {
+		defer messageCursor.Close(ctx)
+		if err = messageCursor.All(ctx, &messages); err != nil {
+			log.Printf("Error decoding discussion messages: %v", err)
+			messages = []models.Message{}
+		}
+	}
+
+	discussion := make([]models.DiscussionEntry, 0, len(messages))
+	uniqueUserIDs := make(map[primitive.ObjectID]bool)
+
+	for _, msg := range messages {
+		discussion = append(discussion, models.DiscussionEntry{
+			MessageID: msg.ID,
+			UserID:    msg.SenderID,
+			Content:   msg.Content,
+			CreatedAt: msg.Timestamp,
+		})
+		uniqueUserIDs[msg.SenderID] = true
+	}
+
+	uniqueUserIDs[motion.MoverID] = true
+	if motion.SeconderID != nil {
+		uniqueUserIDs[*motion.SeconderID] = true
+	}
+
+	var userIDList []primitive.ObjectID
+	for userID := range uniqueUserIDs {
+		userIDList = append(userIDList, userID)
+	}
+
+	var users []models.User
+	if len(userIDList) > 0 {
+		usersCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("users")
+		userFilter := bson.M{"_id": bson.M{"$in": userIDList}}
+		userCursor, err := usersCollection.Find(ctx, userFilter)
+		if err != nil {
+			log.Printf("Error fetching users: %v", err)
+			users = []models.User{}
+		} else {
+			defer userCursor.Close(ctx)
+			if err = userCursor.All(ctx, &users); err != nil {
+				log.Printf("Error decoding users: %v", err)
+				users = []models.User{}
+			}
+		}
+	}
+
+	// Update motion with discussion
+	motion.Discussion = discussion
+
+	c.JSON(http.StatusOK, gin.H{
+		"motion": motion,
+		"users":  users,
+	})
 }
 
 func UpdateMotion(c *gin.Context) {
+	committeeIDStr := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid committee ID"})
+		return
+	}
+
 	motionIDStr := c.Param("motionId")
 	motionID, err := primitive.ObjectIDFromHex(motionIDStr)
 	if err != nil {
@@ -123,21 +210,80 @@ func UpdateMotion(c *gin.Context) {
 		return
 	}
 
-	var updateReq struct {
-		Status     *models.MotionStatus `json:"status,omitempty"`
-		SeconderID *primitive.ObjectID  `json:"seconderId,omitempty"`
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
 	}
 
+	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
+	committeesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Get the motion first
+	var motion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Motion not found"})
+		return
+	}
+
+	// Get committee for permission checking
+	var committee models.Committee
+	err = committeesCollection.FindOne(ctx, bson.M{"_id": committeeID}).Decode(&committee)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Committee not found"})
+		return
+	}
+
+	// Parse request body
+	var updateReq models.UpdateMotionDetailsRequest
 	if err := c.ShouldBindJSON(&updateReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// Check if motion is closed (can't edit closed motions)
+	if motion.Status == models.MotionStatusPassed || motion.Status == models.MotionStatusFailed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot edit a closed motion"})
+		return
+	}
 
-	update := bson.M{"$set": bson.M{"updated_at": time.Now()}}
+	// Permission check for editing details (title, description, vote_threshold)
+	if updateReq.Title != nil || updateReq.Description != nil || updateReq.VoteThreshold != nil {
+		// Can edit if: owner, chair, or proposer
+		isOwner := committee.OwnerID == userID
+		isChair := !committee.ChairID.IsZero() && committee.ChairID == userID
+		isProposer := motion.MoverID == userID
+
+		canEdit := isOwner || isChair || isProposer
+
+		if !canEdit {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Only the motion proposer, committee chair, or owner can edit motion details"})
+			return
+		}
+	}
+
+	// Build update document
+	update := bson.M{
+		"$set": bson.M{
+			"updated_at": time.Now(),
+		},
+	}
+
+	if updateReq.Title != nil {
+		update["$set"].(bson.M)["title"] = *updateReq.Title
+	}
+	if updateReq.Description != nil {
+		update["$set"].(bson.M)["description"] = *updateReq.Description
+	}
+	if updateReq.VoteThreshold != nil {
+		update["$set"].(bson.M)["vote_threshold"] = *updateReq.VoteThreshold
+	}
+
+	// Keep existing status/seconder update logic
 	if updateReq.Status != nil {
 		update["$set"].(bson.M)["status"] = *updateReq.Status
 	}
@@ -145,25 +291,26 @@ func UpdateMotion(c *gin.Context) {
 		update["$set"].(bson.M)["seconder_id"] = *updateReq.SeconderID
 	}
 
-	result, err := motionsCollection.UpdateOne(ctx, bson.M{"_id": motionID}, update)
+	// Perform update
+	_, err = motionsCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": motionID},
+		update,
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update motion"})
 		return
 	}
 
-	if result.MatchedCount == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Motion not found"})
-		return
-	}
-
-	var motion models.Motion
-	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
+	// Fetch and return updated motion
+	var updatedMotion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&updatedMotion)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated motion"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"motion": motion})
+	c.JSON(http.StatusOK, gin.H{"motion": updatedMotion})
 }
 
 func CreateMotion(c *gin.Context) {
@@ -251,6 +398,7 @@ func CreateMotion(c *gin.Context) {
 		Votes:          []models.Vote{},
 		Comments:       []models.Comment{},
 		IsSpecial:      false,
+		MotionType:     models.MotionTypeMain,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -259,6 +407,25 @@ func CreateMotion(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create motion"})
 		return
+	}
+
+	// Create a message for the motion in the committee chat
+	roomID := models.CreateCommitteeRoomID(committeeID)
+	message := models.Message{
+		ID:        primitive.NewObjectID(),
+		Type:      models.TypeMotion,
+		SenderID:  userID,
+		Content:   "proposed a motion",
+		RoomID:    roomID,
+		Timestamp: time.Now(),
+		MotionID:  &motion.ID,
+	}
+
+	messagesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	_, err = messagesCollection.InsertOne(ctx, message)
+	if err != nil {
+		log.Printf("Failed to save motion message: %v", err)
+		// Don't fail the request if message creation fails
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"motion": motion})
@@ -373,12 +540,32 @@ func CloseMotion(c *gin.Context) {
 	newStatus := models.MotionStatusFailed
 	if passed {
 		newStatus = models.MotionStatusPassed
+
+		if motion.MotionType == models.MotionTypeToTable && motion.ParentMotionID != nil {
+			_, err := motionsCollection.UpdateOne(
+				ctx,
+				bson.M{"_id": *motion.ParentMotionID},
+				bson.M{
+					"$set": bson.M{
+						"status":     models.MotionStatusTabled,
+						"updated_at": time.Now(),
+					},
+				},
+			)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to table parent motion"})
+				return
+			}
+		}
 	}
+
+	summary := generateMotionSummary(&motion, tally)
 
 	update := bson.M{
 		"$set": bson.M{
 			"status":     newStatus,
 			"vote_tally": tally,
+			"summary":    summary,
 			"updated_at": now,
 		},
 	}
@@ -396,4 +583,218 @@ func CloseMotion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"motion": motion, "tally": tally, "passed": passed})
+}
+
+func CreateMotionToTable(c *gin.Context) {
+	committeeIDStr := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid committee ID"})
+		return
+	}
+
+	motionIDStr := c.Param("motionId")
+	motionID, err := primitive.ObjectIDFromHex(motionIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid motion ID"})
+		return
+	}
+
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var targetMotion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&targetMotion)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Motion not found"})
+		return
+	}
+
+	if targetMotion.Status != models.MotionStatusProposed && targetMotion.Status != models.MotionStatusSeconded && targetMotion.Status != models.MotionStatusOpen {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Can only table active motions"})
+		return
+	}
+
+	var existingTableMotion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{
+		"committee_id":     committeeID,
+		"parent_motion_id": motionID,
+		"motion_type":      models.MotionTypeToTable,
+		"status":           bson.M{"$in": []string{string(models.MotionStatusProposed), string(models.MotionStatusSeconded), string(models.MotionStatusOpen)}},
+	}).Decode(&existingTableMotion)
+
+	if err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "A motion to table is already pending for this motion"})
+		return
+	}
+
+	tableMotion := models.Motion{
+		ID:             primitive.NewObjectID(),
+		CommitteeID:    committeeID,
+		MoverID:        userID,
+		Title:          fmt.Sprintf("Motion to Table: %s", targetMotion.Title),
+		Description:    "Postpone this motion indefinitely",
+		Status:         models.MotionStatusProposed,
+		VoteThreshold:  models.VoteThresholdSimpleMajority,
+		RequiresQuorum: false,
+		Votes:          []models.Vote{},
+		Comments:       []models.Comment{},
+		IsSpecial:      true,
+		MotionType:     models.MotionTypeToTable,
+		ParentMotionID: &motionID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	_, err = motionsCollection.InsertOne(ctx, tableMotion)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create motion to table"})
+		return
+	}
+
+	// Create a message for the motion in the committee chat
+	roomID := models.CreateCommitteeRoomID(committeeID)
+	message := models.Message{
+		ID:        primitive.NewObjectID(),
+		Type:      models.TypeMotion,
+		SenderID:  userID,
+		Content:   "proposed a motion",
+		RoomID:    roomID,
+		Timestamp: time.Now(),
+		MotionID:  &tableMotion.ID,
+	}
+
+	messagesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("messages")
+	_, err = messagesCollection.InsertOne(ctx, message)
+	if err != nil {
+		log.Printf("Failed to save motion message: %v", err)
+		// Don't fail the request if message creation fails
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"motion": tableMotion})
+}
+
+func UntableMotion(c *gin.Context) {
+	committeeIDStr := c.Param("id")
+	committeeID, err := primitive.ObjectIDFromHex(committeeIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid committee ID"})
+		return
+	}
+
+	motionIDStr := c.Param("motionId")
+	motionID, err := primitive.ObjectIDFromHex(motionIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid motion ID"})
+		return
+	}
+
+	userIDStr := c.MustGet("userID").(string)
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	committeesCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("committees")
+	motionsCollection := config.DB.Database(os.Getenv("DATABASE_NAME")).Collection("motions")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var committee models.Committee
+	err = committeesCollection.FindOne(ctx, bson.M{"_id": committeeID}).Decode(&committee)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Committee not found"})
+		return
+	}
+
+	isOwner := committee.OwnerID == userID
+	isChair := !committee.ChairID.IsZero() && committee.ChairID == userID
+
+	if !isOwner && !isChair {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only chair or owner can take motion from table"})
+		return
+	}
+
+	var motion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&motion)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Motion not found"})
+		return
+	}
+
+	if motion.Status != models.MotionStatusTabled {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Motion is not tabled"})
+		return
+	}
+
+	count, err := motionsCollection.CountDocuments(ctx, bson.M{
+		"committee_id": committeeID,
+		"status":       bson.M{"$in": []string{string(models.MotionStatusProposed), string(models.MotionStatusSeconded), string(models.MotionStatusOpen)}},
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check for active motions"})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot untable while another motion is active"})
+		return
+	}
+
+	restoredStatus := models.MotionStatusProposed
+	if motion.SeconderID != nil {
+		restoredStatus = models.MotionStatusSeconded
+	}
+
+	_, err = motionsCollection.UpdateOne(
+		ctx,
+		bson.M{"_id": motionID},
+		bson.M{
+			"$set": bson.M{
+				"status":     restoredStatus,
+				"updated_at": time.Now(),
+			},
+		},
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to untable motion"})
+		return
+	}
+
+	var updatedMotion models.Motion
+	err = motionsCollection.FindOne(ctx, bson.M{"_id": motionID}).Decode(&updatedMotion)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated motion"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"motion": updatedMotion})
+}
+
+func generateMotionSummary(motion *models.Motion, tally *models.VoteTally) string {
+	var summary strings.Builder
+
+	summary.WriteString(fmt.Sprintf("Motion: %s\n\n", motion.Title))
+
+	if len(motion.Discussion) > 0 {
+		summary.WriteString("Discussion Summary:\n")
+		summary.WriteString(fmt.Sprintf("- %d messages exchanged during deliberation\n", len(motion.Discussion)))
+	}
+
+	if tally != nil {
+		summary.WriteString(fmt.Sprintf("\nVoting Results:\n"))
+		summary.WriteString(fmt.Sprintf("- Aye: %d\n", tally.AyeCount))
+		summary.WriteString(fmt.Sprintf("- Nay: %d\n", tally.NayCount))
+		summary.WriteString(fmt.Sprintf("- Abstain: %d\n", tally.AbstainCount))
+	}
+
+	return summary.String()
 }

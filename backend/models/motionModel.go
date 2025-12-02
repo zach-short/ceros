@@ -33,6 +33,13 @@ const (
 	VoteThresholdUnanimous      VoteThreshold = "unanimous"
 )
 
+type MotionType string
+
+const (
+	MotionTypeMain    MotionType = "main"
+	MotionTypeToTable MotionType = "to_table"
+)
+
 type VoteTally struct {
 	AyeCount      int        `bson:"aye_count" json:"aye_count"`
 	NayCount      int        `bson:"nay_count" json:"nay_count"`
@@ -41,6 +48,13 @@ type VoteTally struct {
 	QuorumMet     bool       `bson:"quorum_met" json:"quorum_met"`
 	Passed        *bool      `bson:"passed,omitempty" json:"passed,omitempty"`
 	TalliedAt     *time.Time `bson:"tallied_at,omitempty" json:"tallied_at,omitempty"`
+}
+
+type DiscussionEntry struct {
+	MessageID primitive.ObjectID `bson:"message_id" json:"message_id"`
+	UserID    primitive.ObjectID `bson:"user_id" json:"user_id"`
+	Content   string             `bson:"content" json:"content"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
 }
 
 type Motion struct {
@@ -58,7 +72,19 @@ type Motion struct {
 	Comments       []Comment            `bson:"comments" json:"comments"`
 	IsSpecial      bool                 `bson:"is_special" json:"is_special"`
 	Summary        string               `bson:"summary,omitempty" json:"summary"`
+	Discussion     []DiscussionEntry    `bson:"discussion,omitempty" json:"discussion,omitempty"`
+	MotionType     MotionType           `bson:"motion_type" json:"motion_type"`
+	ParentMotionID *primitive.ObjectID  `bson:"parent_motion_id,omitempty" json:"parent_motion_id,omitempty"`
 	CreatedAt      time.Time            `bson:"created_at" json:"created_at"`
 	UpdatedAt      time.Time            `bson:"updated_at" json:"updated_at"`
 	VotingEndsAt   *time.Time           `bson:"voting_ends_at,omitempty" json:"voting_ends_at,omitempty"`
+}
+
+// UpdateMotionDetailsRequest is used for editing motion properties
+type UpdateMotionDetailsRequest struct {
+	Title         *string        `json:"title,omitempty"`
+	Description   *string        `json:"description,omitempty"`
+	VoteThreshold *VoteThreshold `json:"vote_threshold,omitempty"`
+	Status        *MotionStatus  `json:"status,omitempty"`
+	SeconderID    *primitive.ObjectID `json:"seconderId,omitempty"`
 }
