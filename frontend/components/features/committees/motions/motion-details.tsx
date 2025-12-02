@@ -156,7 +156,6 @@ export default function MotionDetails() {
   const users = motionData?.users || [];
   const messages = motionData?.messages || [];
   const committee = committeeData?.committee;
-
   if (!motion) {
     return (
       <div className='h-[calc(100vh-4rem)] flex items-center justify-center'>

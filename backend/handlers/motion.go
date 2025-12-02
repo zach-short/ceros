@@ -146,16 +146,13 @@ func GetMotion(c *gin.Context) {
 		}
 	}
 
-	discussion := make([]models.DiscussionEntry, 0, len(messages))
+	// Filter out motion-type messages and collect unique user IDs
+	filteredMessages := make([]models.Message, 0)
 	uniqueUserIDs := make(map[primitive.ObjectID]bool)
-
 	for _, msg := range messages {
-		discussion = append(discussion, models.DiscussionEntry{
-			MessageID: msg.ID,
-			UserID:    msg.SenderID,
-			Content:   msg.Content,
-			CreatedAt: msg.Timestamp,
-		})
+		if msg.Type != models.TypeMotion {
+			filteredMessages = append(filteredMessages, msg)
+		}
 		uniqueUserIDs[msg.SenderID] = true
 	}
 
@@ -186,12 +183,24 @@ func GetMotion(c *gin.Context) {
 		}
 	}
 
+	// Create discussion entries for backward compatibility
+	discussion := make([]models.DiscussionEntry, 0, len(filteredMessages))
+	for _, msg := range filteredMessages {
+		discussion = append(discussion, models.DiscussionEntry{
+			MessageID: msg.ID,
+			UserID:    msg.SenderID,
+			Content:   msg.Content,
+			CreatedAt: msg.Timestamp,
+		})
+	}
+
 	// Update motion with discussion
 	motion.Discussion = discussion
 
 	c.JSON(http.StatusOK, gin.H{
-		"motion": motion,
-		"users":  users,
+		"motion":   motion,
+		"users":    users,
+		"messages": filteredMessages,
 	})
 }
 
