@@ -2,8 +2,8 @@
 
 ## Demo Links
 
-- **Demo Video**: [https://www.youtube.com/watch?v=AmSdPCBHlj4](#)
-- **Hosted Site**: [https://ceros.netlify.app/](#)
+- **Demo Video**: [Demo Video](https://www.youtube.com/watch?v=AmSdPCBHlj4)
+- **Hosted Site**: [Hosted Site](https://ceros.netlify.app/)
 
 ## Features
 
