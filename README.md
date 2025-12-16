@@ -48,27 +48,64 @@ We have documented the detailed API endpoints in this link: [API Documentation](
 
 ## Database Schema
 
+Users can be friends with each other (via Friends table). Committees group users and motions. Motions are linked to committees.
+
 ### Users Table
 
-| Column   | Type         | Description           |
-| -------- | ------------ | --------------------- |
-| id       | UUID         | Unique identifier.    |
-| username | VARCHAR(50)  | User's username.      |
-| email    | VARCHAR(100) | User's email address. |
-| password | TEXT         | Hashed password.      |
+| Field        | Type                | Description                          |
+| ------------ | ------------------- | ------------------------------------ |
+| id           | ObjectID (string)   | Unique user identifier               |
+| email        | string              | User email address                   |
+| name         | string (optional)   | Full name                            |
+| givenName    | string (optional)   | Given/first name                     |
+| familyName   | string (optional)   | Family/last name                     |
+| passwordHash | string (optional)   | Hashed password                      |
+| bio          | string (optional)   | User biography                       |
+| picture      | string (optional)   | Profile picture URL                  |
+| phoneNumber  | string (optional)   | Phone number                         |
+| address      | Address (object)    | Address details (street, city, etc.) |
+| settings     | UserSettings (obj)  | User settings (theme, privacy, etc.) |
+| isOnline     | bool                | Online status                        |
+| lastSeen     | DateTime (optional) | Last seen timestamp                  |
+| isDeleted    | bool                | Deletion status                      |
+| deletedAt    | DateTime (optional) | Deletion timestamp                   |
 
 ### Friends Table
 
-| Column    | Type | Description        |
-| --------- | ---- | ------------------ |
-| id        | UUID | Unique identifier. |
-| user_id   | UUID | ID of the user.    |
-| friend_id | UUID | ID of the friend.  |
+| Field       | Type                | Description                                 |
+| ----------- | ------------------- | ------------------------------------------- |
+| id          | ObjectID (string)   | Unique identifier for the friendship        |
+| requesterId | ObjectID (string)   | User ID of the friend request sender        |
+| addresseeId | ObjectID (string)   | User ID of the friend request receiver      |
+| status      | string (enum)       | Status: "pending", "accepted", or "blocked" |
+| requestedAt | DateTime            | Timestamp when the request was sent         |
+| respondedAt | DateTime (nullable) | Timestamp when the request was responded to |
 
 ### Committees Table
 
-| Column      | Type         | Description        |
-| ----------- | ------------ | ------------------ |
-| id          | UUID         | Unique identifier. |
-| name        | VARCHAR(100) | Committee name.    |
-| description | TEXT         | Committee details. |
+| Column       | Type          | Description                                    |
+| ------------ | ------------- | ---------------------------------------------- |
+| id           | string (UUID) | Unique identifier for the committee            |
+| name         | string        | Committee name                                 |
+| description  | string        | Description of the committee                   |
+| type         | string        | Committee type/category                        |
+| picture      | string (URL)  | Optional committee picture                     |
+| ownerId      | string (UUID) | User ID of the committee owner                 |
+| chairId      | string (UUID) | User ID of the committee chair                 |
+| memberIds    | string[]      | Array of user IDs for committee members        |
+| observerIds  | string[]      | Array of user IDs for committee observers      |
+| voting_rules | object        | Voting rules (see VotingRules structure below) |
+| createdAt    | string (date) | Optional creation timestamp                    |
+| updatedAt    | string (date) | Optional last update timestamp                 |
+
+### Motions Table
+
+| Column       | Type         | Description              |
+| ------------ | ------------ | ------------------------ |
+| id           | UUID         | Unique identifier.       |
+| title        | VARCHAR(200) | Motion title.            |
+| description  | TEXT         | Motion details.          |
+| committee_id | UUID         | Associated committee ID. |
+| created_at   | TIMESTAMP    | Creation timestamp.      |
+| created_by   | UUID         | ID of the creator.       |
+| status       | VARCHAR(50)  | Motion status.           |
