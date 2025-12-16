@@ -9,7 +9,6 @@
 
 - Real-time chat functionality.
   ![chat](frontend/public/images/group-chat.png)
-  ![phone-chat](frontend/public/images/phone.jpg)
 - Committee and motion management.
   ![committees](frontend/public/images/committee.png)
   ![new-committee](frontend/public/images/new-committee.png)
