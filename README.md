@@ -8,10 +8,10 @@
 ## Features
 
 - Real-time chat functionality.
-  ![chat](frontend/public/group-chat.png)
+  ![chat](frontend/public/images/group-chat.png)
 - Committee and motion management.
-  ![committees](frontend/public/committees.png)
-  ![motions](frontend/public/motions.png)
+  ![committees](frontend/public/images/committees.png)
+  ![motions](frontend/public/images/motions.png)
 - Friend management and social features.
   ![friends](frontend/public/friends.png)
 - WebSocket-based live updates.
